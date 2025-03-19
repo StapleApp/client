@@ -50,6 +50,7 @@ function AnimatedSwitch() {
           <Route path="/signin" element={<SignIn />} />      
           <Route path="/forgetPassword" element={<EmailVerification />} />
           <Route path="/terms" element={<Terms />} />
+
         </Routes>
       </AnimatePresence>
     </>

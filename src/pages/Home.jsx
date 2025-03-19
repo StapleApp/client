@@ -1,8 +1,23 @@
 import logo from "../assets/logoDark.svg"
 import FriendsBar from "./FriendsBar";
 import { motion } from "framer-motion";
+import { getAuth } from "firebase/auth";
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
+    const auth = getAuth();
+    const navigate = useNavigate();
+    
+    const user = auth.currentUser;
+    console.log(user);
+
+    const handleLogout = () => {
+        console.log("Logging out...");
+        localStorage.removeItem("user");
+        sessionStorage.removeItem("user");
+        navigate("/login");
+      };
+
     return(
         <>
             <motion.div
@@ -17,8 +32,18 @@ const Home = () => {
                     <div className="w-auto h-auto col-start-2 mt-auto mb-auto text-5xl font-bold">
                         <img src={logo} className="rounded-full opacity-15" />
                         HOME
-                    </div>   
+                    </div>  
+                    <div>
+                    <button 
+                        type="button" 
+                        className="font-semibold text-indigo-600 hover:text-indigo-500"
+                        onClick={handleLogout}
+                    >
+                        Log Out
+                    </button>
+                </div> 
                 </div>
+                
             </motion.div>    
         </>
     );   

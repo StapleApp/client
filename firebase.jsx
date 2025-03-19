@@ -52,7 +52,6 @@ export const signInWithGoogle = async (navigate) => {
     try {
         const result = await signInWithPopup(auth, provider_google);
         const user = result.user;
-        console.log("User Info:", user);
 
         const userName = user.displayName.split(" ")[0];
         const userSurname = user.displayName.split(" ")[1];
@@ -97,6 +96,8 @@ async function writeUserData(uid, name, surname, nickname,birthdate, email, phot
             createdDate:serverTimestamp(),
             email: email,
             friendshipID: friendshipID,
+            friends: [],
+            servers: [],
 
         });
 
@@ -110,7 +111,6 @@ async function writeUserData(uid, name, surname, nickname,birthdate, email, phot
 export const loginWithMail = async (email, password, navigate) => {
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        console.log("User authenticated:", userCredential.user);
         toast.success("Login successful!");
 
         navigate("/home");
@@ -151,5 +151,9 @@ const createFriendshipID = async () => {
 
     return friendshipID; 
 };
+
+
+
+
 
 export default app;
