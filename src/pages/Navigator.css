@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+/* WebKit (Chrome, Safari) */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: none;
+}
+
+@layer components {
+
+  .sidebar-icon {
+    @apply relative flex items-center justify-center
+           h-10 w-10 mt-2 mb-2 mx-auto shadow-lg mr-auto
+           bg-[#7496a1] text-[#89A8B2] border-3 border-[#B3C8CF]
+           hover:bg-[#89A8B2] hover:text-[#7496a1] hover:border-3 hover:border-[#526f78]
+           rounded-full hover:rounded-full
+           transition-all duration-300 ease-linear
+           cursor-pointer; 
+  }
+
+  .rightbar-icon {
+    @apply relative flex items-center justify-center
+           h-12 w-12 mt-2 mb-2 mx-auto shadow-lg mr-auto ml-2
+           bg-[#7496a1] text-[#89A8B2] border-3 border-[#B3C8CF]
+           hover:bg-[#89A8B2] hover:text-[#7496a1] hover:border-3 hover:border-[#526f78]
+           rounded-3xl hover:rounded-xl
+           transition-all duration-300 ease-linear
+           cursor-pointer; 
+  }
+
+  .sidebar-tooltip {
+    @apply absolute w-auto p-2 m-2 min-w-max left-14 rounded-md shadow-md
+    text-[#89A8B2] bg-[#7496a1]
+    text-xs font-bold 
+    transition-all duration-100 scale-0 origin-left;
+  }
+
+  .sidebar-expand {
+    @apply mr-auto ml-2;
+  }
+
+  .sidebar-settings {
+    @apply mr-auto ml-2;
+  }
+}
+
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
