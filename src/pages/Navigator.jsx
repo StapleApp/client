@@ -11,20 +11,7 @@ const Navigator = () => {
 
     return (
         <>
-            <div className={`fixed flex flex-col top-0 left-0 h-screen gap-0 z-1
-            w-16 transition-all ease-linear
-            bg-[#89A8B2] text-[#c6b9f4] shadow-lg`}>
-                <SideBarImg  />
-                <SideBarHome />
-                <SideBarFriend />
-                <SideBarTest />
-                <SideBarIconExpand
-                    icon={isExpanded ? <FaRegArrowAltCircleLeft size="35" /> : <FaRegArrowAltCircleRight size="35" />}  
-                    toggleExpand={() => setIsExpanded(!isExpanded)} 
-                />
-                <SideBarIconSettings />
-            </div>
-            <div className={`fixed top-0 left-0 z-1 ml-16 h-screen
+            <div className={`fixed top-0 -left-20 z-1 ml-16 h-screen
                             bg-[#7496a1] text-[#c1b2f6] shadow-lg
                             transition-all duration-150 ease-linear
                             ${isExpanded ? 'w-64' : 'w-0'}`}>
@@ -64,6 +51,21 @@ const Navigator = () => {
                                 ${isExpanded ? 'scale-100' : 'scale-0'}`}>
                     Ayarlar
                 </div>
+            </div>
+            <div className={isExpanded ? `fixed flex flex-col top-0 left-55 h-screen gap-0 z-1
+            w-16 transition-all ease-linear
+            bg-[#89A8B2] text-[#c6b9f4] shadow-lg` : `fixed flex flex-col top-0 left-0 h-screen gap-0 z-1
+            w-16 transition-all ease-linear
+            bg-[#89A8B2] text-[#c6b9f4] shadow-lg`}>
+                <SideBarImg  />
+                <SideBarHome />
+                <SideBarFriend />
+                <SideBarTest />
+                <SideBarIconExpand
+                    icon={isExpanded ? <FaRegArrowAltCircleLeft size="35" /> : <FaRegArrowAltCircleRight size="35" />}  
+                    toggleExpand={() => setIsExpanded(!isExpanded)} 
+                />
+                <SideBarIconSettings />
             </div>
         </>
     );
