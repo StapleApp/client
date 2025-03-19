@@ -1,20 +1,20 @@
 import pfp from '../assets/360.png';
-import './Navigator.css';
+import '../App.css';
 import { FaUserFriends } from 'react-icons/fa';
 
 const FriendsBar = () => {
     return(
-        <div className="fixed top-0 right-0 h-screen w-48 bg-[#89A8B2] text-[#7496a1] shadow-lg m-0 z-10 flex flex-col">
+        <div className="fixed top-0 right-0 h-screen w-48 bg-[var(--primary-bg)] text-[var(--primary-border)] shadow-lg m-0 z-10 flex flex-col">
             {/* Başlık */}
-            <div className="flex bg-[#7496a1] rounded-2xl mx-4 w-40 h-10 mt-2 mb-2 text-[#B3C8CF] text-xl font-bold justify-center items-center">
+            <div className="flex bg-[var(--secondary-bg)] rounded-2xl mx-4 w-40 h-10 mt-2 mb-2 text-[var(--primary-text)] text-xl font-bold justify-center items-center">
                 ARKADAŞLAR
             </div>
 
             {/* Kullanıcı Listesi (Kaydırılabilir) */}
-            <div className="flex-1 overflow-y-auto mx-4 w-40 mt-2 mb-2 bg-[#7496a1] rounded-2xl text-[#7496a1] text-xs font-bold max-h-[calc(100vh-120px)]">
+            <div className="flex-1 overflow-y-auto mx-4 w-40 mt-2 mb-2 bg-[var(--secondary-bg)] rounded-2xl text-[var(--secondary-text)] text-xs font-bold max-h-[calc(100vh-120px)]">
                 <div className="grid gap-2 p-2">
-                    {Array(30).fill("Chiramii").map((name, index) => (
-                        <div key={index} className="flex items-center w-full h-12 bg-[#B3C8CF] rounded-lg p-2">
+                    {Array(100).fill("Chiramii").map((name, index) => (
+                        <div key={index} className="flex items-center w-full h-12 bg-[var(--primary-border)] rounded-lg p-2">
                             <span className={`w-16`}><RightBarImg imgSrc={pfp} /></span>
                             <span>{name}</span>
                         </div>
@@ -23,7 +23,7 @@ const FriendsBar = () => {
             </div>
 
             {/* Profil Butonu (En Alta Sabit) */}
-            <div className="relative bottom-0 mx-4 w-40 h-10 mt-2 mb-2 flex bg-[#7496a1] rounded-2xl text-[#B3C8CF] text-2xl font-bold justify-center items-center">
+            <div className="relative bottom-0 mx-4 w-40 h-10 mt-2 mb-2 flex bg-[var(--secondary-bg)] rounded-2xl text-[var(--primary-border)] text-2xl font-bold justify-center items-center">
                 <FaUserFriends /> Profil
             </div>
         </div>

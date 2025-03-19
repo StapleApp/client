@@ -11,12 +11,11 @@
 }
 
 @layer components {
-
   .sidebar-icon {
     @apply relative flex items-center justify-center
            h-10 w-10 mt-2 mb-2 mx-auto shadow-lg mr-auto
-           bg-[#7496a1] text-[#89A8B2] border-3 border-[#B3C8CF]
-           hover:bg-[#89A8B2] hover:text-[#7496a1] hover:border-3 hover:border-[#526f78]
+           bg-[var(--secondary-bg)] text-[var(--primary-text)] border-3 border-[var(--primary-border)]
+           hover:bg-[var(--primary-bg)] hover:text-[var(--secondary-bg)] hover:border-3 hover:border-[var(--secondary-border)]
            rounded-full hover:rounded-full
            transition-all duration-300 ease-linear
            cursor-pointer; 
@@ -25,8 +24,8 @@
   .rightbar-icon {
     @apply relative flex items-center justify-center
            h-12 w-12 mt-2 mb-2 mx-auto shadow-lg mr-auto ml-2
-           bg-[#7496a1] text-[#89A8B2] border-3 border-[#B3C8CF]
-           hover:bg-[#89A8B2] hover:text-[#7496a1] hover:border-3 hover:border-[#526f78]
+           bg-[var(--secondary-bg)] text-[var(--primary-text)] border-3 border-[var(--primary-border)]
+           hover:bg-[var(--primary-bg)] hover:text-[var(--secondary-bg)] hover:border-3 hover:border-[var(--secondary-border)]
            rounded-3xl hover:rounded-xl
            transition-all duration-300 ease-linear
            cursor-pointer; 
@@ -34,7 +33,7 @@
 
   .sidebar-tooltip {
     @apply absolute w-auto p-2 m-2 min-w-max left-14 rounded-md shadow-md
-    text-[#89A8B2] bg-[#7496a1]
+    text-[var(--secondary-text)] bg-[var(--secondary-bg)]
     text-xs font-bold 
     transition-all duration-100 scale-0 origin-left;
   }
@@ -46,6 +45,12 @@
   .sidebar-settings {
     @apply mr-auto ml-2;
   }
+
+  .expanded-text {
+    @apply flex bg-[var(--primary-bg)] rounded-2xl ml-8 mr-8 w-48 h-10 mt-2 mb-2
+    transition-all duration-100 delay-20
+    text-[var(--secondary-text)] text-2xl font-bold justify-center items-center
+  }
 }
 
 #root {
@@ -53,6 +58,13 @@
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  
+  --primary-bg: #89A8B2;
+  --secondary-bg: #7496a1;
+  --primary-text: #B3C8CF;
+  --secondary-text: #354950;
+  --primary-border: #B3C8CF;
+  --secondary-border: #526f78;
 }
 
 .logo {
