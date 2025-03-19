@@ -53,9 +53,9 @@ const Navigator = () => {
                 </div>
             </div>
             <div className={isExpanded ? `fixed flex flex-col top-0 left-55 h-screen gap-0 z-1
-            w-16 transition-all ease-linear
+            w-16 transition-all duration-145 ease-linear
             bg-[#89A8B2] text-[#c6b9f4] shadow-lg` : `fixed flex flex-col top-0 left-0 h-screen gap-0 z-1
-            w-16 transition-all ease-linear
+            w-16 transition-all duration-145 ease-linear
             bg-[#89A8B2] text-[#c6b9f4] shadow-lg`}>
                 <SideBarImg  />
                 <SideBarHome />
