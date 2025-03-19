@@ -11,9 +11,11 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.0.13",
+    "firebase": "^11.4.0",
     "framer-motion": "^12.5.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hot-toast": "^2.5.2",
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.3.0",
     "tailwindcss": "^4.0.13"
