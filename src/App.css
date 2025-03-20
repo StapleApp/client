@@ -14,7 +14,7 @@
   
   .icon {
     @apply relative flex items-center justify-center
-           h-10 w-10 mt-2 mb-2 mx-auto shadow-lg
+           h-12 w-12 mt-2 mb-2 mx-auto shadow-lg
            bg-[var(--primary-bg)] text-[var(--primary-text)] border-3 border-[var(--primary-border)]
            hover:bg-[var(--tertiary-text)] hover:text-[var(--tertiary-bg)] hover:border-3 hover:border-[var(--tertiary-border)]
            rounded-xl hover:rounded-xl
@@ -24,17 +24,17 @@
 
   .hovered-icon {
     @apply relative flex items-center justify-center
-           h-10 w-10 mt-2 mb-2 mx-auto shadow-lg
+           h-12 w-12 mt-2 mb-2 mx-auto shadow-lg
            bg-[var(--tertiary-text)] text-[var(--tertiary-bg)] border-3 border-[var(--tertiary-border)]
            rounded-xl hover:rounded-xl
            transition-all duration-300 ease-linear
-           cursor-pointer scale-120;
+           cursor-pointer scale-105;
   }
 
   .sidebar-tooltip {
     @apply absolute w-auto p-2 m-2 min-w-max left-14 rounded-md shadow-md
     bg-[var(--tertiary-text)] text-[var(--tertiary-bg)]
-    text-xs font-bold 
+    text-xs font-bold
     transition-all duration-100 scale-0 origin-left;
   }
 
@@ -47,9 +47,8 @@
   }
 
   .expanded-text {
-    @apply flex bg-[var(--primary-bg)] rounded-2xl ml-8 mr-8 w-48 h-10 mt-2 mb-2
-    transition-all duration-100 delay-20
-    text-[var(--primary-text)] text-2xl font-bold justify-center items-center
+    @apply flex bg-[var(--primary-bg)] h-8 pr-2
+    text-[var(--primary-text)] text-lg font-bold
   }
 }
 
@@ -68,7 +67,7 @@
 
   --primary-bg: #222831;
   --secondary-bg: #393E46;
-  --tertiary-bg: #FFD369;
+  --tertiary-bg: #ffbc1f;
 
   --primary-text: #BBBBBB;
   --secondary-text: #DDDDDD;
@@ -76,7 +75,7 @@
 
   --primary-border: #393E46;
   --secondary-border: #222831;
-  --tertiary-border: #FFD369;
+  --tertiary-border: #ffbc1f;
 }
 
 .logo {

@@ -14,8 +14,8 @@ const FriendsBar = () => {
             <div className="flex-1 overflow-y-auto mx-4 w-40 mt-2 mb-2 bg-[var(--secondary-bg)] text-[var(--primary-text)] rounded-md text-xs font-bold max-h-[calc(100vh-120px)]">
                 <div className="grid gap-2 p-2">
                     {Array(100).fill("Chiramii").map((name, index) => (
-                        <div key={index} className="flex items-center w-full h-12 bg-[var(--primary-bg)] rounded-md p-2">
-                            <span className={`group cursor-pointer icon hover:scale-120 ml-1 mr-3`}><RightBarImg imgSrc={pfp} /></span>
+                        <div key={index} className="flex items-center w-full h-14 bg-[var(--primary-bg)] rounded-md p-2">
+                            <span className={`group cursor-pointer icon hover:scale-105 ml-1 mr-3`}><RightBarImg imgSrc={pfp} /></span>
                             <span>{name}</span>
                         </div>
                     ))}
@@ -32,8 +32,8 @@ const FriendsBar = () => {
 
 const RightBarImg = ({ imgSrc, link }) => {
     return (
-        <div className="rightbar-icon group cursor-pointer" onClick={() => navigate(link)}>
-            <img src={imgSrc} className="w-8 h-8 rounded-md" alt="logo" />
+        <div className="group cursor-pointer" onClick={() => navigate(link)}>
+            <img src={imgSrc} className="rounded-md w-10 h-10" alt="logo" />
         </div>
     );
 };
