@@ -11,24 +11,24 @@
 }
 
 @layer components {
-  .sidebar-icon {
+  
+  .icon {
     @apply relative flex items-center justify-center
-           h-10 w-10 mt-2 mb-2 mx-auto shadow-lg mr-auto
+           h-10 w-10 mt-2 mb-2 mx-auto shadow-lg
            bg-[var(--secondary-bg)] text-[var(--primary-text)] border-3 border-[var(--primary-border)]
-           hover:bg-[var(--primary-bg)] hover:text-[var(--secondary-bg)] hover:border-3 hover:border-[var(--secondary-border)]
+           hover:bg-[var(--primary-text)] hover:text-[var(--secondary-bg)] hover:border-3 hover:border-[var(--secondary-border)]
            rounded-full hover:rounded-full
            transition-all duration-300 ease-linear
            cursor-pointer; 
   }
 
-  .rightbar-icon {
+  .hovered-icon {
     @apply relative flex items-center justify-center
-           h-12 w-12 mt-2 mb-2 mx-auto shadow-lg mr-auto ml-2
-           bg-[var(--secondary-bg)] text-[var(--primary-text)] border-3 border-[var(--primary-border)]
-           hover:bg-[var(--primary-bg)] hover:text-[var(--secondary-bg)] hover:border-3 hover:border-[var(--secondary-border)]
-           rounded-3xl hover:rounded-xl
+           h-10 w-10 mt-2 mb-2 mx-auto shadow-lg
+           bg-[var(--primary-text)] text-[var(--secondary-bg)] border-3 border-[var(--secondary-border)]
+           rounded-full hover:rounded-full
            transition-all duration-300 ease-linear
-           cursor-pointer; 
+           cursor-pointer scale-120;
   }
 
   .sidebar-tooltip {
@@ -49,7 +49,7 @@
   .expanded-text {
     @apply flex bg-[var(--primary-bg)] rounded-2xl ml-8 mr-8 w-48 h-10 mt-2 mb-2
     transition-all duration-100 delay-20
-    text-[var(--secondary-text)] text-2xl font-bold justify-center items-center
+    text-[var(--primary-text)] text-2xl font-bold justify-center items-center
   }
 }
 
@@ -61,8 +61,8 @@
   
   --primary-bg: #89A8B2;
   --secondary-bg: #7496a1;
-  --primary-text: #B3C8CF;
-  --secondary-text: #354950;
+  --primary-text: #354950;
+  --secondary-text: #B3C8CF;
   --primary-border: #B3C8CF;
   --secondary-border: #526f78;
 }
