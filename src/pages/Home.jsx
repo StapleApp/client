@@ -3,11 +3,12 @@ import FriendsBar from "./FriendsBar";
 import { motion } from "framer-motion";
 import { getAuth } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
+import React , { useEffect } from "react";
 
 const Home = () => {
     const auth = getAuth();
     const navigate = useNavigate();
-    
+
     const user = auth.currentUser;
     console.log(user);
 
@@ -16,7 +17,15 @@ const Home = () => {
         localStorage.removeItem("user");
         sessionStorage.removeItem("user");
         navigate("/login");
-      };
+    };
+    
+    useEffect(() => {
+        const storedUser = localStorage.getItem("user") || sessionStorage.getItem("user");
+      
+        if (!storedUser) {
+          navigate("/login");
+        }
+    }, [navigate]);
 
     return(
         <>

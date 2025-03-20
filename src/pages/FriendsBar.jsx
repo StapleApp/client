@@ -4,7 +4,7 @@ import { FaUserFriends } from 'react-icons/fa';
 
 const FriendsBar = () => {
     return(
-        <div className="fixed top-0 right-0 h-screen w-48 bg-[var(--primary-bg)] text-[var(--primary-border)] shadow-lg m-0 z-10 flex flex-col">
+        <div className="fixed top-0 right-0 h-screen w-48 bg-[var(--secondary-bg)] text-[var(--primary-border)] shadow-lg m-0 z-10 flex flex-col">
             {/* Başlık */}
             <div className="flex bg-[var(--secondary-bg)] rounded-2xl mx-4 w-40 h-10 mt-2 mb-2 text-[var(--primary-text)] text-xl font-bold justify-center items-center">
                 ARKADAŞLAR
