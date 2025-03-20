@@ -54,7 +54,6 @@ const SignIn = () => {
 
 
     try {
-      console.log(birthdate);
       const user = await register(name,surname, email, password,birthdate, navigate);
       console.log(user);
 

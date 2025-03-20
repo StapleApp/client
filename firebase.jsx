@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,signInWithEmailAndPassword} from "firebase/auth";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, doc, setDoc,getDocs,where,query,collection,serverTimestamp } from "firebase/firestore"; 
+import { getFirestore, doc, setDoc,getDocs,where,query,collection,serverTimestamp,updateDoc } from "firebase/firestore"; 
 import toast from 'react-hot-toast';
 
 const firebaseConfig = {
@@ -33,12 +33,12 @@ export const register = async (name, surname, email, password,birthdate, navigat
         
         const checkEmailVerification = setInterval(async () => {
             await user.reload();
-            if (user.emailVerified) {
+            if (true) { //user.emailVerified
                 clearInterval(checkEmailVerification);
                 toast.success("Email Confirmed");
 
                 await writeUserData(user.uid, name, surname, birthdate ,user.email,user.photoURL);
-                navigate("/login");
+                navigate("/create_profile");
             }
         }, 3000);
     } catch (error) {
@@ -71,7 +71,7 @@ export const signInWithGoogle = async (navigate) => {
         }
 
         // Eğer kullanıcı yoksa, Firestore'a ekle ve "home" sayfasına geç
-        await writeUserData(user.uid, userName, userSurname, userNickname, "--", user.email, user.photoURL);
+        await writeUserData(user.uid, userName, userSurname, "--", user.email);
         navigate("/home");
 
     } catch (error) {
@@ -82,13 +82,14 @@ export const signInWithGoogle = async (navigate) => {
 
 
 // **Kullanıcı bilgilerini Firestore'a yazma fonksiyonu**
-async function writeUserData(uid, name, surname,birthdate, email, photoURL) {
+async function writeUserData(uid, name, surname,birthdate, email) {
     const friendshipID = await createFriendshipID();
     
     try {
         await setDoc(doc(db, "Users", uid), {
             userID: uid,
-            photoURL: photoURL,
+            photoURL: "",
+            nickName:"",
             name: name,
             surname: surname,
             bithdate:birthdate,
@@ -151,6 +152,19 @@ const createFriendshipID = async () => {
     return friendshipID; 
 };
 
+
+export const UpdateNickname = async (uid, newValue) => {
+    try {
+        const userDocRef = doc(db, "Users", uid);
+        await updateDoc(userDocRef, {
+            nickName: newValue
+        });
+
+        console.log("User name updated in Firestore");
+    } catch (error) {
+        console.error("Database update failed:", error);
+    }
+};
 
 
 

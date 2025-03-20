@@ -12,6 +12,7 @@ const Home = () => {
     const user = auth.currentUser;
     console.log(user);
 
+
     const handleLogout = () => {
         console.log("Logging out...");
         localStorage.removeItem("user");
@@ -25,6 +26,8 @@ const Home = () => {
         if (!storedUser) {
           navigate("/login");
         }
+
+
     }, [navigate]);
 
     return(
