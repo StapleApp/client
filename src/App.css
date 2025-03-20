@@ -16,8 +16,8 @@
     @apply relative flex items-center justify-center
            h-10 w-10 mt-2 mb-2 mx-auto shadow-lg
            bg-[var(--secondary-bg)] text-[var(--primary-text)] border-3 border-[var(--primary-border)]
-           hover:bg-[var(--primary-text)] hover:text-[var(--secondary-bg)] hover:border-3 hover:border-[var(--secondary-border)]
-           rounded-full hover:rounded-full
+           hover:bg-[#FFD369] hover:text-[var(--secondary-bg)] hover:border-3 hover:border-[var(--secondary-border)]
+           rounded-xl hover:rounded-xl
            transition-all duration-300 ease-linear
            cursor-pointer; 
   }
@@ -26,7 +26,7 @@
     @apply relative flex items-center justify-center
            h-10 w-10 mt-2 mb-2 mx-auto shadow-lg
            bg-[var(--primary-text)] text-[var(--secondary-bg)] border-3 border-[var(--secondary-border)]
-           rounded-full hover:rounded-full
+           rounded-xl hover:rounded-xl
            transition-all duration-300 ease-linear
            cursor-pointer scale-120;
   }
@@ -59,12 +59,19 @@
   padding: 2rem;
   text-align: center;
   
-  --primary-bg: #89A8B2;
+  /* --primary-bg: #89A8B2;
   --secondary-bg: #7496a1;
   --primary-text: #354950;
   --secondary-text: #B3C8CF;
   --primary-border: #B3C8CF;
-  --secondary-border: #526f78;
+  --secondary-border: #526f78; */
+
+  --primary-bg: #222831;
+  --secondary-bg: #393E46;
+  --primary-text: #BBBBBB;
+  --secondary-text: #DDDDDD;
+  --primary-border: #393E46;
+  --secondary-border: #222831;
 }
 
 .logo {
