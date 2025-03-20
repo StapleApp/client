@@ -15,7 +15,7 @@
   .icon {
     @apply relative flex items-center justify-center
            h-10 w-10 mt-2 mb-2 mx-auto shadow-lg
-           bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] border-3 border-[var(--primary-border)]
+           bg-[var(--primary-bg)] text-[var(--primary-text)] border-3 border-[var(--primary-border)]
            hover:bg-[var(--tertiary-text)] hover:text-[var(--tertiary-bg)] hover:border-3 hover:border-[var(--tertiary-border)]
            rounded-xl hover:rounded-xl
            transition-all duration-300 ease-linear
