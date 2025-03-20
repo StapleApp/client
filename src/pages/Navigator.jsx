@@ -22,27 +22,27 @@ const Navigator = () => {
                     <div className={`expanded-text`}>
                         STAPLE APP
                     </div>
-                    <hr className="border-[#7496a1] border-2" />
+                    <hr className="border-[var(--primary-border)] border-2" />
                     <div className={`expanded-text`}>
                         Ana Sayfa
                     </div>
-                    <hr className="border-[#7496a1] border-2" />
+                    <hr className="border-[var(--primary-border)] border-2" />
                     <div className={`expanded-text`}>
                         Arkadaş Ekle
                     </div>
                     <div className={`expanded-text`}>
                         Test
                     </div>
-                    <hr className="border-[#7496a1] border-2" />
+                    <hr className="border-[var(--primary-border)] border-2" />
                 </div>
 
                 {/* Alt Menü Öğeleri */}
                 <div className="flex flex-col">
-                    <hr className="border-[#7496a1] border-2" />
+                    <hr className="border-[var(--primary-border)] border-2" />
                     <div className={`expanded-text`}>
                         Küçült
                     </div>
-                    <hr className="border-[#7496a1] border-2" />
+                    <hr className="border-[var(--primary-border)] border-2" />
                     <div className={`expanded-text`}>
                         Ayarlar
                     </div>
@@ -73,12 +73,12 @@ const Navigator = () => {
 const SideBarImg = () => {
     const navigate = useNavigate();
     return (
-        <>
+        <>  
             <div className="icon group cursor-pointer hover:scale-120" onClick={() => navigate("/")}>
                 <img src={logo} className="w-8 rounded-md" alt={"logo"} />
                 <span className="sidebar-tooltip group-hover:scale-100">Staple App</span>
             </div>
-            <hr className="border-[#393E46] border-2" />
+            <hr className="border-[var(--primary-border)] border-2" />
         </>
     );
 };
@@ -92,7 +92,7 @@ const SideBarHome = () => {
                 <FaFire size="20" />    
                 <span className="sidebar-tooltip group-hover:scale-100">Ana Sayfa</span>
             </div>
-            <hr className="border-[#393E46] border-2" />
+            <hr className="border-[var(--primary-border)] border-2" />
         </>
     );
 };
@@ -119,7 +119,7 @@ const SideBarTest = () => {
                 <BsFillLightningFill size="20" />
                 <span className="sidebar-tooltip group-hover:scale-100">Test</span>
             </div>
-            <hr className="border-[#393E46] border-2" />
+            <hr className="border-[var(--primary-border)] border-2" />
         </>
     );
 };
@@ -127,7 +127,7 @@ const SideBarTest = () => {
 const SideBarIconExpand = ({ icon, toggleExpand }) => {
     return (
         <>
-            <hr className="border-[#393E46] border-2" />
+            <hr className="border-[var(--primary-border)] border-2" />
             <div className="icon group cursor-pointer hover:scale-120" onClick={toggleExpand}>
                 {icon}
                 <span className="sidebar-tooltip group-hover:scale-100">Genişlet</span>
@@ -140,7 +140,7 @@ const SideBarIconSettings = () => {
     const navigate = useNavigate();
     return (
         <>
-            <hr className="border-[#393E46] border-2" />
+            <hr className="border-[var(--primary-border)] border-2" />
             <div className={window.location.pathname === "/Ayarlar" ? `hovered-icon group` : `icon group hover:scale-120`}
                 onClick={() => navigate("/Ayarlar")}>
                 <BsGearFill size="22" />
