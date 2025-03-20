@@ -10,6 +10,8 @@ import SignIn from "./auth/signin";
 import Login from "./auth/login"; 
 import EmailVerification from "./auth/emailVerification";
 import Terms from "./auth/terms";
+import CreateProfile from "./auth/createProfile";
+
 import { Toaster } from 'react-hot-toast';
 
 function App() {
@@ -22,7 +24,7 @@ function App() {
 
 function MainLayout() {
   const location = useLocation();
-  const hideNavigatorRoutes = ["/login", "/signin","/forgetPassword","/terms"];
+  const hideNavigatorRoutes = ["/login", "/signin","/forgetPassword","/terms","/create_profile"];
 
   return (
     <div className="flex">
@@ -50,6 +52,7 @@ function AnimatedSwitch() {
           <Route path="/signin" element={<SignIn />} />      
           <Route path="/forgetPassword" element={<EmailVerification />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/create_profile" element={<CreateProfile />} />
 
         </Routes>
       </AnimatePresence>

@@ -23,7 +23,7 @@ const provider_google = new GoogleAuthProvider();
 const db = getFirestore(app); 
 
 // **E-posta ile Kayıt Olma**
-export const register = async (name, surname, nickname, email, password,birthdate, navigate) => {
+export const register = async (name, surname, email, password,birthdate, navigate) => {
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
@@ -37,7 +37,7 @@ export const register = async (name, surname, nickname, email, password,birthdat
                 clearInterval(checkEmailVerification);
                 toast.success("Email Confirmed");
 
-                await writeUserData(user.uid, name, surname, nickname, birthdate ,user.email,user.photoURL);
+                await writeUserData(user.uid, name, surname, birthdate ,user.email,user.photoURL);
                 navigate("/login");
             }
         }, 3000);
@@ -82,7 +82,7 @@ export const signInWithGoogle = async (navigate) => {
 
 
 // **Kullanıcı bilgilerini Firestore'a yazma fonksiyonu**
-async function writeUserData(uid, name, surname, nickname,birthdate, email, photoURL) {
+async function writeUserData(uid, name, surname,birthdate, email, photoURL) {
     const friendshipID = await createFriendshipID();
     
     try {
@@ -91,7 +91,6 @@ async function writeUserData(uid, name, surname, nickname,birthdate, email, phot
             photoURL: photoURL,
             name: name,
             surname: surname,
-            nickname: nickname,
             bithdate:birthdate,
             createdDate:serverTimestamp(),
             email: email,
