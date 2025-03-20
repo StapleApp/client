@@ -32,7 +32,7 @@ const handleSubmit = async (e) => {
     if (user) {
       console.log("Current User:", user);
       UpdateNickname(user.uid, nickname);
-      //navigate('/home')  
+      navigate('/home')  
     } else {
       console.log("No user is signed in.");
     }
