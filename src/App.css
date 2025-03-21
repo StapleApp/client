@@ -28,7 +28,7 @@
            bg-[var(--tertiary-text)] text-[var(--tertiary-bg)] border-3 border-[var(--tertiary-border)]
            rounded-xl hover:rounded-xl
            transition-all duration-300 ease-linear
-           cursor-pointer scale-105;
+           cursor-pointer;
   }
 
   .sidebar-tooltip {
@@ -47,8 +47,7 @@
   }
 
   .expanded-text {
-    @apply flex bg-[var(--primary-bg)] h-8 pr-2
-    text-[var(--primary-text)] text-lg font-bold
+    @apply pr-2 text-[var(--primary-text)] text-sm font-bold
   }
 }
 
