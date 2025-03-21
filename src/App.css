@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+
 /* WebKit (Chrome, Safari) */
 ::-webkit-scrollbar {
   display: none;
@@ -67,10 +68,12 @@
   --primary-bg: #222831;
   --secondary-bg: #393E46;
   --tertiary-bg: #ffbc1f;
+  --quaternary-bg: #fff3a1;
 
   --primary-text: #BBBBBB;
   --secondary-text: #DDDDDD;
   --tertiary-text: #222831;
+  --quaternary-text: #ffbc1f;
 
   --primary-border: #393E46;
   --secondary-border: #222831;
