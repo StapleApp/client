@@ -2,15 +2,33 @@ import React, { useState ,useEffect } from "react";
 import { FaEye, FaEyeSlash } from 'react-icons/fa'; 
 import { useNavigate } from "react-router-dom";
 import toast from 'react-hot-toast';
-import { loginWithMail } from "../../firebase"
-import { signInWithGoogle } from "../../firebase";
+import { loginWithMail , signInWithGoogle, NickNameExist} from "../../firebase"
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+
   const navigate = useNavigate();
+  const auth = getAuth();
+
+  const handleAuthState = () => {
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const isNicknameExist = await NickNameExist(user.uid);
+          isNicknameExist ? navigate('/home') : navigate('/create_profile');
+        } catch (error) {
+          console.error("Nickname kontrol hatası:", error);
+        }
+      } else {
+        console.log("No user is signed in.");
+      }
+    });
+  };
+  
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,33 +38,33 @@ const Login = () => {
   
       if (user) {
         const userData = { email, token: "example-token" };
+        rememberMe
+          ? localStorage.setItem("user", JSON.stringify(userData))
+          : sessionStorage.setItem("user", JSON.stringify(userData));
   
-        if (rememberMe) {
-          localStorage.setItem("user", JSON.stringify(userData));  
-        } else {
-          sessionStorage.setItem("user", JSON.stringify(userData));
-        }
-  
-        navigate("/home");
+        handleAuthState(); 
       }
     } catch (error) {
       toast.error("Login failed");
       console.log(error);
     }
   };
-
+  
   const googleAuthFunc = async (e) => {
     e.preventDefault();
+  
     try {
       const user = await signInWithGoogle(navigate);
-      localStorage.setItem("user", JSON.stringify(user));  
+      localStorage.setItem("user", JSON.stringify(user));
       console.log(user);
-      navigate("/home")
+  
+      handleAuthState(); 
     } catch (error) {
       toast.error("Registration failed:", error.message);
       console.log(error);
     }
   };
+  
   
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);

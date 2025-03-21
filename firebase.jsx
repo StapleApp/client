@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,signInWithEmailAndPassword} from "firebase/auth";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, doc, setDoc,getDocs,where,query,collection,serverTimestamp,updateDoc } from "firebase/firestore"; 
+import { getFirestore, doc, setDoc,getDocs,where,query,collection,serverTimestamp,updateDoc,getDoc } from "firebase/firestore"; 
 import toast from 'react-hot-toast';
 
 const firebaseConfig = {
@@ -33,12 +33,12 @@ export const register = async (name, surname, email, password,birthdate, navigat
         
         const checkEmailVerification = setInterval(async () => {
             await user.reload();
-            if (true) { //user.emailVerified
+            if (user.emailVerified) { 
                 clearInterval(checkEmailVerification);
                 toast.success("Email Confirmed");
 
                 await writeUserData(user.uid, name, surname, birthdate ,user.email,user.photoURL);
-                navigate("/create_profile");
+                navigate("/login");
             }
         }, 3000);
     } catch (error) {
@@ -55,7 +55,6 @@ export const signInWithGoogle = async (navigate) => {
 
         const userName = user.displayName.split(" ")[0];
         const userSurname = user.displayName.split(" ")[1];
-        const userNickname = "User" + Math.floor(Math.random() * 10000);
         
         const usersRef = collection(db, "Users");
         
@@ -153,6 +152,7 @@ const createFriendshipID = async () => {
 };
 
 
+// ** Nickname Güncelleme **
 export const UpdateNickname = async (uid, newValue) => {
     try {
         const userDocRef = doc(db, "Users", uid);
@@ -166,7 +166,26 @@ export const UpdateNickname = async (uid, newValue) => {
     }
 };
 
-
+// ** Nickname Kontrolü **
+export const NickNameExist = async (uid) => {
+    try {
+      const userDocRef = doc(db, "Users", uid);
+      const userSnapshot = await getDoc(userDocRef);
+  
+      if (userSnapshot.exists()) {
+        const nickName = userSnapshot.data().nickName;
+        console.log("NickName:", nickName);
+  
+        return nickName ? true : false; // NickName varsa true, yoksa false döner
+      } else {
+        console.log("Kullanıcı bulunamadı.");
+        return false;
+      }
+    } catch (error) {
+      console.error("Database sorgusu başarısız:", error);
+      return false;
+    }
+};
 
 
 export default app;
