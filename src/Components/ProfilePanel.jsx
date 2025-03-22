@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { IoPersonAdd } from "react-icons/io5";
 
@@ -47,9 +46,7 @@ const ProfilePanel = ({check , setCheck, posX, posY, userName, userID}) => {
   
               {/* Ortada Duracak İkon */}
               <div className="absolute top-1/12 grid grid-cols-3 w-64">
-              <div className="icon group cursor-pointer hover:scale-105 w-15 h-15 my-auto ml-3 mr-2 rounded-full">
-                  <img src={icon} className="rounded-full w-14 h-14" alt={"logo"} />
-              </div>
+              <ProfilePicture src={icon} />
               <div className="grid col-span-2 expanded-text bg-[var(--primary-bg)] h-6 my-auto rounded-md mr-3 p-0">
                   <div className="flex text-sm justify-between">
                   <span className="ml-2">{userName}</span>
@@ -139,6 +136,20 @@ const SideBarIconClose = ({ toggleExpand }) => {
         </div>
       </>
     );
+};
+
+const ProfilePicture = ({ src }) => {
+  const navigate = useNavigate();
+  return (
+    <>
+      <div
+        className="icon group cursor-pointer hover:scale-105 w-15 h-15 my-auto ml-3 mr-2 rounded-full"
+        onClick={() => navigate("/Profile")}
+      >
+        <img src={src} className="rounded-full h-14 w-14"/>
+      </div>
+    </>
+  );
 };
 
 export default ProfilePanel;
