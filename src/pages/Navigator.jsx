@@ -1,17 +1,14 @@
-import { useState } from "react";
-import { BsFillLightningFill, BsGearFill } from "react-icons/bs";
-import { FaFire, FaStapler, FaPowerOff } from "react-icons/fa6";
-import { CgProfile } from "react-icons/cg";
-import {
-  MdOutlineKeyboardArrowRight,
-  MdOutlineKeyboardArrowLeft,
-} from "react-icons/md";
+import { BsGearFill } from "react-icons/bs";
+import { FaStapler, FaPowerOff } from "react-icons/fa6";
+import { MdHome, MdSearch  } from "react-icons/md";
 import { IoLogInOutline } from "react-icons/io5";
-import { useNavigate } from "react-router-dom";
+
 import logo from "../assets/logoDark.svg";
 import icon from "../assets/360.png";
-import profileBackground from "../assets/profileBackground.png";
-import profileBackground2_small from "../assets/profileBackground2_small.png";
+
+import ProfilePanel from '../Components/ProfilePanel'
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../App.css";
 
 const Navigator = () => {
@@ -19,60 +16,14 @@ const Navigator = () => {
 
   return (
     <>
-      <div
-        className={`fixed top-0 left-0 z-1 h-76 w-64 ml-1 rounded-md
-                bg-[var(--primary-bg)] shadow-xl
-                transition-all duration-150 ease-linear
-                flex flex-col justify-between
-                ${isExpanded ? "left-16" : "opacity-0 pointer-events-none"}`}
-      >
-        {/* Üst Menü Öğeleri */}
-        <div className="flex flex-col h-auto">
-          <div className="grid grid-rows-3">
-            {/* Üst Arkaplan */}
-            <img className="row-span rounded-t-md" src={profileBackground} />
-            <img className="row-span rounded-b-md" src={profileBackground} />
-
-            {/* Ortada Duracak İkon */}
-            <div className="absolute top-1/12 grid grid-cols-3 w-64">
-              <div className="icon group cursor-pointer hover:scale-105 w-15 h-15 my-auto ml-3 mr-2 rounded-md">
-                <img src={icon} className="rounded-md w-14 h-14" alt={"logo"} />
-              </div>
-              <div className="grid col-span-2 expanded-text bg-[var(--primary-bg)] h-6 my-auto rounded-md mr-3 p-0">
-                <div className="flex text-sm justify-between">
-                  <span className="ml-2">Chiramii</span>
-                  <span className="mr-2">#777777</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Alt Arkaplan */}
-            <div className="grid grid-cols-3 my-auto">
-              <ProfileButton />
-              <ProfileButton />
-              <ProfileButton />
-            </div>
-          </div>
-          <textarea
-            className="expanded-text text-sm bg-[var(--secondary-bg)]
-                    col-span-2 m-1 pl-2 rounded-md h-14 p-0 resize-none"
-            type="text"
-            // value={""}
-            maxLength="100"
-            placeholder="Hakkında..."
-          ></textarea>
-        </div>
-
-        {/* Alt Menü Öğeleri */}
-        <div className="flex flex-col h-16">
-          <hr className="border-[var(--primary-border)] border" />
-          <div className="expanded-text h-6 rounded-md mr-3 p-0 flex my-auto">
-            <span className="ml-2 text-sm expanded-text h-12">
-              Şu tarihten beri üye: 21/03/2025
-            </span>
-          </div>
-        </div>
-      </div>
+      <ProfilePanel 
+        check={isExpanded} 
+        setCheck={setIsExpanded}
+        posX={242} 
+        posY={30}
+        userName={"Admin"} 
+        userID={777777}
+      />
 
       <div
         className={`fixed flex flex-col top-0 left-0 h-screen gap-0 z-1
@@ -88,41 +39,11 @@ const Navigator = () => {
           )}
           <SideBarHome />
           <SideBarFriend />
-          <SideBarTest />
+          <SideBarSearch />
         </div>
-        <div className="flex flex-col h-32">
-          <SideBarIconExpand
-            icon={
-              isExpanded ? (
-                <MdOutlineKeyboardArrowLeft size="35" />
-              ) : (
-                <MdOutlineKeyboardArrowRight size="35" />
-              )
-            }
-            toggleExpand={() => setIsExpanded(!isExpanded)}
-          />
+        <div className="flex flex-col h-16">
           <SideBarIconSettings />
         </div>
-      </div>
-    </>
-  );
-};
-
-const ProfileButton = () => {
-  const navigate = useNavigate();
-  return (
-    <>
-      <div
-        className="flex icon group cursor-pointer hover:scale-105 h-7 w-20 mt-1 mb-0 mx-auto"
-        onClick={() => navigate("/Profile")}
-      >
-        <span
-          className="bg-[var(--primary-bg)]
-                text-[var(--primary-text)] text-sm font-bold mr-1"
-        >
-          Profil
-        </span>
-        <CgProfile />
       </div>
     </>
   );
@@ -167,14 +88,13 @@ const SideBarLogOut = () => {
 };
 
 const SideBarImg = ({ src, toggleExpand }) => {
-  const navigate = useNavigate();
   return (
     <>
       <div
-        className="icon group cursor-pointer hover:scale-105"
+        className="icon group cursor-pointer hover:scale-105 rounded-full"
         onClick={toggleExpand}
       >
-        <img src={src} className="w-10 h-10 rounded-md" alt={"logo"} />
+        <img src={src} className="w-10 h-10 rounded-full" alt={"logo"} />
         <span className="sidebar-tooltip group-hover:scale-100">Profil</span>
       </div>
     </>
@@ -193,7 +113,7 @@ const SideBarHome = () => {
         }
         onClick={() => navigate("/")}
       >
-        <FaFire size="20" />
+        <MdHome size="25" />
         <span className="sidebar-tooltip group-hover:scale-100">Ana Sayfa</span>
       </div>
     </>
@@ -221,7 +141,7 @@ const SideBarFriend = () => {
   );
 };
 
-const SideBarTest = () => {
+const SideBarSearch = () => {
   const navigate = useNavigate();
   return (
     <>
@@ -233,25 +153,10 @@ const SideBarTest = () => {
         }
         onClick={() => navigate("/Test")}
       >
-        <BsFillLightningFill size="20" />
-        <span className="sidebar-tooltip group-hover:scale-100">Test</span>
+        <MdSearch  size="25" />
+        <span className="sidebar-tooltip group-hover:scale-100">Sunucu Ara</span>
       </div>
       <hr className="border-[var(--primary-border)] border" />
-    </>
-  );
-};
-
-const SideBarIconExpand = ({ icon, toggleExpand }) => {
-  return (
-    <>
-      <hr className="border-[var(--primary-border)] border" />
-      <div
-        className="icon group cursor-pointer hover:scale-105"
-        onClick={toggleExpand}
-      >
-        {icon}
-        <span className="sidebar-tooltip group-hover:scale-100">Genişlet</span>
-      </div>
     </>
   );
 };
@@ -260,6 +165,7 @@ const SideBarIconSettings = () => {
   const navigate = useNavigate();
   return (
     <>
+      <hr className="border-[var(--primary-border)] border" />
       <div
         className={
           window.location.pathname === "/Ayarlar"
