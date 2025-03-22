@@ -187,5 +187,10 @@ export const NickNameExist = async (uid) => {
     }
 };
 
+export const FindUserInDB = async (uid) => {
+
+}
+
+
 
 export default app;

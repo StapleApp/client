@@ -37,7 +37,7 @@ const Login = () => {
       const user = await loginWithMail(email, password, navigate);
   
       if (user) {
-        const userData = { email, token: "example-token" };
+        const userData = { email, token: user.uid };
         rememberMe
           ? localStorage.setItem("user", JSON.stringify(userData))
           : sessionStorage.setItem("user", JSON.stringify(userData));
