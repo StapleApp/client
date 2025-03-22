@@ -20,7 +20,7 @@ const RightBarImg = ({ src, toggleExpand }) => {
     return (
       <>
         <div
-          className="icon group cursor-pointer hover:scale-105 rounded-full"
+          className="group cursor-pointer rounded-full"
           onClick={toggleExpand}
         >
           <img src={src} className="w-10 h-10 rounded-full" alt={"logo"} />
@@ -62,8 +62,11 @@ const FriendList = ({isExpanded, setIsExpanded}) => {
                     {Array(100).fill("Chiramii").map((user, UID) => (
                         <div key={UID} ref={(element) => (userRefs.current[UID] = element)}
                             onClick={() => handleUserClick(UID, user)}
-                            className="flex items-center w-full h-14 bg-[var(--primary-bg)] rounded-md p-2">
-                            <span className="group cursor-pointer icon hover:scale-105 ml-1 mr-3 rounded-full">
+                            className="flex items-center w-full h-14 bg-[var(--primary-bg)] rounded-md p-2
+                            border-3 border-[var(--primary-border)] shadow-xl
+                            hover:border-3 hover:border-[var(--tertiary-border)]
+                            transition-all duration-300 ease-linear hover:scale-105 cursor-pointer">
+                            <span className="group cursor-pointer ml-1 mr-3 rounded-full">
                                 <RightBarImg src={icon} toggleExpand={() => setIsExpanded(true)} />
                             </span>
                             <span>{user + UID}</span>
