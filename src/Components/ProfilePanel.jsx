@@ -6,10 +6,12 @@ import { FaTelegramPlane } from "react-icons/fa";
 import { useEffect, useRef } from "react"; // Import useEffect and useRef
 import profileBackground2_small from "../assets/profileBackground2_small.png";
 import icon from "../assets/360.png";
+import { useAuth } from "../context/AuthContext";
 
-const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID }) => {
+const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDate}) => {
   const formattedUID = `${userID}`.padStart(6, '0');
   const panelRef = useRef(null); // Create a reference to the panel
+  const { currentUser, userData } = useAuth();
 
   const clampPosition = (x, y, panelWidth, panelHeight) => {
     const screenWidth = window.innerWidth;
@@ -27,6 +29,21 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID }) => {
   const panelWidth = 304; // 76 * 4 (Tailwind w-64)
   const panelHeight = 304; // 76 * 4 (Tailwind h-76)
   const { clampedX, clampedY } = clampPosition(posX, posY, panelWidth, panelHeight);
+
+ // Database'den gelen Timestamp verisini Date nesnesine dönüştürme
+  let creadetDateText = "Üyelik tarihi mevcut değil";
+
+  if (userData && memberDate) {
+    const createdDateTimestamp = memberDate;
+    const createdDate = new Date(createdDateTimestamp.seconds * 1000);
+    const formattedDate = createdDate.toLocaleDateString("tr-TR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    creadetDateText = "Şu tarihten beri üye : " + formattedDate;
+  }
+
 
   // Panel açılınca, panel dışı her yeri dinleyen listener ekledim
   useEffect(() => {
@@ -101,7 +118,7 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID }) => {
         <hr className="border-[var(--primary-border)] border" />
         <div className="expanded-text h-6 rounded-md mr-3 p-0 flex my-auto">
           <span className="ml-2 text-sm expanded-text h-12">
-            Şu tarihten beri üye: 21/03/2025
+            {creadetDateText}
           </span>
         </div>
       </div>

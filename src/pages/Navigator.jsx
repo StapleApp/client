@@ -26,6 +26,7 @@ const Navigator = () => {
         posY={30}
         userName={userData?.nickName}
         userID={userData?.friendshipID}
+        memberDate={userData?.createdDate}
       />
       <div
         className={`fixed flex flex-col top-0 left-0 h-screen gap-0 z-1
