@@ -19,32 +19,54 @@ const Navigator = () => {
 
   return (
     <>
-      <ProfilePanel 
-        check={isExpanded} 
+      <ProfilePanel
+        check={isExpanded}
         setCheck={setIsExpanded}
-        posX={242} 
+        posX={242}
         posY={30}
-        userName={userData?.nickName} 
+        userName={userData?.nickName}
         userID={userData?.friendshipID}
       />
-
       <div
         className={`fixed flex flex-col top-0 left-0 h-screen gap-0 z-1
-            w-16 transition-all duration-145 ease-linear justify-between shadow-xl
-            bg-[var(--primary-bg)]`}
+              w-16 transition-all duration-145 ease-linear justify-between shadow-xl
+              bg-[var(--primary-bg)]`}
       >
         <div className="flex flex-col h-64">
-          {isExpanded ? null : (
+          <div
+            className={`transition-all duration-400 ease-in-out
+                      ${isExpanded 
+                        ? 'opacity-0 -translate-y-15' 
+                        : 'opacity-100 translate-y-0'}`}
+          >
             <SideBarImg
               src={icon}
               toggleExpand={() => setIsExpanded(!isExpanded)}
             />
-          )}
-          <SideBarHome />
-          <SideBarFriend />
-          <SideBarSearch />
+          </div>
+          <div
+            className={`transition-all duration-300 ease-in-out delay-75
+                      ${isExpanded ? '-translate-y-15' : 'translate-y-0'}`}
+          >
+            <SideBarHome />
+          </div>
+          <div
+            className={`transition-all duration-300 ease-in-out delay-150
+                      ${isExpanded ? '-translate-y-15' : 'translate-y-0'}`}
+          >
+            <SideBarFriend />
+          </div>
+          <div
+            className={`transition-all duration-300 ease-in-out delay-225
+                      ${isExpanded ? '-translate-y-15' : 'translate-y-0'}`}
+          >
+            <SideBarSearch />
+          </div>
         </div>
-        <div className="flex flex-col h-16">
+        <div
+          className={`flex flex-col h-16 transition-all duration-300 ease-in-out delay-300
+                     ${isExpanded ? '-translate-y-0' : 'translate-y-0'}`}
+        >
           <SideBarIconSettings />
         </div>
       </div>
