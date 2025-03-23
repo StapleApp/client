@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,signInWithEmailAndPassword} from "firebase/auth";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, doc, setDoc,getDocs,where,query,collection,serverTimestamp,updateDoc,getDoc } from "firebase/firestore"; 
+import { getFirestore, doc, setDoc,getDocs,where,query,collection,serverTimestamp,updateDoc } from "firebase/firestore"; 
 import toast from 'react-hot-toast';
 
 const firebaseConfig = {
@@ -78,7 +78,6 @@ export const signInWithGoogle = async (navigate) => {
         toast.error("An error occurred while signing in with Google.");
     }
 };
-
 
 // **Kullanıcı bilgilerini Firestore'a yazma fonksiyonu**
 async function writeUserData(uid, name, surname,birthdate, email) {
@@ -166,26 +165,7 @@ export const UpdateNickname = async (uid, newValue) => {
     }
 };
 
-// ** Nickname Kontrolü **
-export const NickNameExist = async (uid) => {
-    try {
-      const userDocRef = doc(db, "Users", uid);
-      const userSnapshot = await getDoc(userDocRef);
-  
-      if (userSnapshot.exists()) {
-        const nickName = userSnapshot.data().nickName;
-        console.log("NickName:", nickName);
-  
-        return nickName ? true : false; // NickName varsa true, yoksa false döner
-      } else {
-        console.log("Kullanıcı bulunamadı.");
-        return false;
-      }
-    } catch (error) {
-      console.error("Database sorgusu başarısız:", error);
-      return false;
-    }
-};
+
 
 
 

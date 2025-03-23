@@ -2,8 +2,9 @@ import React, { useState ,useEffect } from "react";
 import { FaEye, FaEyeSlash } from 'react-icons/fa'; 
 import { useNavigate } from "react-router-dom";
 import toast from 'react-hot-toast';
-import { loginWithMail , signInWithGoogle, NickNameExist} from "../../firebase"
+import { loginWithMail , signInWithGoogle} from "../../firebase"
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -13,13 +14,13 @@ const Login = () => {
 
   const navigate = useNavigate();
   const auth = getAuth();
+  const { currentUser, userData } = useAuth();
 
   const handleAuthState = () => {
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          const isNicknameExist = await NickNameExist(user.uid);
-          isNicknameExist ? navigate('/home') : navigate('/create_profile');
+          userData.nickName === "" ? navigate('/create_profile') : navigate('/home');
         } catch (error) {
           console.error("Nickname kontrol hatası:", error);
         }
