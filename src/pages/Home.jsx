@@ -3,11 +3,9 @@ import FriendsBar from "./FriendsBar";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import React, { useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
 
 const Home = () => {
   const navigate = useNavigate();
-  const { currentUser, userData } = useAuth();
 
   const handleLogout = () => {
     console.log("Logging out...");
@@ -46,16 +44,8 @@ const Home = () => {
               onClick={handleLogout}
             >
               Log Out
-              <div>
-      {currentUser ? (
-        <>
-          <h2>Hoşgeldin, {userData?.nickName}</h2>
-          <p>Email: {currentUser.email}</p>
-        </>
-      ) : (
-        <p>Giriş yapmadınız.</p>
-      )}
-    </div>
+            <div>
+          </div>
             </button>
           </div>
         </div>
