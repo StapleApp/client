@@ -28,6 +28,11 @@ const handleSubmit = async (e) => {
     return;
   }
 
+  if (nickname.length > 12) {
+    toast.error("Nickname should be less 12 character");
+    return;
+  }
+
   onAuthStateChanged(auth, (user) => {
     if (user) {
       console.log("Current User:", user);

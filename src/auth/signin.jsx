@@ -29,6 +29,11 @@ const SignIn = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if(name.length > 12 || surname.length > 12){
+      toast.error("Name and Surname should be less 12 character");
+      return;
+    }
+
     if (!agreeTerms) {
       toast.error("You must agree to the Terms & Conditions.");
       return;
