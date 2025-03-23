@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { IoPersonAdd } from "react-icons/io5";
 import { IoMdClose } from "react-icons/io";
 import { CgProfile } from "react-icons/cg";
+import { FaTelegramPlane } from "react-icons/fa";
 import { useEffect, useRef } from "react"; // Import useEffect and useRef
 import profileBackground2_small from "../assets/profileBackground2_small.png";
 import icon from "../assets/360.png";
@@ -81,6 +82,7 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID }) => {
           <div className="flex my-auto">
             <ProfileButton />
             <AddFriendButton />
+            <DMButton />
             <SideBarIconClose toggleExpand={() => setCheck(false)} />
           </div>
         </div>
@@ -112,7 +114,7 @@ const ProfileButton = () => {
   return (
     <>
       <div
-        className="flex icon group cursor-pointer hover:scale-105 h-7 w-24 mt-1 mb-0 mx-auto"
+        className="flex icon group cursor-pointer hover:scale-105 h-7 w-20 mt-1 mb-0 mx-auto"
         onClick={() => navigate("/Profile")}
       >
         <span
@@ -131,7 +133,7 @@ const AddFriendButton = () => {
   return (
     <>
       <div
-        className="flex icon group cursor-pointer hover:scale-105 h-7 w-24 mt-1 mb-0 mx-auto"
+        className="flex icon group cursor-pointer hover:scale-105 h-7 w-20 mt-1 mb-0 mx-auto"
         onClick={() => navigate("/ArkadasEkle")}
       >
         <span
@@ -141,6 +143,25 @@ const AddFriendButton = () => {
           Ekle
         </span>
         <IoPersonAdd size="15" />
+      </div>
+    </>
+  );
+};
+
+const DMButton = () => {
+  const navigate = useNavigate();
+  return (
+    <>
+      <div
+        className="flex icon group cursor-pointer hover:scale-105 h-7 w-20 mt-1 mb-0 mx-auto"
+        onClick={() => navigate("/DirectMessaging")}
+      >
+        <span
+          className="bg-[var(--primary-bg)] text-[var(--primary-text)] text-sm font-bold mr-1"
+        >
+          DM
+        </span>
+        <FaTelegramPlane size="15" />
       </div>
     </>
   );
