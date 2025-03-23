@@ -23,7 +23,7 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID }) => {
     return { clampedX, clampedY };
   };
 
-  const panelWidth = 256; // 64 * 4 (Tailwind w-64)
+  const panelWidth = 304; // 76 * 4 (Tailwind w-64)
   const panelHeight = 304; // 76 * 4 (Tailwind h-76)
   const { clampedX, clampedY } = clampPosition(posX, posY, panelWidth, panelHeight);
 
