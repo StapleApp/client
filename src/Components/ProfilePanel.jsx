@@ -49,7 +49,7 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID }) => {
   return (
     <div
       ref={panelRef}
-      className={`fixed z-10 h-76 w-64 ml-1 rounded-md
+      className={`fixed z-10 h-76 w-76 ml-1 rounded-md
               bg-[var(--primary-bg)] shadow-xl
               transition-all duration-300 ease-in-out
               flex flex-col justify-between
@@ -63,11 +63,11 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID }) => {
         <div className="grid grid-rows-3">
           {/* Üst Arkaplan */}
           <div className="row-span-2">
-            <img className="rounded-t-md h-32 w-64" src={profileBackground2_small} />
+            <img className="rounded-t-md h-32 w-76" src={profileBackground2_small} />
           </div>
 
           {/* Ortada Duracak İkon */}
-          <div className="absolute top-1/12 grid grid-cols-3 w-64">
+          <div className="absolute top-1/12 grid grid-cols-3 w-76">
             <ProfilePicture src={icon} />
             <div className="grid col-span-2 expanded-text bg-[var(--primary-bg)] h-6 my-auto rounded-md mr-3 p-0">
               <div className="flex text-sm justify-between">
