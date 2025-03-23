@@ -12,19 +12,22 @@ import EmailVerification from "./auth/emailVerification";
 import Terms from "./auth/terms";
 import CreateProfile from "./auth/createProfile";
 
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from "react-hot-toast";
+import { AuthProvider } from "./context/AuthContext";  // ✅ Doğru import
 
 function App() {
   return (
-    <Router>
-      <MainLayout />
-    </Router>
+    <AuthProvider>
+      <Router>
+        <MainLayout />
+      </Router>  
+    </AuthProvider>
   );
 }
 
 function MainLayout() {
   const location = useLocation();
-  const hideNavigatorRoutes = ["/login", "/signin","/forgetPassword","/terms","/create_profile"];
+  const hideNavigatorRoutes = ["/login", "/signin", "/forgetPassword", "/terms", "/create_profile"];
 
   return (
     <div className="flex">
@@ -40,7 +43,7 @@ function AnimatedSwitch() {
   return (
     <>
       <Toaster />
-      <AnimatePresence mode="wait"> 
+      <AnimatePresence mode="wait">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<Home />} />
@@ -53,7 +56,6 @@ function AnimatedSwitch() {
           <Route path="/forgetPassword" element={<EmailVerification />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/create_profile" element={<CreateProfile />} />
-
         </Routes>
       </AnimatePresence>
     </>

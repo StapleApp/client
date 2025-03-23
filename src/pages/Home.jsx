@@ -1,28 +1,13 @@
 import logo from "../assets/logoDark.svg";
 import FriendsBar from "./FriendsBar";
 import { motion } from "framer-motion";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
 
 const Home = () => {
-  const auth = getAuth();
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState(null);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setCurrentUser(user);
-        console.log("Firebase User:", user);
-      } else {
-        setCurrentUser(null);
-        console.log("No user is logged in");
-      }
-    });
-
-    return () => unsubscribe(); 
-  }, [auth]);
+  const { currentUser, userData } = useAuth();
 
   const handleLogout = () => {
     console.log("Logging out...");
@@ -53,7 +38,6 @@ const Home = () => {
           </div>
           <div className="w-auto h-auto col-start-2 mt-auto mb-auto text-5xl font-bold">
             <img src={logo} className="rounded-full opacity-15" />
-            {currentUser ? `Welcome, ${currentUser.email}!` : "HOME"}
           </div>
           <div>
             <button
@@ -62,6 +46,16 @@ const Home = () => {
               onClick={handleLogout}
             >
               Log Out
+              <div>
+      {currentUser ? (
+        <>
+          <h2>Hoşgeldin, {userData?.nickName}</h2>
+          <p>Email: {currentUser.email}</p>
+        </>
+      ) : (
+        <p>Giriş yapmadınız.</p>
+      )}
+    </div>
             </button>
           </div>
         </div>

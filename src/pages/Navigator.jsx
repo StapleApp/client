@@ -11,8 +11,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
 
+import { useAuth } from "../context/AuthContext";
+
 const Navigator = () => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { currentUser, userData } = useAuth();
 
   return (
     <>
@@ -21,8 +24,8 @@ const Navigator = () => {
         setCheck={setIsExpanded}
         posX={242} 
         posY={30}
-        userName={"Admin"} 
-        userID={777777}
+        userName={userData?.nickName} 
+        userID={userData?.friendshipID}
       />
 
       <div
@@ -81,7 +84,6 @@ const SideBarLogOut = () => {
         onClick={() => navigate("#")}
       >
         <IoLogInOutline size="30" />
-        <span className="sidebar-tooltip group-hover:scale-100">Çıkış Yap</span>
       </div>
     </>
   );
