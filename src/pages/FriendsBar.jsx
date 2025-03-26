@@ -5,14 +5,30 @@ import ProfilePanel from '../Components/ProfilePanel'
 import icon from "../assets/360.png";
 
 const FriendsBar = () => {
-    
+    const [isFriendsBarExpanded, setIsFriendsBarExpanded] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
-    return(
+
+    return (
         <>
             <div>
-                <FriendList isExpanded={isExpanded} setIsExpanded={setIsExpanded}/>
+                <FriendsBarExpand toggleExpand={() => setIsFriendsBarExpanded(!isFriendsBarExpanded)} />
+                {isFriendsBarExpanded && (
+                    <FriendList isExpanded={isExpanded} setIsExpanded={setIsExpanded} />
+                )}
             </div>
         </>
+    );
+};
+
+
+const FriendsBarExpand = ({ toggleExpand }) => {
+    return (
+        <div 
+            className="icon fixed group cursor-pointer rounded-full top-0 right-0"
+            onClick={toggleExpand}
+        >
+            < FaUserFriends size="25" />
+        </div>
     )
 }
 

@@ -26,7 +26,7 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDat
     return { clampedX, clampedY };
   };
 
-  const panelWidth = 304; // 76 * 4 (Tailwind w-64)
+  const panelWidth = 320; // 80 * 4 (Tailwind w-64)
   const panelHeight = 304; // 76 * 4 (Tailwind h-76)
   const { clampedX, clampedY } = clampPosition(posX, posY, panelWidth, panelHeight);
 
@@ -67,7 +67,7 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDat
   return (
     <div
       ref={panelRef}
-      className={`fixed z-10 h-76 w-76 ml-1 rounded-md
+      className={`fixed z-10 h-76 w-80 ml-1 rounded-md
               bg-[var(--primary-bg)] shadow-xl
               transition-all duration-300 ease-in-out
               flex flex-col justify-between
@@ -81,7 +81,7 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDat
         <div className="grid grid-rows-3">
           {/* Üst Arkaplan */}
           <div className="row-span-2">
-            <img className="rounded-t-md h-32 w-76" src={profileBackground2_small} />
+            <img className="rounded-t-md h-32 w-80" src={profileBackground2_small} />
           </div>
 
           {/* Ortada Duracak İkon */}
