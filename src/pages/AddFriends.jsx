@@ -3,7 +3,7 @@ import pfp from "../assets/360.png";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom"; // navigate için gerekli hook
 
-const ArkadasEkle = () => {
+const AddFriends = () => {
   const navigate = useNavigate(); // navigate fonksiyonunu tanımlıyoruz
   return (
     <>
@@ -15,7 +15,7 @@ const ArkadasEkle = () => {
         className="fixed top-0 left-0 w-full h-screen"
       >
         {/* Arka Plan */}
-        <div className="background fixed grid grid-cols-3 bg-[var(--secondary-bg)] text-[var(--secondary-text)] h-screen w-screen left-16 top-0 z-0">
+        <div className="background fixed grid grid-cols-3 bg-[var(--secondary-bg)] text-[var(--secondary-text)] h-screen w-screen top-0 z-0">
           {/* Arama Çubuğu */}
           <div className="col-span-3 text-center pt-4">
             <input
@@ -78,4 +78,4 @@ const ApplyButton = () => {
   );
 };
 
-export default ArkadasEkle;
+export default AddFriends;

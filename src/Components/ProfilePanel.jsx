@@ -151,7 +151,7 @@ const AddFriendButton = () => {
     <>
       <div
         className="flex icon group cursor-pointer hover:scale-105 h-7 w-20 mt-1 mb-0 mx-auto"
-        onClick={() => navigate("/ArkadasEkle")}
+        onClick={() => navigate("/AddFriends")}
       >
         <span
           className="bg-[var(--primary-bg)]

@@ -1,8 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
-import Navigator from "./pages/Navigator";
+import Navigator from "./Components/Navigator";
 import Home from "./pages/Home"; 
-import Ayarlar from "./pages/Ayarlar";
-import ArkadasEkle from "./pages/ArkadasEkle"; 
+import Settings from "./pages/Settings";
+import AddFriends from "./pages/AddFriends"; 
 import Test from "./pages/Test"; 
 import { AnimatePresence } from "framer-motion";
 
@@ -47,8 +47,8 @@ function AnimatedSwitch() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<Home />} />
-          <Route path="/Ayarlar" element={<Ayarlar />} />
-          <Route path="/ArkadasEkle" element={<ArkadasEkle />} />
+          <Route path="/Settings" element={<Settings />} />
+          <Route path="/AddFriends" element={<AddFriends />} />
           <Route path="/Test" element={<Test />} />
 
           <Route path="/login" element={<Login />} />

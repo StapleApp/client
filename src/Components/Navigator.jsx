@@ -1,12 +1,11 @@
 import { BsGearFill } from "react-icons/bs";
 import { FaStapler, FaPowerOff } from "react-icons/fa6";
 import { MdHome, MdSearch  } from "react-icons/md";
-import { IoLogInOutline } from "react-icons/io5";
 
 import logo from "../assets/logoDark.svg";
 import icon from "../assets/360.png";
 
-import ProfilePanel from '../Components/ProfilePanel'
+import ProfilePanel from './ProfilePanel'
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
@@ -94,23 +93,7 @@ const SideBarPowerOff = () => {
   );
 };
 
-const SideBarLogOut = () => {
-  const navigate = useNavigate();
-  return (
-    <>
-      <div
-        className={
-          window.location.pathname === "#"
-            ? `hovered-icon group mx-2`
-            : `icon group hover:scale-105 mx-2`
-        }
-        onClick={() => navigate("#")}
-      >
-        <IoLogInOutline size="30" />
-      </div>
-    </>
-  );
-};
+
 
 const SideBarImg = ({ src, toggleExpand }) => {
   return (
@@ -151,11 +134,11 @@ const SideBarFriend = () => {
     <>
       <div
         className={
-          window.location.pathname === "/ArkadasEkle"
+          window.location.pathname === "/AddFriends"
             ? `hovered-icon group`
             : `icon group hover:scale-105`
         }
-        onClick={() => navigate("/ArkadasEkle")}
+        onClick={() => navigate("/AddFriends")}
       >
         <FaStapler size="20" />
         <span className="sidebar-tooltip group-hover:scale-100">
@@ -193,11 +176,11 @@ const SideBarIconSettings = () => {
       <hr className="border-[var(--primary-border)] border" />
       <div
         className={
-          window.location.pathname === "/Ayarlar"
+          window.location.pathname === "/Settings"
             ? `hovered-icon group`
             : `icon group hover:scale-105`
         }
-        onClick={() => navigate("/Ayarlar")}
+        onClick={() => navigate("/Settings")}
       >
         <BsGearFill size="22" />
         <span className="sidebar-tooltip group-hover:scale-100">Ayarlar</span>
