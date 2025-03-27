@@ -15,7 +15,7 @@ const ArkadasEkle = () => {
         className="fixed top-0 left-0 w-full h-screen"
       >
         {/* Arka Plan */}
-        <div className="fixed grid grid-cols-3 bg-[var(--secondary-bg)] text-[var(--secondary-text)] h-screen w-screen left-16 top-0 z-0">
+        <div className="background fixed grid grid-cols-3 bg-[var(--secondary-bg)] text-[var(--secondary-text)] h-screen w-screen left-16 top-0 z-0">
           {/* Arama Çubuğu */}
           <div className="col-span-3 text-center pt-4">
             <input
@@ -26,14 +26,14 @@ const ArkadasEkle = () => {
           </div>
 
           {/* Kaydırılabilir Arkadaş Listesi */}
-          <div className="col-span-3 mt-6 overflow-y-auto mx-4 bg-[var(--secondary-bg)] text-[var(--primary-text)] rounded-md max-h-[calc(100vh-150px)]">
+          <div className="col-span-3 mt-6 overflow-y-auto mx-4 text-[var(--primary-text)] rounded-md max-h-[calc(100vh-150px)]">
             <div className="flex justify-center items-center gap-4 p-2">
               {Array(1)
                 .fill("Chiramii")
                 .map((name, index) => (
                   <div
                     key={index}
-                    className="flex items-center w-1/2 h-16 bg-[var(--primary-bg)] rounded-md p-3 hover:shadow-lg hover:shadow-[0_0_1px_2px_#ffbc1f] transition-all duration-100  ease-in-out"
+                    className="flex items-center w-1/2 h-16 bg-[var(--primary-bg)] rounded-md p-3 transition-all duration-100  ease-in-out"
                   >
                     <div className="flex items-center w-full justify-between">
                       <div className="flex items-center">
