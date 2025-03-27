@@ -33,8 +33,8 @@ const FriendsBarExpand = ({ toggleExpand, isFlagSetted }) => {
     return (
         <div 
             className={isFlagSetted ?
-                "icon fixed group cursor-pointer rounded-md w-20 top-0 right-0 mr-2" : 
-                "hovered-icon fixed group cursor-pointer rounded-md w-20 top-0 right-0 mr-2"}
+                "icon fixed group cursor-pointer rounded-md w-18 top-0 right-2 mr-2" : 
+                "hovered-icon fixed group cursor-pointer rounded-md w-18 top-0 right-2 mr-2"}
             onClick={toggleExpand}
         >
             <FaUserFriends size="25" />         
@@ -46,8 +46,8 @@ const ServerBarExpand = ({ toggleExpand, isFlagSetted}) => {
     return (
         <div 
             className={!isFlagSetted ?
-                "icon fixed group cursor-pointer rounded-md w-20 top-0 right-25 " : 
-                "hovered-icon fixed group cursor-pointer rounded-md w-20 top-0 right-25"}
+                "icon fixed group cursor-pointer rounded-md w-18 top-0 right-26 " : 
+                "hovered-icon fixed group cursor-pointer rounded-md w-18 top-0 right-26"}
             onClick={toggleExpand}
         >
             <AiOutlineGlobal size="25" />        
