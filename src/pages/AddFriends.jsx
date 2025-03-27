@@ -7,7 +7,7 @@ import { IoIosSearch, IoMdPersonAdd } from "react-icons/io"; // Arama ikonu
 import profileBackground2_small from "../assets/profileBackground2_small.png";
 import { useAuth } from "../context/AuthContext";
 
-const AddFriends = () => {
+const ArkadasEkle = () => {
   const { currentUser, userData } = useAuth();
 
   const navigate = useNavigate();
@@ -27,7 +27,7 @@ const AddFriends = () => {
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: 100 }}
         transition={{ duration: 0.1 }}
-        className="background fixed top-0 left-0 w-full h-screen bg-[var(--secondary-bg)] text-[var(--secondary-text)]"
+        className="fixed top-0 left-0 w-full h-screen bg-[var(--secondary-bg)] text-[var(--secondary-text)]"
       >
         {/* Arama Çubuğu */}
         <div className="flex items-center justify-center relative w-110 h-25 mx-auto  hover:border-[var(--tertiary-border)]">
@@ -145,9 +145,6 @@ const AddFriends = () => {
   );
 };
 
-<<<<<<< Updated upstream:src/pages/AddFriends.jsx
-export default AddFriends;
-=======
 const handleAddFriend = () => {
   // Eğer mesaj zaten varsa, tekrar ekleme
   if (document.querySelector(".friend-request-message")) return;
@@ -193,4 +190,3 @@ const handleAddFriend = () => {
 };
 
 export default ArkadasEkle;
->>>>>>> Stashed changes:src/pages/ArkadasEkle.jsx
