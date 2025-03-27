@@ -3,7 +3,7 @@ import pfp from "../assets/360.png";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { IoIosSearch } from "react-icons/io"; // Arama ikonu
+import { IoIosSearch, IoMdPersonAdd } from "react-icons/io"; // Arama ikonu
 import profileBackground2_small from "../assets/profileBackground2_small.png";
 import { useAuth } from "../context/AuthContext";
 
@@ -48,17 +48,36 @@ const AddFriends = () => {
 
         <div className="relative w-110 h-110 mx-auto bg-[var(--primary-bg)] rounded-lg pt-5">
           {/* Profil Fotoğrafı ve Kullanıcı Bilgileri */}
-
           <div
             className="flex items-center justify-start relative w-100 h-30 bg-[var(--secondary-bg)] 
-          mx-auto  pl-10 rounded-lg bg-[url('/path/to/your-image.jpg')] bg-cover bg-center"
+  mx-auto pl-10 rounded-lg bg-cover bg-center"
             style={{ backgroundImage: `url(${profileBackground2_small})` }}
           >
-            <img
-              src={pfp}
-              alt="Profil"
-              className="w-22 h-22 rounded-full border-4 border-[var(--tertiary-border)] shadow-lg"
-            />
+            {/* Profil Fotoğrafı Dönen Kart */}
+            <div className="relative w-22 h-22 group">
+              <div className="w-full h-full relative transition-transform duration-700 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)]">
+                {/* Ön Yüz (Profil Fotoğrafı) */}
+                <div className="absolute w-full h-full backface-hidden">
+                  <img
+                    src={pfp}
+                    alt="Profil"
+                    className="w-full h-full rounded-full border-4 border-[var(--tertiary-border)] shadow-lg"
+                  />
+                </div>
+
+                {/* Arka Yüz (Arkadaş Ekle Butonu) */}
+                <div className="absolute w-full h-full flex items-center justify-center bg-[var(--secondary-bg)] rounded-full border-4 border-[var(--tertiary-border)] shadow-lg [transform:rotateY(180deg)] backface-hidden">
+                  <button
+                    className="text-white text-xl"
+                    onClick={handleAddFriend}
+                  >
+                    <IoMdPersonAdd />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Kullanıcı Bilgileri */}
             <div>
               <h2 className="mt-2 text-xl font-bold">
                 {userData?.nickName || "Bilinmeyen Kullanıcı"}
@@ -126,4 +145,52 @@ const AddFriends = () => {
   );
 };
 
+<<<<<<< Updated upstream:src/pages/AddFriends.jsx
 export default AddFriends;
+=======
+const handleAddFriend = () => {
+  // Eğer mesaj zaten varsa, tekrar ekleme
+  if (document.querySelector(".friend-request-message")) return;
+
+  const message = document.createElement("div");
+  message.className = "friend-request-message"; // Mesajı tanımlamak için class ekliyoruz
+  message.textContent = "İstek Gönderildi!";
+
+  // Stilleri ayarla
+  message.style.position = "fixed";
+  message.style.top = "50%";
+  message.style.left = "50%";
+  message.style.transform = "translate(-50%, -50%) scale(0.8)";
+  message.style.opacity = "0"; // İlk başta görünmez
+  message.style.backgroundColor = "#393E46";
+  message.style.color = "#ffbc1f";
+  message.style.padding = "1rem 2rem";
+  message.style.borderRadius = "0.5rem";
+  message.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)";
+  message.style.fontSize = "1.2rem";
+  message.style.textAlign = "center";
+  message.style.zIndex = "9999";
+  message.style.transition = "transform 0.5s ease-out, opacity 0.5s ease-out"; // Animasyon
+
+  // Body'ye ekle
+  document.body.appendChild(message);
+
+  // Kısa bir gecikmeyle animasyonu başlat
+  setTimeout(() => {
+    message.style.transform = "translate(-50%, -50%) scale(1)";
+    message.style.opacity = "1";
+  }, 10);
+
+  // 2 saniye sonra mesajı kaybolarak sil
+  setTimeout(() => {
+    message.style.transform = "translate(-50%, -50%) scale(0.8)";
+    message.style.opacity = "0";
+
+    setTimeout(() => {
+      message.remove(); // Mesajı DOM'dan kaldır
+    }, 500); // Kaybolma animasyonunun bitmesini bekle
+  }, 2000);
+};
+
+export default ArkadasEkle;
+>>>>>>> Stashed changes:src/pages/ArkadasEkle.jsx
