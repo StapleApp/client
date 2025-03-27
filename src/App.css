@@ -13,6 +13,17 @@
 
 @layer components {
   
+  .background {
+    background-image: url("./assets/background.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: repeat;
+    background-attachment: scroll;
+    height: 100vh;
+    width: 100vw;
+  }
+  
+
   .icon {
     @apply relative flex items-center justify-center
            h-12 w-12 mt-2 mb-2 mx-auto shadow-lg
