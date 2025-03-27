@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-
 /* WebKit (Chrome, Safari) */
 ::-webkit-scrollbar {
   display: none;
@@ -18,7 +17,7 @@
     background-position: center;
     background-repeat: repeat;
     background-attachment: scroll;
-    background-size: 100px 100px; /* Deseni küçültüp sıklaştırır */
+    background-size: 7vw 7vw;
     height: 100vh;
     width: 100vw;
   }

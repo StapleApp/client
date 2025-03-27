@@ -93,7 +93,7 @@ const RightBarImg = ({ src, toggleExpand }) => {
     return (
         <div className="flex-1 overflow-y-auto w-40 mb-1 
             bg-[var(--secondary-bg)] text-[var(--primary-text)] 
-            rounded-md text-xs font-bold max-h-[calc(100vh-84px)]
+            rounded-md text-xs font-bold max-h-[calc(100vh-74px)]
             shadow-xl mx-auto mt-16"
             >
             <div className="grid gap-2 p-1">
@@ -152,7 +152,7 @@ const FriendList = ({isExpanded, setIsExpanded}) => {
     return (
         <div className="flex-1 overflow-y-auto w-40 mb-1 
             bg-[var(--secondary-bg)] text-[var(--primary-text)] 
-            rounded-md text-xs font-bold max-h-[calc(100vh-84px)]
+            rounded-md text-xs font-bold max-h-[calc(100vh-74px)]
             shadow-xl mx-auto mt-16"
             >
             <div className="grid gap-2 p-1">
