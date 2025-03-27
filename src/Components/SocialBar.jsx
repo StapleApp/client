@@ -12,10 +12,10 @@ const SocialBar = () => {
         <>
             <div className="fixed top-0 right-0 bg-[var(--primary-bg)] h-screen w-48 shadow-xl">
                 <FriendsBarExpand isFlagSetted={isFlagSetted} 
-                toggleExpand={() => setIsFlagSetted(!isFlagSetted)} />
+                toggleExpand={() => setIsFlagSetted(false)} />
 
                 <ServerBarExpand isFlagSetted={isFlagSetted} 
-                toggleExpand={() => setIsFlagSetted(!isFlagSetted)} />
+                toggleExpand={() => setIsFlagSetted(true)} />
                 
                 {!isFlagSetted && (
                     <FriendList isExpanded={isExpanded} setIsExpanded={setIsExpanded} />
