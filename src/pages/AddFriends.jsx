@@ -49,7 +49,7 @@ const ArkadasEkle = () => {
             placeholder="arkadaş ara..."
             value={searchId}
             onChange={(e) => setSearchId(e.target.value)}
-            className="w-90 p-2 rounded-lg border-2 border-[var(--secondary-border)] focus:outline-none focus:border-[var(--tertiary-border)]"
+            className="w-90 p-2 rounded-lg border-2 border-[var(--secondary-border)] focus:outline-none focus:border-[var(--tertiary-border)] bg-[var(--primary-bg)]"
           />
           <button
             onClick={handleSearch}
