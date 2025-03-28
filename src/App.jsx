@@ -3,7 +3,9 @@ import Navigator from "./Components/Navigator";
 import Home from "./pages/Home"; 
 import Settings from "./pages/Settings";
 import AddFriends from "./pages/AddFriends"; 
-import Test from "./pages/Test"; 
+import SearchServer from "./pages/SearchServer";
+import Profile from "./pages/Profile";
+import DirectMessaging from "./pages/DirectMessaging";
 import { AnimatePresence } from "framer-motion";
 
 import SignIn from "./auth/signin";
@@ -14,6 +16,7 @@ import CreateProfile from "./auth/createProfile";
 
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";  // ✅ Doğru import
+
 
 function App() {
   return (
@@ -49,7 +52,9 @@ function AnimatedSwitch() {
           <Route path="/home" element={<Home />} />
           <Route path="/Settings" element={<Settings />} />
           <Route path="/AddFriends" element={<AddFriends />} />
-          <Route path="/Test" element={<Test />} />
+          <Route path="/SearchServer" element={<SearchServer />} />
+          <Route path="/Profile" element={<Profile />} />
+          <Route path="/DirectMessaging" element={<DirectMessaging />} />
 
           <Route path="/login" element={<Login />} />
           <Route path="/signin" element={<SignIn />} />      

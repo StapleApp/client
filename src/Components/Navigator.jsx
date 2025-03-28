@@ -155,11 +155,11 @@ const SideBarSearch = () => {
     <>
       <div
         className={
-          window.location.pathname === "/Test"
+          window.location.pathname === "/SearchServer"
             ? `hovered-icon group`
             : `icon group hover:scale-105`
         }
-        onClick={() => navigate("/Test")}
+        onClick={() => navigate("/SearchServer")}
       >
         <MdSearch  size="25" />
         <span className="sidebar-tooltip group-hover:scale-100">Sunucu Ara</span>

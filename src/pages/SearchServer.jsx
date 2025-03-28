@@ -1,7 +1,6 @@
-import logo from "../assets/logoDark.svg"
 import { motion } from "framer-motion";
 
-const Test = () => {
+const SearchServer = () => {
     return(
         <>
             <motion.div
@@ -11,9 +10,10 @@ const Test = () => {
                 transition={{ duration: 0.1 }}   
                 className="fixed top-0 left-0 w-full h-screen"
                 >
-                <div className="background fixed grid grid-cols-3 bg-[var(--secondary-bg)] text-[var(--secondary-text)] h-screen w-screen top-0 z-0">
-                    <div className="w-auto h-auto col-start-2 mt-auto mb-auto text-5xl font-bold">
-                        TEST
+                <div className="background fixed grid grid-cols-3 
+                bg-[var(--secondary-bg)] text-[var(--secondary-text)] h-screen w-screen top-0 z-0">
+                    <div className="w-auto h-auto col-start-2 my-auto text-5xl font-bold">
+                        SUNUCU ARA
                     </div>
                 </div>
             </motion.div>
@@ -21,4 +21,4 @@ const Test = () => {
     );   
 };
   
-export default Test;
+export default SearchServer;
