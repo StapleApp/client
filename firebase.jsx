@@ -166,6 +166,25 @@ export const UpdateNickname = async (uid, newValue) => {
 };
 
 
+export const GetUserByFriendshipID = async (friendshipID) => {
+    try {
+        const usersRef = collection(db, "Users");
+        const q = query(usersRef, where("friendshipID", "==", friendshipID));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            const userData = querySnapshot.docs[0].data(); // İlk eşleşen kaydı al
+            return userData; // Kullanıcı verisini döndür
+        } else {
+            return null; // Kullanıcı bulunamadı
+        }
+    } catch (error) {
+        console.error("Error fetching user by friendshipID:", error);
+        return null; // Hata durumunda null döndür
+    }
+};
+
+
 
 
 

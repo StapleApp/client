@@ -6,17 +6,30 @@ import { useState } from "react";
 import { IoIosSearch, IoMdPersonAdd } from "react-icons/io"; // Arama ikonu
 import profileBackground2_small from "../assets/profileBackground2_small.png";
 import { useAuth } from "../context/AuthContext";
+import { GetUserByFriendshipID } from "../../firebase";
+import toast from 'react-hot-toast';
 
 const ArkadasEkle = () => {
   const { currentUser, userData } = useAuth();
-
   const navigate = useNavigate();
   const [searchId, setSearchId] = useState("");
   const [showProfile, setShowProfile] = useState(false);
+  const [friendData, setFriendData] = useState(null);
 
   const handleSearch = () => {
     if (searchId) {
       setShowProfile(true);
+
+      GetUserByFriendshipID(searchId).then((friend) => {
+        if (friend) {
+            setFriendData(friend); 
+            console.log("User found:", friend);
+        } else {
+            setFriendData(null); 
+            toast.error("No user found with this friendshipID.");
+            console.log("No user found with this friendshipID.");
+        }
+    });
     }
   };
 
@@ -49,8 +62,7 @@ const ArkadasEkle = () => {
         <div className="relative w-110 h-110 mx-auto bg-[var(--primary-bg)] rounded-lg pt-5">
           {/* Profil Fotoğrafı ve Kullanıcı Bilgileri */}
           <div
-            className="flex items-center justify-start relative w-100 h-30 bg-[var(--secondary-bg)] 
-  mx-auto pl-10 rounded-lg bg-cover bg-center"
+            className="flex items-center justify-start relative w-100 h-30 bg-[var(--secondary-bg)] mx-auto pl-10 rounded-lg bg-cover bg-center"
             style={{ backgroundImage: `url(${profileBackground2_small})` }}
           >
             {/* Profil Fotoğrafı Dönen Kart */}
@@ -80,10 +92,10 @@ const ArkadasEkle = () => {
             {/* Kullanıcı Bilgileri */}
             <div>
               <h2 className="mt-2 text-xl font-bold">
-                {userData?.nickName || "Bilinmeyen Kullanıcı"}
+                {friendData?.nickName || "Bilinmeyen Kullanıcı"}
               </h2>
               <p className="text-gray-400">
-                #{userData?.friendshipID || "ID Bulunamadı"}
+                #{friendData?.friendshipID || "ID Bulunamadı"}
               </p>
               <span className="text-green-500 text-sm">● Çevrimiçi</span>
             </div>
