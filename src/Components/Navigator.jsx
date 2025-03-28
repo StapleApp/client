@@ -34,9 +34,9 @@ const Navigator = () => {
       >
         <div className="flex flex-col h-64">
           <div
-            className={`transition-all duration-400 ease-in-out
+            className={`transition-all duration-350 ease-in-out
                       ${isExpanded 
-                        ? 'opacity-0 -translate-y-15' 
+                        ? 'opacity-0 -translate-y-16' 
                         : 'opacity-100 translate-y-0'}`}
           >
             <SideBarImg
@@ -45,26 +45,26 @@ const Navigator = () => {
             />
           </div>
           <div
-            className={`transition-all duration-300 ease-in-out delay-75
+            className={`transition-all duration-250 ease-in-out delay-75
                       ${isExpanded ? '-translate-y-15' : 'translate-y-0'}`}
           >
             <SideBarHome />
           </div>
           <div
-            className={`transition-all duration-300 ease-in-out delay-150
+            className={`transition-all duration-250 ease-in-out delay-150
                       ${isExpanded ? '-translate-y-15' : 'translate-y-0'}`}
           >
             <SideBarFriend />
           </div>
           <div
-            className={`transition-all duration-300 ease-in-out delay-225
+            className={`transition-all duration-250 ease-in-out delay-225
                       ${isExpanded ? '-translate-y-15' : 'translate-y-0'}`}
           >
             <SideBarSearch />
           </div>
         </div>
         <div
-          className={`flex flex-col h-16 transition-all duration-300 ease-in-out delay-300
+          className={`flex flex-col h-16 transition-all duration-250 ease-in-out delay-300
                      ${isExpanded ? '-translate-y-0' : 'translate-y-0'}`}
         >
           <SideBarIconSettings />
@@ -92,8 +92,6 @@ const SideBarPowerOff = () => {
     </>
   );
 };
-
-
 
 const SideBarImg = ({ src, toggleExpand }) => {
   return (
