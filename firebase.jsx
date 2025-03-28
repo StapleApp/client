@@ -150,7 +150,6 @@ const createFriendshipID = async () => {
     return friendshipID; 
 };
 
-
 // ** Nickname Güncelleme **
 export const UpdateNickname = async (uid, newValue) => {
     try {
@@ -165,7 +164,7 @@ export const UpdateNickname = async (uid, newValue) => {
     }
 };
 
-
+// ** FrinedshipID ile Kullanıcı Arama ** 
 export const GetUserByFriendshipID = async (friendshipID) => {
     try {
         const usersRef = collection(db, "Users");

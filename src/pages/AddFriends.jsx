@@ -53,7 +53,7 @@ const ArkadasEkle = () => {
           />
           <button
             onClick={handleSearch}
-            className="ml-2 p-2 text-white rounded-lg border-2 border-[var(--secondary-border)] hover:border-[var(--tertiary-border)]"
+            className="ml-2 p-2 text-white rounded-lg border-2 border-[var(--secondary-border)] hover:border-[var(--tertiary-border)] bg-[var(--primary-bg)]"
           >
             <IoIosSearch size={20} /> {/* Arama ikonu */}
           </button>
