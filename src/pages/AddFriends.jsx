@@ -46,14 +46,14 @@ const ArkadasEkle = () => {
         initial={{ opacity: 0, x: -100 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: 100 }}
-        transition={{ duration: 1 }}
+        transition={{ duration: 0.1 }}
         className="background fixed top-0 left-0 w-full h-screen bg-[var(--secondary-bg)] text-[var(--secondary-text)]"
       >
         {/* Arama Çubuğu */}
         <div className="flex items-center justify-center relative w-110 h-25 mx-auto  hover:border-[var(--tertiary-border)]">
           <input
             type="text"
-            placeholder="arkadaş ara..."
+            placeholder="Arkadaş ara..."
             value={searchId}
             onChange={(e) => setSearchId(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()} // Enter tuşu ile arama yap
@@ -61,7 +61,7 @@ const ArkadasEkle = () => {
           />
           <button
             onClick={handleSearch}
-            className="ml-2 p-2 text-white rounded-lg border-2 border-[var(--secondary-border)] hover:border-[var(--tertiary-border)] bg-[var(--primary-bg)]"
+            className="icon ml-2 p-2"
           >
             <IoIosSearch size={20} /> {/* Arama ikonu */}
           </button>
@@ -81,7 +81,7 @@ const ArkadasEkle = () => {
           <motion.div
             initial={{ opacity: 0, y: -50 }} // Başlangıçta şeffaf ve yukarıda
             animate={{ opacity: 1, y: 0 }} // Görünür hale gelince, yukarıdan normal pozisyona gelsin
-            transition={{ duration: 0.8 }} // Animasyon süresi 0.6 saniye
+            transition={{ duration: 0.4 }} // Animasyon süresi 0.6 saniye
             className="relative w-110 h-110 mx-auto bg-[var(--primary-bg)] rounded-lg pt-5"
           >
             <div className="relative w-110 h-110 mx-auto bg-[var(--primary-bg)] rounded-lg pt-5">
@@ -227,7 +227,6 @@ const addFriendAnim = () => {
   return (
     <DotLottieReact
       src="https://lottie.host/7ae9face-ddcd-4284-8dfe-19efef04d56b/sySXGDavLA.lottie"
-      loop
       autoplay
       style={{ width: 300, height: 300 }}
     />
