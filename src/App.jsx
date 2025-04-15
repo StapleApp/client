@@ -6,6 +6,7 @@ import AddFriends from "./pages/AddFriends";
 import SearchServer from "./pages/SearchServer";
 import Profile from "./pages/Profile";
 import DirectMessaging from "./pages/DirectMessaging";
+import Notifications from "./pages/Notifications";
 import { AnimatePresence } from "framer-motion";
 
 import SignIn from "./auth/signin";
@@ -55,6 +56,7 @@ function AnimatedSwitch() {
           <Route path="/SearchServer" element={<SearchServer />} />
           <Route path="/Profile" element={<Profile />} />
           <Route path="/DirectMessaging" element={<DirectMessaging />} />
+          <Route path="/Notifications" element={<Notifications />} />
 
           <Route path="/login" element={<Login />} />
           <Route path="/signin" element={<SignIn />} />      

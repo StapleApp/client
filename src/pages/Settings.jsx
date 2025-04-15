@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import React, { useEffect } from "react";
 import { IoLogInOutline } from "react-icons/io5";
+import { FaPowerOff } from "react-icons/fa6";
 
 const Settings = () => {
     const navigate = useNavigate();
@@ -33,6 +34,7 @@ const Settings = () => {
                     <div className="w-auto h-auto col-start-2 mt-auto mb-auto text-5xl font-bold">
                     <div>
                         <SideBarLogOut handleLogout={handleLogout}/>
+                        <SideBarPowerOff />
                     </div>
                     </div>
                 </div>
@@ -50,6 +52,20 @@ const SideBarLogOut = ({ handleLogout }) => {
         >
             <IoLogInOutline size="100" />
             <span className="ml-4">Log Out</span>
+        </div>
+      </>
+    );
+};
+
+const SideBarPowerOff = () => {
+    const navigate = useNavigate();
+    return (
+      <>
+        <div
+          className={`icon group w-100 h-30`}
+        >
+          <FaPowerOff size="80" />
+          <span className="ml-4">Kapat</span>
         </div>
       </>
     );

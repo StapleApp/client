@@ -1,6 +1,7 @@
 import { BsGearFill } from "react-icons/bs";
-import { FaStapler, FaPowerOff } from "react-icons/fa6";
+import { FaStapler } from "react-icons/fa6";
 import { MdHome, MdSearch  } from "react-icons/md";
+import { IoMdNotifications } from "react-icons/io";
 
 import logo from "../assets/logoDark.svg";
 import icon from "../assets/360.png";
@@ -62,6 +63,12 @@ const Navigator = () => {
           >
             <SideBarSearch />
           </div>
+          <div
+          className={`flex flex-col h-16 transition-all duration-250 ease-in-out delay-300
+                     ${isExpanded ? '-translate-y-15' : 'translate-y-0'}`}
+          >
+            <SideBarNotification />
+          </div>
         </div>
         <div
           className={`flex flex-col h-16 transition-all duration-250 ease-in-out delay-300
@@ -74,21 +81,22 @@ const Navigator = () => {
   );
 };
 
-const SideBarPowerOff = () => {
+const SideBarNotification = () => {
   const navigate = useNavigate();
-  return (
+  return(
     <>
       <div
         className={
-          window.location.pathname === "#"
-            ? `hovered-icon group mx-2`
-            : `icon group hover:scale-105 mx-2`
+          window.location.pathname === "/Notifications"
+            ? `hovered-icon group`
+            : `icon group hover:scale-105`
         }
-        onClick={() => navigate("#")}
+        onClick={() => navigate("/Notifications")}
       >
-        <FaPowerOff size="20" />
-        <span className="sidebar-tooltip group-hover:scale-100">Kapat</span>
+        <IoMdNotifications size="25" />
+        <span className="sidebar-tooltip group-hover:scale-100">Bildirimler</span>
       </div>
+      <hr className="border-[var(--primary-border)] border" />
     </>
   );
 };
@@ -162,7 +170,6 @@ const SideBarSearch = () => {
         <MdSearch  size="25" />
         <span className="sidebar-tooltip group-hover:scale-100">Sunucu Ara</span>
       </div>
-      <hr className="border-[var(--primary-border)] border" />
     </>
   );
 };
