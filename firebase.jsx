@@ -94,8 +94,8 @@ async function writeUserData(uid, name, surname,birthdate, email) {
             createdDate:serverTimestamp(),
             email: email,
             friendshipID: friendshipID,
-            friends: [],
-            servers: [],
+            friends: {},
+            servers: {},
 
         });
 
@@ -184,7 +184,25 @@ export const GetUserByFriendshipID = async (friendshipID) => {
 };
 
 
+// ** Arkadaş Ekleme **
+export const AddFriend = async (uid,friendshipID,relation) => {
+    try {
+        const userRef = doc(db, "Users", uid);
 
+        // Yeni arkadaş verisi
+        const newFriendData = {
+            [`friends.${friendshipID}`]: {
+                relation: relation,
+                relationDate: serverTimestamp()
+            }
+        };
+
+        await updateDoc(userRef, newFriendData);
+        console.log("Friend added successfully");
+    } catch (error) {
+        console.error("Error adding/updating friend:", error);
+    }
+};
 
 
 

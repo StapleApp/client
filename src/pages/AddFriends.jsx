@@ -3,19 +3,22 @@ import pfp from "../assets/360.png";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { IoIosSearch, IoMdPersonAdd } from "react-icons/io"; // Arama ikonu
+import { IoIosSearch, IoMdPersonAdd } from "react-icons/io"; 
 import profileBackground2_small from "../assets/profileBackground2_small.png";
 import { useAuth } from "../context/AuthContext";
 import { GetUserByFriendshipID } from "../../firebase";
 import toast from "react-hot-toast";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import { div } from "framer-motion/client";
+import { AddFriend } from "../../firebase";
+
 
 const ArkadasEkle = () => {
   const { currentUser, userData } = useAuth();
-  const navigate = useNavigate();
   const [searchId, setSearchId] = useState("");
   const [showProfile, setShowProfile] = useState(false);
   const [friendData, setFriendData] = useState(null);
+
 
   const handleSearch = () => {
     if (searchId) {
@@ -33,7 +36,6 @@ const ArkadasEkle = () => {
           console.log("User found:", friend);
         } else {
           setFriendData(null);
-          toast.error("No user found with this friendshipID.");
           console.log("No user found with this friendshipID.");
         }
       });
@@ -68,7 +70,7 @@ const ArkadasEkle = () => {
         </div>
 
         {/* Animasyon: İlk başta profil gözükmezken gösterilecek */}
-        {!showProfile && (
+        { !showProfile && !friendData && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
             {addFriendAnim()}
             <span className="block text-lg font-semibold text-[var(--quaternary-text)]">
@@ -76,8 +78,8 @@ const ArkadasEkle = () => {
             </span>
           </div>
         )}
-
-        {showProfile && (
+        {/* Girilen ID ile kullanıcı bulunursa gösterilecek */}
+        {showProfile && friendData && (
           <motion.div
             initial={{ opacity: 0, y: -50 }} // Başlangıçta şeffaf ve yukarıda
             animate={{ opacity: 1, y: 0 }} // Görünür hale gelince, yukarıdan normal pozisyona gelsin
@@ -105,7 +107,7 @@ const ArkadasEkle = () => {
                     <div className="absolute w-full h-full flex items-center justify-center bg-[var(--secondary-bg)] rounded-full border-4 border-[var(--tertiary-border)] shadow-lg [transform:rotateY(180deg)] backface-hidden">
                       <button
                         className="text-white text-xl"
-                        onClick={handleAddFriend}
+                        onClick={() => handleAddFriend(userData,friendData)}
                       >
                         <IoMdPersonAdd />
                       </button>
@@ -174,12 +176,28 @@ const ArkadasEkle = () => {
             </div>
           </motion.div>
         )}
+        {/* Girilen ID ile kullanıcı bulunamazsa gözükecek */}
+        {showProfile && friendData === null && (
+          <motion.div
+            className="flex items-center justify-center h-full w-full"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <p className="text-gray-500 text-xl font-semibold">Kullanıcı bulunamadı</p>
+          </motion.div>
+        )}
+
       </motion.div>
     </>
   );
 };
 
-const handleAddFriend = () => {
+const handleAddFriend = (userData,friendData) => {
+  
+  AddFriend(userData.userID,friendData.userID,"Friend")
+  AddFriend(friendData.userID,userData.userID,"Friend")
+    
   // Eğer mesaj zaten varsa, tekrar ekleme
   if (document.querySelector(".friend-request-message")) return;
 
