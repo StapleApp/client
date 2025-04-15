@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,signInWithEmailAndPassword} from "firebase/auth";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, doc, setDoc,getDocs,where,query,collection,serverTimestamp,updateDoc } from "firebase/firestore"; 
+import { getFirestore, doc, setDoc,getDocs,getDoc,where,query,collection,serverTimestamp,updateDoc } from "firebase/firestore"; 
 import toast from 'react-hot-toast';
 
 const firebaseConfig = {
@@ -21,6 +21,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider_google = new GoogleAuthProvider();
 const db = getFirestore(app); 
+
 
 // **E-posta ile Kayıt Olma**
 export const register = async (name, surname, email, password,birthdate, navigate) => {
@@ -183,7 +184,6 @@ export const GetUserByFriendshipID = async (friendshipID) => {
     }
 };
 
-
 // ** Arkadaş Ekleme **
 export const AddFriend = async (uid,friendshipID,relation) => {
     try {
@@ -204,6 +204,28 @@ export const AddFriend = async (uid,friendshipID,relation) => {
     }
 };
 
+// ** Arkadaşlar Listesine Ulaşma
+export const getFriendsList = async(uid) =>{
+    try {
+        const userRef = doc(db, "Users", uid);
+        const docSnap = await getDoc(userRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            const friends = data.friends || {};
+
+            //console.log("Friends List:", friends);
+
+            return friends;
+        } else {
+            console.log("No such user document!");
+            return null;
+        }
+    } catch (error) {
+        console.error("Error getting friends list:", error);
+        return null;
+    }
+}
 
 
 export default app;
