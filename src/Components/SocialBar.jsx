@@ -1,11 +1,12 @@
 import '../App.css';
 import { FaUserFriends } from 'react-icons/fa';
 import { AiOutlineGlobal } from "react-icons/ai";
-import { useState, useRef } from "react";
+import { useState, useRef ,useEffect} from "react";
 import ProfilePanel from './ProfilePanel'
 import { useAuth } from "../context/AuthContext";
 import { getFriendsList } from '../../firebase';
 import icon from "../assets/360.png";
+import { getUser } from '../../firebase';
 
 const SocialBar = () => {
     const [isFlagSetted, setIsFlagSetted] = useState(false);
@@ -131,69 +132,69 @@ const RightBarImg = ({ src, toggleExpand }) => {
 }
 
 const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
+    const [friends, setFriends] = useState([]);
     const [position, setPosition] = useState({ top: 0, left: 0 });
     const userRefs = useRef({});
     const [selectedUser, setSelectedUser] = useState(null);
 
-    if(userData){
-        const friend = getFriendsList(userData.userID)
-        console.log(friend)
-        const friends = [
-            { id: 1, name: 'Chiramii' },
-            { id: 2, name: 'Pikachu' },
-            { id: 3, name: 'Eevee' },
-            // ...
-        ];
-    
-        const handleUserClick = (id, name) => {
-            if (userRefs.current[id]) {
-                const rect = userRefs.current[id].getBoundingClientRect();
-                setPosition({ top: rect.top, left: rect.right });
-                setSelectedUser({ id, name });
-                setIsExpanded(true);
+    useEffect(() => {
+        const fetchFriends = async () => {
+            if (userData) {
+                const friendList = await getFriendsList(userData.userID);
+                setFriends(friendList); // friendList bir array olmalı
             }
         };
-    
-        return (
-            <div className="flex-1 overflow-y-auto w-40 mb-1 
-                bg-[var(--secondary-bg)] text-[var(--primary-text)] 
-                rounded-md text-xs font-bold max-h-[calc(100vh-74px)]
-                shadow-xl mx-auto mt-16">
-                
-                <div className="grid gap-2 p-1">
-                    {friends.map((user) => (
-                        <div
-                            key={user.id}
-                            ref={(element) => (userRefs.current[user.id] = element)}
-                            onClick={() => handleUserClick(user.id, user.name)}
-                            className="flex items-center w-full h-14 bg-[var(--primary-bg)] rounded-md p-2
-                                border-3 border-[var(--primary-border)] shadow-xl
-                                hover:border-3 hover:border-[var(--tertiary-border)]
-                                transition-all duration-300 ease-linear hover:scale-105 cursor-pointer"
-                        >
-                            <span className="group cursor-pointer ml-1 mr-3 rounded-full">
-                                <RightBarImg src={icon} toggleExpand={() => setIsExpanded(true)} />
-                            </span>
-                            <span>{user.name}</span>
-                        </div>
-                    ))}
-    
-                    {selectedUser && (
-                        <ProfilePanel 
-                            check={isExpanded} 
-                            setCheck={setIsExpanded}
-                            posX={position.left} 
-                            posY={position.top}
-                            userName={selectedUser.name} 
-                            userID={selectedUser.id}
-                        />
-                    )}
-                </div>
+        fetchFriends();
+    }, [userData]);
+
+    const handleUserClick = (uid, name) => {
+        if (userRefs.current[uid]) {
+            const rect = userRefs.current[uid].getBoundingClientRect();
+            setPosition({ top: rect.top, left: rect.right });
+            setSelectedUser({ id: uid, name });
+            setIsExpanded(true);
+        }
+    };
+
+    return (
+        <div className="flex-1 overflow-y-auto w-40 mb-1 
+            bg-[var(--secondary-bg)] text-[var(--primary-text)] 
+            rounded-md text-xs font-bold max-h-[calc(100vh-74px)]
+            shadow-xl mx-auto mt-16">
+            
+            <div className="grid gap-2 p-1">
+                {friends.map((user) => (
+                    <div
+                        key={user.uid}
+                        ref={(el) => (userRefs.current[user.uid] = el)}
+                        onClick={() => handleUserClick(user.uid, user.uid)} // İsim bilgisini ayrıca çekmek istersen onu da saklaman gerekir
+                        className="flex items-center w-full h-14 bg-[var(--primary-bg)] rounded-md p-2
+                            border-3 border-[var(--primary-border)] shadow-xl
+                            hover:border-3 hover:border-[var(--tertiary-border)]
+                            transition-all duration-300 ease-linear hover:scale-105 cursor-pointer"
+                    >
+                        <span className="group cursor-pointer ml-1 mr-3 rounded-full">
+                            <RightBarImg src={icon} toggleExpand={() => setIsExpanded(true)} />
+                        </span>
+                        <span>{user.uid}</span> {/* Burada user.name varsa onu da göster */}
+                    </div>
+                ))}
+
+                {selectedUser && (
+                    <ProfilePanel 
+                        check={isExpanded} 
+                        setCheck={setIsExpanded}
+                        posX={position.left} 
+                        posY={position.top}
+                        userName={selectedUser.name} 
+                        userID={selectedUser.id}
+                    />
+                )}
             </div>
-        );
-    }
-  
+        </div>
+    );
 };
+
 
 
 export default SocialBar;

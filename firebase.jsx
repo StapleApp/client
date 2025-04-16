@@ -185,13 +185,13 @@ export const GetUserByFriendshipID = async (friendshipID) => {
 };
 
 // ** Arkadaş Ekleme **
-export const AddFriend = async (uid,friendshipID,relation) => {
+export const AddFriend = async (uid,friendID,relation) => {
     try {
         const userRef = doc(db, "Users", uid);
 
         // Yeni arkadaş verisi
         const newFriendData = {
-            [`friends.${friendshipID}`]: {
+            [`friends.${friendID}`]: {
                 relation: relation,
                 relationDate: serverTimestamp()
             }
@@ -204,28 +204,51 @@ export const AddFriend = async (uid,friendshipID,relation) => {
     }
 };
 
-// ** Arkadaşlar Listesine Ulaşma
-export const getFriendsList = async(uid) =>{
+// ** Arkadaş Listesine Ulaşma **
+export const getFriendsList = async (uid) => {
     try {
         const userRef = doc(db, "Users", uid);
         const docSnap = await getDoc(userRef);
 
         if (docSnap.exists()) {
             const data = docSnap.data();
-            const friends = data.friends || {};
+            const allFriends = data.friends || {};
 
-            //console.log("Friends List:", friends);
+            // "Friend" olanları dizi olarak döndür
+            const filteredFriendsArray = Object.entries(allFriends)
+                .filter(([_, info]) => info.relation === "Friend")
+                .map(([uid, info]) => ({
+                    uid,
+                    ...info
+                }));
 
-            return friends;
+            //console.log("Filtered Friends Array:", filteredFriendsArray);
+            return filteredFriendsArray;
         } else {
             console.log("No such user document!");
-            return null;
+            return [];
         }
     } catch (error) {
         console.error("Error getting friends list:", error);
+        return [];
+    }
+};
+
+export const getUser = async (uid) => {
+    try {
+        const userRef = doc(db, "Users", uid);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+            return { uid, ...docSnap.data() }; // uid + kullanıcının tüm verileri
+        } else {
+            console.log("No such user!");
+            return null;
+        }
+    } catch (error) {
+        console.error("Error fetching user:", error);
         return null;
     }
-}
+};
 
 
 export default app;
