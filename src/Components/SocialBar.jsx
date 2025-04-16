@@ -141,20 +141,37 @@ const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
         const fetchFriends = async () => {
             if (userData) {
                 const friendList = await getFriendsList(userData.userID);
-                setFriends(friendList); // friendList bir array olmalı
+
+
+                // UID listesi üzerinden isimleri çek
+                const fullFriendData = await Promise.all(
+                    friendList.map(async (friend) => {
+                        const userInfo = await getUser(friend.uid);
+                        return { uid: friend.uid, nickName: userInfo.nickName , friendshipID : userInfo.friendshipID};
+                    })
+                );
+    
+                setFriends(fullFriendData);
+
             }
         };
+    
         fetchFriends();
     }, [userData]);
+    
 
-    const handleUserClick = (uid, name) => {
+    const handleUserClick = (uid, nickName, friendshipID) => {
         if (userRefs.current[uid]) {
+            console.log(userRefs)
             const rect = userRefs.current[uid].getBoundingClientRect();
             setPosition({ top: rect.top, left: rect.right });
-            setSelectedUser({ id: uid, name });
+    
+            // 👇 Artık friendshipID'yi profile panelde göstermek için gönderiyoruz
+            setSelectedUser({ id: friendshipID, nickName: nickName });
             setIsExpanded(true);
         }
     };
+    
 
     return (
         <div className="flex-1 overflow-y-auto w-40 mb-1 
@@ -163,22 +180,23 @@ const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
             shadow-xl mx-auto mt-16">
             
             <div className="grid gap-2 p-1">
-                {friends.map((user) => (
-                    <div
-                        key={user.uid}
-                        ref={(el) => (userRefs.current[user.uid] = el)}
-                        onClick={() => handleUserClick(user.uid, user.uid)} // İsim bilgisini ayrıca çekmek istersen onu da saklaman gerekir
-                        className="flex items-center w-full h-14 bg-[var(--primary-bg)] rounded-md p-2
-                            border-3 border-[var(--primary-border)] shadow-xl
-                            hover:border-3 hover:border-[var(--tertiary-border)]
-                            transition-all duration-300 ease-linear hover:scale-105 cursor-pointer"
-                    >
-                        <span className="group cursor-pointer ml-1 mr-3 rounded-full">
-                            <RightBarImg src={icon} toggleExpand={() => setIsExpanded(true)} />
-                        </span>
-                        <span>{user.uid}</span> {/* Burada user.name varsa onu da göster */}
-                    </div>
-                ))}
+            {friends.map((user) => (
+            <div
+                key={user.uid}
+                ref={(el) => (userRefs.current[user.uid] = el)}
+                onClick={() => handleUserClick(user.uid, user.nickName, user.friendshipID)}
+                className="flex items-center w-full h-14 bg-[var(--primary-bg)] rounded-md p-2
+                    border-3 border-[var(--primary-border)] shadow-xl
+                    hover:border-3 hover:border-[var(--tertiary-border)]
+                    transition-all duration-300 ease-linear hover:scale-105 cursor-pointer"
+            >
+                <span className="group cursor-pointer ml-1 mr-3 rounded-full">
+                    <RightBarImg src={icon} toggleExpand={() => setIsExpanded(true)} />
+                </span>
+                <span>{user.nickName}</span> {/* 👈 Burada artık isim gözüküyor */}
+            </div>
+        ))}
+
 
                 {selectedUser && (
                     <ProfilePanel 
@@ -186,7 +204,7 @@ const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
                         setCheck={setIsExpanded}
                         posX={position.left} 
                         posY={position.top}
-                        userName={selectedUser.name} 
+                        userName={selectedUser.nickName} 
                         userID={selectedUser.id}
                     />
                 )}

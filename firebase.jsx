@@ -222,7 +222,6 @@ export const getFriendsList = async (uid) => {
                     ...info
                 }));
 
-            //console.log("Filtered Friends Array:", filteredFriendsArray);
             return filteredFriendsArray;
         } else {
             console.log("No such user document!");
@@ -234,21 +233,24 @@ export const getFriendsList = async (uid) => {
     }
 };
 
+// ** ID ile Kullanıcıya Ulaşma
 export const getUser = async (uid) => {
     try {
-        const userRef = doc(db, "Users", uid);
-        const docSnap = await getDoc(userRef);
-        if (docSnap.exists()) {
-            return { uid, ...docSnap.data() }; // uid + kullanıcının tüm verileri
+        const userDocRef = doc(collection(db, "Users"), uid);
+        const userSnap = await getDoc(userDocRef);
+
+        if (userSnap.exists()) {
+            return userSnap.data(); // Belge varsa verisini döndür
         } else {
-            console.log("No such user!");
-            return null;
+            console.warn("No user found with uid:", uid);
+            return null; // Belge yoksa null döndür
         }
     } catch (error) {
-        console.error("Error fetching user:", error);
-        return null;
+        console.error("Error fetching user by uid:", error);
+        return null; // Hata durumunda null döndür
     }
 };
+
 
 
 export default app;
