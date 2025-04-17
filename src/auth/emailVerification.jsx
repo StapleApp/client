@@ -2,27 +2,38 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from 'react-hot-toast';
 import { handleResetPassword } from "../../firebase";
+
+
 const EmailVerification = () => {
 
-  const [email,setEmail] = useState('');
-  const navigate = useNavigate();
-  
+  // Kullanıcının girdiği e-posta adresini tutan state
+  const [email, setEmail] = useState('');
+
+  const navigate = useNavigate(); // Yönlendirme için hook
+
+  // Form gönderildiğinde çalışacak fonksiyon
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Sayfanın yeniden yüklenmesini engeller
 
     try {
-        await handleResetPassword(email);
-        toast.success("Password reset link has been sent!");
+      // handleResetPassword fonksiyonu ile şifre sıfırlama bağlantısı gönderilir
+      await handleResetPassword(email);
 
-        setTimeout(() => {
-            navigate("/login");
-        }, 3000);
-        
+      // Başarılı olursa kullanıcıya bilgilendirme mesajı göster
+      toast.success("Password reset link has been sent!");
+
+      // 3 saniye sonra giriş sayfasına yönlendirilir
+      setTimeout(() => {
+        navigate("/login");
+      }, 3000);
+
     } catch (error) {
-        toast.error("Password reset failed:");
-        console.log(error);
+      // Hata olursa kullanıcıya hata mesajı göster ve konsola yazdır
+      toast.error("Password reset failed:");
+      console.log(error);
     }
   };
+
 
 
   return (

@@ -5,6 +5,7 @@ import { register } from "../../firebase";
 import toast from 'react-hot-toast';
 
 const SignIn = () => {
+  // Form alanlarının verilerini tutan state'ler
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -12,62 +13,71 @@ const SignIn = () => {
   const [surname, setSurname] = useState('');
   const [birthdate, setBirthdate] = useState("");
 
+  // Kullanıcının sözleşmeyi kabul edip etmediğini ve şifre gösterme ayarlarını tutan state'ler
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
- 
-  const navigate = useNavigate();
 
+  const navigate = useNavigate(); // Sayfa yönlendirmeleri için hook
+
+  // Şifre görünürlüğünü değiştiren fonksiyon
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
+  // Onay şifresi görünürlüğünü değiştiren fonksiyon
   const togglePasswordVisibilityConfirm = () => {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
+  // Form gönderildiğinde çalışacak fonksiyon
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Sayfanın yenilenmesini engeller
 
-    if(name.length > 12 || surname.length > 12){
-      toast.error("Name and Surname should be less 12 character");
+    // Ad veya soyad 12 karakterden uzunsa uyarı ver
+    if (name.length > 12 || surname.length > 12) {
+      toast.error("Name and Surname should be less than 12 characters");
       return;
     }
 
+    // Kullanıcı şartları kabul etmemişse uyarı ver
     if (!agreeTerms) {
       toast.error("You must agree to the Terms & Conditions.");
       return;
     }
 
-    if(password !== confirmPassword){
+    // Şifreler eşleşmiyorsa uyarı ver
+    if (password !== confirmPassword) {
       toast.error("Password does not match.");
       return;
     }
 
+    // Doğum tarihinden yaş hesaplama
     const birthDate = new Date(birthdate);
     const today = new Date();
     const age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
     const dayDiff = today.getDate() - birthDate.getDate();
 
+    // Ay ve gün farkına göre gerçek yaşı hesapla
     const finalAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
 
+    // 13 yaşından küçükse kayıt olmasına izin verme
     if (finalAge < 13) {
       toast.error("You're under 13!");
       return;
     }
 
-
     try {
-      const user = await register(name,surname, email, password,birthdate, navigate);
-      console.log(user);
-
+      // register fonksiyonu ile kullanıcı kaydını gerçekleştir
+      const user = await register(name, surname, email, password, birthdate, navigate);
+      console.log(user); // Kayıt başarılıysa kullanıcıyı konsola yazdır
     } catch (error) {
-      toast.error("Registration failed:", error);
+      toast.error("Registration failed:", error); // Kayıt başarısızsa hata mesajı göster
       console.log(error);
     }
   };
-  
+
 
 
   return (

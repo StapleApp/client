@@ -7,20 +7,25 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
+  // E-posta, şifre ve diğer seçenekleri tutan state'ler
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // Şifreyi göster/gizle
+  const [rememberMe, setRememberMe] = useState(false);     // Beni hatırla seçeneği
 
-  const navigate = useNavigate();
-  const auth = getAuth();
-  const { currentUser, userData } = useAuth();
+  const navigate = useNavigate(); // Yönlendirme için hook
+  const auth = getAuth();         // Firebase auth nesnesi
+  const { currentUser, userData } = useAuth(); // Özel hook ile kullanıcı bilgisi çekiliyor
 
+  // Kullanıcının oturum durumunu kontrol eder
   const handleAuthState = () => {
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          userData.nickName === "" ? navigate('/create_profile') : navigate('/home');
+          // Kullanıcının profilinde nickname yoksa profil oluşturma sayfasına yönlendir
+          userData.nickName === "" 
+            ? navigate('/create_profile') 
+            : navigate('/home'); // Varsa ana sayfaya yönlendir
         } catch (error) {
           console.error("Nickname kontrol hatası:", error);
         }
@@ -29,56 +34,62 @@ const Login = () => {
       }
     });
   };
-  
-  
+
+  // Giriş formu gönderildiğinde çalışır
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     try {
+      // E-posta ve şifre ile giriş yapılır
       const user = await loginWithMail(email, password, navigate);
-  
+
       if (user) {
+        // Kullanıcı bilgisi (e-posta + UID) localStorage veya sessionStorage'a kaydedilir
         const userData = { email, token: user.uid };
         rememberMe
           ? localStorage.setItem("user", JSON.stringify(userData))
           : sessionStorage.setItem("user", JSON.stringify(userData));
-  
-        handleAuthState(); 
+
+        handleAuthState(); // Giriş sonrası yönlendirme yapılır
       }
     } catch (error) {
-      toast.error("Login failed");
+      toast.error("Login failed"); // Hata mesajı
       console.log(error);
     }
   };
-  
+
+  // Google ile giriş yapıldığında çalışır
   const googleAuthFunc = async (e) => {
     e.preventDefault();
-  
+
     try {
+      // Google ile giriş yapılır
       const user = await signInWithGoogle(navigate);
+      
+      // Giriş başarılıysa kullanıcı bilgisi localStorage'a kaydedilir
       localStorage.setItem("user", JSON.stringify(user));
       console.log(user);
-  
-      handleAuthState(); 
+
+      handleAuthState(); // Giriş sonrası yönlendirme
     } catch (error) {
       toast.error("Registration failed:", error.message);
       console.log(error);
     }
   };
-  
-  
+
+  // Şifre görünürlüğünü değiştirir
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
+  // Sayfa ilk yüklendiğinde daha önce giriş yapılmışsa doğrudan /home sayfasına yönlendir
   useEffect(() => {
     const storedUser = localStorage.getItem("user") || sessionStorage.getItem("user");
-  
+
     if (storedUser) {
       navigate("/home");
     }
   }, [navigate]);
-  
 
   return (
     <div className="flex items-center justify-center min-h-screen -100">

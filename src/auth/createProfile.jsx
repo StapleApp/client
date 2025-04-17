@@ -9,40 +9,48 @@ import profileImage from "../assets/360.png";
 
 
 const CreateProfile = () => {
-  const [nickname,setNickname] = useState('');
+  // Kullanıcının takma adını tutmak için state
+  const [nickname, setNickname] = useState('');
+  // Kullanıcının profil fotoğrafını tutmak için state
   const [profilePhoto, setProfilePhoto] = useState(null);
 
-  const navigate = useNavigate();
-  const auth = getAuth();
+  const navigate = useNavigate(); // Sayfalar arasında geçiş yapmak için hook
+  const auth = getAuth(); // Firebase kimlik doğrulama nesnesi
 
+  // Profil fotoğrafı değiştirildiğinde çalışacak fonksiyon
   const handleChangeImage = (e) => {
-    const file = e.target.files[0];
-    if (file) setProfilePhoto(file);
-};
+    const file = e.target.files[0]; // Seçilen ilk dosyayı al
+    if (file) setProfilePhoto(file); // Dosya varsa state'e kaydet
+  };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  // Form gönderildiğinde çalışacak fonksiyon
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // Sayfanın yeniden yüklenmesini engeller
 
-  if (nickname === "") {
-    toast.error("Nickname cannot be blank");
-    return;
-  }
-
-  if (nickname.length > 12) {
-    toast.error("Nickname should be less 12 character");
-    return;
-  }
-
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      console.log("Current User:", user);
-      UpdateNickname(user.uid, nickname);
-      navigate('/home')  
-    } else {
-      console.log("No user is signed in.");
+    // Nickname boş bırakılmışsa uyarı ver
+    if (nickname === "") {
+      toast.error("Nickname cannot be blank");
+      return;
     }
-  });
-};
+
+    // Nickname 12 karakterden uzunsa uyarı ver
+    if (nickname.length > 12) {
+      toast.error("Nickname should be less than 12 characters");
+      return;
+    }
+
+    // Kullanıcı oturum açmış mı kontrol et
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log("Current User:", user); // Kullanıcı konsola yazdırılır
+        UpdateNickname(user.uid, nickname); // Takma ad güncellenir (UpdateNickname fonksiyonu senin tanımladığın bir fonksiyon olmalı)
+        navigate('/home'); // Kullanıcı ana sayfaya yönlendirilir
+      } else {
+        console.log("No user is signed in."); // Oturum açan kullanıcı yoksa bilgi ver
+      }
+    });
+  };
+
 
 
 return (
