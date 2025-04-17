@@ -5,7 +5,6 @@ import toast from 'react-hot-toast';
 import { loginWithMail , signInWithGoogle} from "../../firebase"
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useAuth } from "../context/AuthContext";
-import { Link } from 'react-router-dom';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -175,12 +174,17 @@ const Login = () => {
           </button>
         </div>
   
-        <p className="mt-5 text-center text-sm text-gray-500">
-          Not a member?{" "}
-          <Link to="/signin" className="font-semibold text-indigo-600 hover:text-indigo-500">
-            Register Now
-          </Link>
-        </p>
+        <div className="flex flex-row justify-center items-center mt-5 text-sm text-gray-500">
+  Don't you have an account?
+  <button 
+    type="button" 
+    className="ml-1 font-semibold text-indigo-600 hover:text-indigo-500"
+    onClick={() => navigate("/signin")}
+  >
+    Register Now
+  </button>
+</div>
+
       </div>
     </div>
   );
