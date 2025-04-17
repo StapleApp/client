@@ -233,7 +233,7 @@ export const getFriendsList = async (uid) => {
     }
 };
 
-// ** ID ile Kullanıcıya Ulaşma
+// ** ID ile Kullanıcıya Ulaşma **
 export const getUser = async (uid) => {
     try {
         const userDocRef = doc(collection(db, "Users"), uid);
