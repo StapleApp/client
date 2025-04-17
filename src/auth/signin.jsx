@@ -189,12 +189,16 @@ const SignIn = () => {
               onChange={() => setAgreeTerms(!agreeTerms)}
               className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
             />
-            <label htmlFor="terms" className="ml-2 text-sm text-gray-900 flex items-center">
-              I agree to the{' '}
-              <a href="./terms" className="font-semibold text-indigo-600 hover:text-indigo-500 ml-1">
-                Terms & Conditions
-              </a>
-            </label>
+           <label htmlFor="terms" className="ml-2 text-sm text-gray-900 flex items-center">
+            I agree to the
+            <button 
+              type="button" 
+              className="ml-1 font-semibold text-indigo-600 hover:text-indigo-500"
+              onClick={() => navigate("/terms")}
+            >
+              Terms & Conditions
+            </button>
+          </label>
           </div>
           <div>
             <button
@@ -208,9 +212,13 @@ const SignIn = () => {
 
         <p className="mt-10 text-center text-sm/6 text-gray-500">
           Already have an account?{' '}
-          <a href="./login" className="font-semibold text-indigo-600 hover:text-indigo-500">
+          <button 
+            type="button" 
+            className="font-semibold text-indigo-600 hover:text-indigo-500"
+            onClick={() => navigate("/login")}
+          >
             Log In
-          </a>
+          </button>
         </p>
       </div>
     </div>

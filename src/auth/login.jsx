@@ -175,15 +175,15 @@ const Login = () => {
         </div>
   
         <div className="flex flex-row justify-center items-center mt-5 text-sm text-gray-500">
-  Don't you have an account?
-  <button 
-    type="button" 
-    className="ml-1 font-semibold text-indigo-600 hover:text-indigo-500"
-    onClick={() => navigate("/signin")}
-  >
-    Register Now
-  </button>
-</div>
+          Not a member?
+          <button 
+            type="button" 
+            className="ml-1 font-semibold text-indigo-600 hover:text-indigo-500"
+            onClick={() => navigate("/signin")}
+          >
+            Register Now
+          </button>
+        </div>
 
       </div>
     </div>
