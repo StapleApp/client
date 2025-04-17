@@ -18,6 +18,7 @@ import CreateProfile from "./auth/createProfile";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 
+import { Analytics } from "@vercel/analytics/react"
 
 function App() {
   return (
