@@ -5,12 +5,13 @@ import { useAuth } from "../context/AuthContext";
 import "../Dm.css";
 
 const socket = io("https://13.60.96.194", {
-  transports: ["websocket", "polling"], 
-  secure: true, 
-  reconnection: true, 
+  path: "/socket.io", 
+  transports: ["websocket", "polling"],
+  secure: true,
+  reconnection: true,
   reconnectionAttempts: 5,
-  reconnectionDelay: 1000, 
-  reconnectionDelayMax: 5000 
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000
 });
 
 const DirectMessaging = () => {
@@ -46,7 +47,11 @@ const DirectMessaging = () => {
     socket.on("connect", () => {
       setIsConnected(true);
       setConnectionError("");
-      setUsername(userData.nickName);
+      if (socket && userData && userData.nickName) {
+        setUsername(userData.nickName);
+      } else {
+        setUsername("Misafir_" + Math.floor(Math.random() * 1000));
+      }
       console.log("Socket.io bağlantısı kuruldu");
     });
 
@@ -118,7 +123,7 @@ const DirectMessaging = () => {
     
     const messageData = {
       message: msg,
-      username: userData.nickName,
+      username: userData.nickName || "Misafir",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       senderId: socket.id
     };
