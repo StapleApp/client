@@ -8,10 +8,10 @@ const Settings = () => {
     const navigate = useNavigate();
 
     const handleLogout = () => {
-    console.log("Logging out...");
-    localStorage.removeItem("user");
-    sessionStorage.removeItem("user");
-    navigate("/login");
+      console.log("Logging out...");
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
+      navigate("/login");
     };
 
     useEffect(() => {

@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,signInWithEmailAndPassword} from "firebase/auth";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, doc, setDoc,getDocs,where,query,collection,serverTimestamp,updateDoc } from "firebase/firestore"; 
+import { getFirestore, doc, setDoc,getDocs,getDoc,where,query,collection,serverTimestamp,updateDoc } from "firebase/firestore"; 
 import toast from 'react-hot-toast';
 
 const firebaseConfig = {
@@ -21,6 +21,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider_google = new GoogleAuthProvider();
 const db = getFirestore(app); 
+
 
 // **E-posta ile Kayıt Olma**
 export const register = async (name, surname, email, password,birthdate, navigate) => {
@@ -94,8 +95,8 @@ async function writeUserData(uid, name, surname,birthdate, email) {
             createdDate:serverTimestamp(),
             email: email,
             friendshipID: friendshipID,
-            friends: [],
-            servers: [],
+            friends: {},
+            servers: {},
 
         });
 
@@ -183,8 +184,72 @@ export const GetUserByFriendshipID = async (friendshipID) => {
     }
 };
 
+// ** Arkadaş Ekleme **
+export const AddFriend = async (uid,friendID,relation) => {
+    try {
+        const userRef = doc(db, "Users", uid);
 
+        // Yeni arkadaş verisi
+        const newFriendData = {
+            [`friends.${friendID}`]: {
+                relation: relation,
+                relationDate: serverTimestamp()
+            }
+        };
 
+        await updateDoc(userRef, newFriendData);
+        console.log("Friend added successfully");
+    } catch (error) {
+        console.error("Error adding/updating friend:", error);
+    }
+};
+
+// ** Arkadaş Listesine Ulaşma **
+export const getFriendsList = async (uid) => {
+    try {
+        const userRef = doc(db, "Users", uid);
+        const docSnap = await getDoc(userRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            const allFriends = data.friends || {};
+
+            // "Friend" olanları dizi olarak döndür
+            const filteredFriendsArray = Object.entries(allFriends)
+                .filter(([_, info]) => info.relation === "Friend")
+                .map(([uid, info]) => ({
+                    uid,
+                    ...info
+                }));
+
+            return filteredFriendsArray;
+        } else {
+            console.log("No such user document!");
+            return [];
+        }
+    } catch (error) {
+        console.error("Error getting friends list:", error);
+        return [];
+    }
+};
+
+// ** ID ile Kullanıcıya Ulaşma **
+export const getUser = async (uid) => {
+    try {
+        const userDocRef = doc(collection(db, "Users"), uid);
+        const userSnap = await getDoc(userDocRef);
+
+        if (userSnap.exists()) {
+            return userSnap.data(); // Belge varsa verisini döndür
+        } else {
+            console.warn("No user found with uid:", uid);
+            return null; // Belge yoksa null döndür
+        }
+    } catch (error) {
+        console.error("Error fetching user by uid:", error);
+        return null; // Hata durumunda null döndür
+    }
+};
 
 
 

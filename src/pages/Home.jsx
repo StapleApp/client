@@ -1,8 +1,17 @@
 import SocialBar from "../Components/SocialBar";
 import { motion } from "framer-motion";
-import React from "react";
+import { useNavigate } from "react-router-dom";
+import React, { useEffect } from "react";
 
 const Home = () => {
+      const navigate = useNavigate();
+      useEffect(() => {
+        const storedUser = localStorage.getItem("user") || sessionStorage.getItem("user");
+        if (!storedUser) {
+            navigate("/login");
+        }
+      }, [navigate]);
+
   return (
     <>
       <motion.div

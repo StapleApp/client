@@ -1,13 +1,17 @@
 import '../App.css';
 import { FaUserFriends } from 'react-icons/fa';
 import { AiOutlineGlobal } from "react-icons/ai";
-import { useState, useRef } from "react";
+import { useState, useRef ,useEffect} from "react";
 import ProfilePanel from './ProfilePanel'
+import { useAuth } from "../context/AuthContext";
+import { getFriendsList } from '../../firebase';
 import icon from "../assets/360.png";
+import { getUser } from '../../firebase';
 
 const SocialBar = () => {
     const [isFlagSetted, setIsFlagSetted] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
+    const { currentUser, userData } = useAuth();
     return (
         <>
             <div className="fixed top-0 right-0 bg-[var(--primary-bg)] h-screen w-48 shadow-xl">
@@ -18,7 +22,7 @@ const SocialBar = () => {
                 toggleExpand={() => setIsFlagSetted(true)} />
                 
                 {!isFlagSetted && (
-                    <FriendList isExpanded={isExpanded} setIsExpanded={setIsExpanded} />
+                    <FriendList isExpanded={isExpanded} setIsExpanded={setIsExpanded} userData={userData}/>
                 )}
 
                 {isFlagSetted && (
@@ -127,48 +131,72 @@ const RightBarImg = ({ src, toggleExpand }) => {
     )
 }
 
-const FriendList = ({isExpanded, setIsExpanded}) => {
-
+const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
+    const [friends, setFriends] = useState([]);
     const [position, setPosition] = useState({ top: 0, left: 0 });
-    const userRefs = useRef({}); // Her kullanıcı için ref saklamak için obje
+    const userRefs = useRef({});
     const [selectedUser, setSelectedUser] = useState(null);
 
-    const handleUserClick = (id, name) => {
-        if (userRefs.current[id]) {
-            const rect = userRefs.current[id].getBoundingClientRect();
+    useEffect(() => {
+        const fetchFriends = async () => {
+            if (userData) {
+                const friendList = await getFriendsList(userData.userID);
+
+
+                // UID listesi üzerinden isimleri çek
+                const fullFriendData = await Promise.all(
+                    friendList.map(async (friend) => {
+                        const userInfo = await getUser(friend.uid);
+                        return { uid: friend.uid, nickName: userInfo.nickName , friendshipID : userInfo.friendshipID};
+                    })
+                );
     
-            let top = rect.top;
-            let left = rect.right;
+                setFriends(fullFriendData);
+
+            }
+        };
     
-            setPosition({ top, left });
+        fetchFriends();
+    }, [userData]);
     
-            // Seçilen kullanıcıyı state'e kaydet
-            setSelectedUser({ id, name });
+
+    const handleUserClick = (uid, nickName, friendshipID) => {
+        if (userRefs.current[uid]) {
+            console.log(userRefs)
+            const rect = userRefs.current[uid].getBoundingClientRect();
+            setPosition({ top: rect.top, left: rect.right });
+    
+            // 👇 Artık friendshipID'yi profile panelde göstermek için gönderiyoruz
+            setSelectedUser({ id: friendshipID, nickName: nickName });
             setIsExpanded(true);
         }
     };
     
-    
+
     return (
         <div className="flex-1 overflow-y-auto w-40 mb-1 
             bg-[var(--secondary-bg)] text-[var(--primary-text)] 
             rounded-md text-xs font-bold max-h-[calc(100vh-74px)]
-            shadow-xl mx-auto mt-16"
-            >
+            shadow-xl mx-auto mt-16">
+            
             <div className="grid gap-2 p-1">
-                {Array(100).fill("Chiramii").map((user, UID) => (
-                    <div key={UID} ref={(element) => (userRefs.current[UID] = element)}
-                        onClick={() => handleUserClick(UID, user)}
-                        className="flex items-center w-full h-14 bg-[var(--primary-bg)] rounded-md p-2
-                        border-3 border-[var(--primary-border)] shadow-xl
-                        hover:border-3 hover:border-[var(--tertiary-border)]
-                        transition-all duration-300 ease-linear hover:scale-105 cursor-pointer">
-                        <span className="group cursor-pointer ml-1 mr-3 rounded-full">
-                            <RightBarImg src={icon} toggleExpand={() => setIsExpanded(true)} />
-                        </span>
-                        <span>{user + UID}</span>
-                    </div>
-                ))}
+            {friends.map((user) => (
+            <div
+                key={user.uid}
+                ref={(el) => (userRefs.current[user.uid] = el)}
+                onClick={() => handleUserClick(user.uid, user.nickName, user.friendshipID)}
+                className="flex items-center w-full h-14 bg-[var(--primary-bg)] rounded-md p-2
+                    border-3 border-[var(--primary-border)] shadow-xl
+                    hover:border-3 hover:border-[var(--tertiary-border)]
+                    transition-all duration-300 ease-linear hover:scale-105 cursor-pointer"
+            >
+                <span className="group cursor-pointer ml-1 mr-3 rounded-full">
+                    <RightBarImg src={icon} toggleExpand={() => setIsExpanded(true)} />
+                </span>
+                <span>{user.nickName}</span> {/* 👈 Burada artık isim gözüküyor */}
+            </div>
+        ))}
+
 
                 {selectedUser && (
                     <ProfilePanel 
@@ -176,14 +204,15 @@ const FriendList = ({isExpanded, setIsExpanded}) => {
                         setCheck={setIsExpanded}
                         posX={position.left} 
                         posY={position.top}
-                        userName={selectedUser.name} 
+                        userName={selectedUser.nickName} 
                         userID={selectedUser.id}
                     />
                 )}
-
             </div>
         </div>
-    )
-}
+    );
+};
+
+
 
 export default SocialBar;
