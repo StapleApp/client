@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import "../Dm.css";
 
-const socket = io("http://13.60.96.194:443", {
+const socket = io("http://13.60.96.194:3891", {
   path: "/socket.io", 
   transports: ["websocket", "polling"],
   secure: true,
