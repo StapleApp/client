@@ -4,12 +4,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import "../Dm.css";
 
-const socket = io("https://13.60.96.194", {
-  path: "/socket.io", 
+const socket = io(window.location.origin, {
+  path: "/socket.io",
   transports: ["websocket", "polling"],
   secure: true,
+  rejectUnauthorized: false, // SSL sertifika sorunlarını geçici olarak aşmak için
   reconnection: true,
-  reconnectionAttempts: 5,
+  reconnectionAttempts: 10,
   reconnectionDelay: 1000,
   reconnectionDelayMax: 5000
 });
