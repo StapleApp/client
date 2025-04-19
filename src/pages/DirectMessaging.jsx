@@ -4,17 +4,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import "../Dm.css";
 
-const socket = io(window.location.origin, {
-  path: "/socket.io",
-  transports: ["websocket", "polling"],
-  secure: true,
-  rejectUnauthorized: false, // SSL sertifika sorunlarını geçici olarak aşmak için
+const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+const host = window.location.hostname;
+const socket = io(`${host}`, {
+  transports: ["websocket", "polling"], 
+  secure: window.location.protocol === 'https:', 
   reconnection: true,
-  reconnectionAttempts: 10,
-  reconnectionDelay: 1000,
-  reconnectionDelayMax: 5000
+  
 });
-
 const DirectMessaging = () => {
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
