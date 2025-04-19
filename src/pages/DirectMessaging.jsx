@@ -81,7 +81,6 @@ const DirectMessaging = () => {
       setActiveUsers(count);
     });
 
-    // Component unmount olunca bağlantıları temizle
     return () => {
       socket.off("connect");
       socket.off("disconnect");
@@ -124,15 +123,14 @@ const DirectMessaging = () => {
       senderId: socket.id
     };
     
-    // Önce mesajı local state'e ekle (optimistic update)
+
     setMessages((prev) => [...prev, { ...messageData, position: "right" }]);
     
-    // Sonra socket üzerinden gönder
+
     socket.emit("sendMessage", messageData, (ack) => {
-      // İsteğe bağlı: Sunucudan onay kontrolü
+
       if (!ack || ack.error) {
         console.error("Mesaj gönderilemedi:", ack?.error || "Bilinmeyen hata");
-        // Kullanıcıya bildirim gösterilebilir
       }
     });
     
@@ -156,7 +154,7 @@ const DirectMessaging = () => {
     const file = e.target.files[0];
     if (!file) return;
     
-    // AWS'ye dosya yüklemesi eklenebilir, şimdilik local URL ile devam edelim
+
     const imageUrl = URL.createObjectURL(file);
     sendMessage(imageUrl);
     
@@ -178,7 +176,6 @@ const DirectMessaging = () => {
     if (show && showMediaMenu) setShowMediaMenu(false);
   };
 
-  // Animasyon değişkenleri (daha önce tanımlanmıştı)
   const mediaMenuVariants = {
     hidden: { opacity: 0, scale: 0.95, originY: 1, originX: 0 },
     visible: { 
