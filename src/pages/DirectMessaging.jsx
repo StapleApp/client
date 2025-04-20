@@ -4,16 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import "../Dm.css";
 
-const socket = io("http://13.60.96.194:443", {
-  path: "/socket.io", 
-  transports: ["websocket", "polling"],
-  secure: true,
-  reconnection: true,
-  reconnectionAttempts: 5,
-  reconnectionDelay: 1000,
-  reconnectionDelayMax: 5000
-});
-
 const DirectMessaging = () => {
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
@@ -23,11 +13,19 @@ const DirectMessaging = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState("");
   const [activeUsers, setActiveUsers] = useState(1); 
+  const [typing, setTyping] = useState({}); 
+  const [isTyping, setIsTyping] = useState(false); 
+  const [hasFocus, setHasFocus] = useState(true); 
+  const [hasNewMessage, setHasNewMessage] = useState(false); 
+  const [typingTimeout, setTypingTimeout] = useState(null); 
+  
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const fileInputRef = useRef(null);
+  const socketRef = useRef(null); 
   const [showProfileModal, setShowProfileModal] = useState(false);
   const { userData } = useAuth();
+  const originalTitle = useRef(document.title);
 
   const groupInfo = {
     name: "Free Eren",
@@ -44,27 +42,68 @@ const DirectMessaging = () => {
   ];
 
   useEffect(() => {
+    const handleVisibilityChange = () => {
+      const isPageVisible = document.visibilityState === "visible";
+      setHasFocus(isPageVisible);
+      
+      if (isPageVisible && hasNewMessage) {
+        document.title = originalTitle.current;
+        setHasNewMessage(false);
+      }
+    };
+    
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    originalTitle.current = document.title;
+    
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [hasNewMessage]);
+
+  useEffect(() => {
+    console.log("Socket bağlantısı kuruluyor...");
+    
+    socketRef.current = io("http://13.60.96.194:443", {
+      path: "/socket.io", 
+      transports: ["websocket", "polling"],
+      secure: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      autoConnect: false // Otomatik bağlantıyı kapatıyoruz, manuel bağlanacağız
+    });
+
+    const socket = socketRef.current;
+
     socket.on("connect", () => {
+      console.log("Socket.io bağlantısı kuruldu, ID:", socket.id);
       setIsConnected(true);
       setConnectionError("");
-      if (socket && userData && userData.nickName) {
+      
+      if (userData && userData.nickName) {
         setUsername(userData.nickName);
       } else {
         setUsername("Misafir_" + Math.floor(Math.random() * 1000));
       }
-      console.log("Socket.io bağlantısı kuruldu");
     });
 
     socket.on("disconnect", () => {
-      setIsConnected(false);
       console.log("Socket.io bağlantısı kesildi");
+      setIsConnected(false);
     });
     
-    // Hata yönetimi ekleme
     socket.on("connect_error", (error) => {
       console.error("Bağlantı hatası:", error);
       setIsConnected(false);
       setConnectionError("Sunucuya bağlanırken bir hata oluştu. Lütfen daha sonra tekrar deneyin.");
+      
+      setTimeout(() => {
+        if (socket && !socket.connected) {
+          console.log("Yeniden bağlanmayı deniyorum...");
+          socket.connect();
+        }
+      }, 3000);
     });
 
     socket.on("connect_timeout", () => {
@@ -79,6 +118,11 @@ const DirectMessaging = () => {
           ...data, 
           position: "left" 
         }]);
+        
+        if (!hasFocus) {
+          document.title = "🔔 Yeni Mesaj | " + originalTitle.current;
+          setHasNewMessage(true);
+        }
       }
     });
 
@@ -86,15 +130,41 @@ const DirectMessaging = () => {
       setActiveUsers(count);
     });
 
+    socket.on("userTyping", (data) => {
+      setTyping(prev => ({ 
+        ...prev, 
+        [data.userId]: {
+          username: data.username,
+          isTyping: data.isTyping
+        }
+      }));
+    });
+
+    socket.connect();
+    console.log("Socket bağlantısı başlatıldı");
+
     return () => {
-      socket.off("connect");
-      socket.off("disconnect");
-      socket.off("connect_error");
-      socket.off("connect_timeout");
-      socket.off("receiveMessage");
-      socket.off("userCount");
+      console.log("Component unmount, socket bağlantısı temizleniyor");
+      if (socket) {
+        socket.disconnect();
+        socket.off("connect");
+        socket.off("disconnect");
+        socket.off("connect_error");
+        socket.off("connect_timeout");
+        socket.off("receiveMessage");
+        socket.off("userCount");
+        socket.off("userTyping");
+      }
     };
-  }, []);
+  }, []); 
+
+
+  useEffect(() => {
+
+    const typingUsers = Object.values(typing).filter(user => user.isTyping);
+    setIsTyping(typingUsers.length > 0);
+  }, [typing]);
+
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -119,68 +189,131 @@ const DirectMessaging = () => {
   }, [showMediaMenu, showGifPicker]);
 
   const sendMessage = (msg) => {
-    if (!msg.trim() || !isConnected) return;
+    if (!msg.trim() || !isConnected || !socketRef.current) return;
     
     const messageData = {
       message: msg,
-      username: userData.nickName || "Misafir",
+      username: userData?.nickName || username || "Misafir",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      senderId: socket.id
+      senderId: socketRef.current.id
     };
     
-
     setMessages((prev) => [...prev, { ...messageData, position: "right" }]);
     
-
-    socket.emit("sendMessage", messageData, (ack) => {
-
+    socketRef.current.emit("sendMessage", messageData, (ack) => {
       if (!ack || ack.error) {
         console.error("Mesaj gönderilemedi:", ack?.error || "Bilinmeyen hata");
       }
     });
+    
+    sendTypingStatus(false);
     
     setMessage("");
     setShowGifPicker(false);
     setShowMediaMenu(false);
   };
 
+  const sendTypingStatus = (isTyping) => {
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+    }
+    
+    if (isConnected && socketRef.current) {
+      socketRef.current.emit("userTyping", {
+        isTyping: isTyping,
+        username: userData?.nickName || username || "Misafir",
+        userId: socketRef.current.id
+      });
+      
+      
+      if (isTyping) {
+        const timeout = setTimeout(() => {
+          if (socketRef.current) {
+            socketRef.current.emit("userTyping", {
+              isTyping: false,
+              username: userData?.nickName || username || "Misafir",
+              userId: socketRef.current.id
+            });
+          }
+        }, 2000);
+        
+        setTypingTimeout(timeout);
+      }
+    }
+  };
+
+  // Klavye olayları
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
       sendMessage(message);
     }
   };
 
+  // Input değişikliği
+  const handleInputChange = (e) => {
+    setMessage(e.target.value);
+    sendTypingStatus(e.target.value.length > 0);
+  };
+
+  // Resim mesajı mı kontrol et
   const isImageMessage = (msg) => {
     return msg.includes(".gif") || msg.includes(".jpg") || msg.includes(".png") ||
       msg.includes(".jpeg") || msg.includes(".webp") || msg.includes(".svg");
   };
 
+  // Resim yükleme işlemi
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     
-
     const imageUrl = URL.createObjectURL(file);
     sendMessage(imageUrl);
     
     e.target.value = null;
   };
 
+  // Dosya input'unu tetikle
   const triggerFileInput = () => {
     fileInputRef.current.click();
     setShowMediaMenu(false);
   };
 
+  // Medya menüsünü göster/gizle
   const toggleMediaMenu = () => {
     setShowMediaMenu(!showMediaMenu);
     if (showGifPicker) setShowGifPicker(false);
   };
 
+  // GIF seçiciyi göster/gizle
   const toggleGifPicker = (show) => {
     setShowGifPicker(show);
     if (show && showMediaMenu) setShowMediaMenu(false);
   };
 
+  // Yazıyor göstergesini render et
+  const renderTypingIndicator = () => {
+    if (!isTyping) return null;
+    
+    const typingUsers = Object.values(typing).filter(user => user.isTyping);
+    
+    if (typingUsers.length === 1) {
+      return (
+        <div className="text-xs text-light italic ml-4 mb-1">
+          {typingUsers[0].username} yazıyor...
+        </div>
+      );
+    } else if (typingUsers.length > 1) {
+      return (
+        <div className="text-xs text-light italic ml-4 mb-1">
+          {typingUsers.length} kişi yazıyor...
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
+  // Animasyon değişkenleri
   const mediaMenuVariants = {
     hidden: { opacity: 0, scale: 0.95, originY: 1, originX: 0 },
     visible: { 
@@ -347,13 +480,13 @@ const DirectMessaging = () => {
                   variants={messageVariants}
                 >
                   <div className="flex items-center mb-1">
-                    <span className="text-xs text-light">{msg.username || "Kullanıcı"}</span>
+                    <span className="text-xs font-medium text-light">{msg.username || "Kullanıcı"}</span>
                     {msg.timestamp && (
                       <span className="text-xs text-light ml-2">{msg.timestamp}</span>
                     )}
                   </div>
                   <motion.div
-                    className={`p-3 rounded-lg text-sm shadow-md ${
+                    className={`p-3 rounded-lg text-sm shadow-md font-medium ${
                       msg.position === "right" ? "bg-accent border border-accent text-black" : "bg-primary border border-secondary-light"
                     }`}
                     whileHover={{ scale: 1.02 }}
@@ -382,6 +515,8 @@ const DirectMessaging = () => {
                   </motion.div>
                 </motion.div>
               ))}
+              {/* Yazıyor göstergesi */}
+              {renderTypingIndicator()}
               <div ref={messagesEndRef} />
             </div>
 
@@ -400,16 +535,16 @@ const DirectMessaging = () => {
               <input
                 type="text"
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                onChange={handleInputChange}
                 onKeyDown={handleKeyPress}
                 placeholder={isConnected ? "Mesajınızı yazın..." : "Sunucuya bağlanılıyor..."}
-                className="flex-1 h-full p-3 bg-secondary-light text-white focus:outline-none border-l border-secondary-light rounded-xl"
+                className="flex-1 h-full p-3 bg-secondary-light text-white focus:outline-none border-l border-secondary-light rounded-xl font-medium"
                 disabled={!isConnected}
               />
               <motion.button
                 onClick={() => sendMessage(message)}
                 disabled={!message.trim() || !isConnected}
-                className={`px-5 ml-1 h-full transition min-w-[90px] ${
+                className={`px-5 ml-1 h-full transition min-w-[90px] font-medium ${
                   !message.trim() || !isConnected
                     ? "bg-secondary-light cursor-not-allowed"
                     : "bg-secondary hover:bg-primary"
@@ -434,7 +569,7 @@ const DirectMessaging = () => {
                   <div className="flex flex-col gap-1">
                     <motion.button
                       onClick={triggerFileInput}
-                      className="flex items-center gap-2 px-4 py-2 hover:bg-secondary rounded text-left"
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-secondary rounded text-left font-medium"
                       whileHover={{ scale: 1.05, x: 5 }}
                       whileTap={{ scale: 0.95 }}
                     >
@@ -445,7 +580,7 @@ const DirectMessaging = () => {
                         toggleGifPicker(true);
                         setShowMediaMenu(false);
                       }}
-                      className="flex items-center gap-2 px-4 py-2 hover:bg-secondary rounded text-left"
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-secondary rounded text-left font-medium"
                       whileHover={{ scale: 1.05, x: 5 }}
                       whileTap={{ scale: 0.95 }}
                     >
