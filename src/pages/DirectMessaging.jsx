@@ -160,7 +160,6 @@ const DirectMessaging = () => {
 
 
   useEffect(() => {
-
     const typingUsers = Object.values(typing).filter(user => user.isTyping);
     setIsTyping(typingUsers.length > 0);
   }, [typing]);
@@ -170,7 +169,7 @@ const DirectMessaging = () => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);
+  }, [messages, isTyping]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -290,27 +289,43 @@ const DirectMessaging = () => {
     if (show && showMediaMenu) setShowMediaMenu(false);
   };
 
-  // Yazıyor göstergesini render et
+  // Yazıyor göstergesini render et - daha görünür ve animasyonlu
   const renderTypingIndicator = () => {
     if (!isTyping) return null;
     
     const typingUsers = Object.values(typing).filter(user => user.isTyping);
     
-    if (typingUsers.length === 1) {
-      return (
-        <div className="text-xs text-light italic ml-4 mb-1">
-          {typingUsers[0].username} yazıyor...
-        </div>
-      );
-    } else if (typingUsers.length > 1) {
-      return (
-        <div className="text-xs text-light italic ml-4 mb-1">
-          {typingUsers.length} kişi yazıyor...
-        </div>
-      );
-    }
-    
-    return null;
+    return (
+      <motion.div 
+        className="flex items-center text-xs text-light italic ml-4 mb-2 bg-secondary-light p-2 rounded-lg border border-secondary-light bg-opacity-60"
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 5 }}
+        transition={{ duration: 0.3 }}
+      >
+        {typingUsers.length === 1 ? (
+          <div className="flex items-center">
+            <span className="mr-2 font-medium">{typingUsers[0].username}</span> 
+            <span>yazıyor</span>
+            <span className="typing-animation ml-1">
+              <span className="dot"></span>
+              <span className="dot"></span>
+              <span className="dot"></span>
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center">
+            <span className="mr-2 font-medium">{typingUsers.length} kişi</span> 
+            <span>yazıyor</span>
+            <span className="typing-animation ml-1">
+              <span className="dot"></span>
+              <span className="dot"></span>
+              <span className="dot"></span>
+            </span>
+          </div>
+        )}
+      </motion.div>
+    );
   };
 
   // Animasyon değişkenleri
@@ -515,8 +530,12 @@ const DirectMessaging = () => {
                   </motion.div>
                 </motion.div>
               ))}
-              {/* Yazıyor göstergesi */}
-              {renderTypingIndicator()}
+              
+              {/* Yazıyor göstergesi - AnimatePresence ile düzgün geçişler */}
+              <AnimatePresence>
+                {isTyping && renderTypingIndicator()}
+              </AnimatePresence>
+              
               <div ref={messagesEndRef} />
             </div>
 
