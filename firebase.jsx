@@ -34,17 +34,20 @@ export const register = async (name, surname, email, password,birthdate, navigat
         
         const checkEmailVerification = setInterval(async () => {
             await user.reload();
-            if (user.emailVerified) { 
+            if (user.emailVerified) {
                 clearInterval(checkEmailVerification);
                 toast.success("Email Confirmed");
 
                 await writeUserData(user.uid, name, surname, birthdate ,user.email,user.photoURL);
+                
                 navigate("/login");
             }
         }, 3000);
+        return user;
     } catch (error) {
         toast.error(error.message);
         console.error("Error:", error.message);
+        return null;
     }
 };
 
@@ -67,18 +70,20 @@ export const signInWithGoogle = async (navigate) => {
         if (!querySnapshot.empty) {
             console.log("User already exists, redirecting to home.");
             navigate("/home");
-            return;
+            return user; // 🔥 Burada user'ı dön
         }
 
         // Eğer kullanıcı yoksa, Firestore'a ekle ve "home" sayfasına geç
         await writeUserData(user.uid, userName, userSurname, "--", user.email);
-        navigate("/home");
 
+        return user; // 🔥 Yeni kullanıcıyı da dön
     } catch (error) {
         console.error("Google Auth Error:", error);
         toast.error("An error occurred while signing in with Google.");
+        throw error; // Hata dışa fırlatılmalı ki try-catch yakalayabilsin
     }
 };
+
 
 // **Kullanıcı bilgilerini Firestore'a yazma fonksiyonu**
 async function writeUserData(uid, name, surname,birthdate, email) {
@@ -111,8 +116,6 @@ export const loginWithMail = async (email, password, navigate) => {
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         toast.success("Login successful!");
-
-        navigate("/home");
         return true;
     } catch (error) {
         console.error("Login error:", error.message);

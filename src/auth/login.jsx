@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import toast from 'react-hot-toast';
 import { loginWithMail , signInWithGoogle} from "../../firebase"
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { useAuth } from "../context/AuthContext";
+import { getUser } from "../../firebase";
 
 const Login = () => {
   // E-posta, şifre ve diğer seçenekleri tutan state'ler
@@ -15,15 +15,15 @@ const Login = () => {
 
   const navigate = useNavigate(); // Yönlendirme için hook
   const auth = getAuth();         // Firebase auth nesnesi
-  const { currentUser, userData } = useAuth(); // Özel hook ile kullanıcı bilgisi çekiliyor
 
   // Kullanıcının oturum durumunu kontrol eder
   const handleAuthState = () => {
     onAuthStateChanged(auth, async (user) => {
+      const userInfo = await getUser(user.uid);
       if (user) {
         try {
           // Kullanıcının profilinde nickname yoksa profil oluşturma sayfasına yönlendir
-          userData.nickName === "" 
+          userInfo.nickName === "" 
             ? navigate('/create_profile') 
             : navigate('/home'); // Varsa ana sayfaya yönlendir
         } catch (error) {
@@ -45,10 +45,10 @@ const Login = () => {
 
       if (user) {
         // Kullanıcı bilgisi (e-posta + UID) localStorage veya sessionStorage'a kaydedilir
-        const userData = { email, token: user.uid };
+        const userJSONData = { email, token: user.uid };
         rememberMe
-          ? localStorage.setItem("user", JSON.stringify(userData))
-          : sessionStorage.setItem("user", JSON.stringify(userData));
+          ? localStorage.setItem("user", JSON.stringify(userJSONData))
+          : sessionStorage.setItem("user", JSON.stringify(userJSONData));
 
         handleAuthState(); // Giriş sonrası yönlendirme yapılır
       }
@@ -66,11 +66,14 @@ const Login = () => {
       // Google ile giriş yapılır
       const user = await signInWithGoogle(navigate);
       
-      // Giriş başarılıysa kullanıcı bilgisi localStorage'a kaydedilir
-      localStorage.setItem("user", JSON.stringify(user));
-      console.log(user);
+      if(user){
+        // Giriş başarılıysa kullanıcı bilgisi localStorage'a kaydedilir
+        localStorage.setItem("user", JSON.stringify(user));
+        console.log(user);
 
-      handleAuthState(); // Giriş sonrası yönlendirme
+        handleAuthState(); // Giriş sonrası yönlendirme
+      }
+
     } catch (error) {
       toast.error("Registration failed:", error.message);
       console.log(error);
@@ -85,7 +88,6 @@ const Login = () => {
   // Sayfa ilk yüklendiğinde daha önce giriş yapılmışsa doğrudan /home sayfasına yönlendir
   useEffect(() => {
     const storedUser = localStorage.getItem("user") || sessionStorage.getItem("user");
-
     if (storedUser) {
       navigate("/home");
     }
