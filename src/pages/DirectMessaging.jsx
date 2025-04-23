@@ -62,16 +62,16 @@ const DirectMessaging = () => {
 
   useEffect(() => {
     console.log("Socket bağlantısı kuruluyor...");
-    
-    socketRef.current = io("http://13.60.96.194:443", {
-      path: "/socket.io", 
+  
+    socketRef.current = io("https://web.stapleapp.com", {
+      path: "/socket.io",
       transports: ["websocket", "polling"],
       secure: true,
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      autoConnect: false // Otomatik bağlantıyı kapatıyoruz, manuel bağlanacağız
+      autoConnect: false
     });
 
     const socket = socketRef.current;
