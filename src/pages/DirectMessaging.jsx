@@ -63,7 +63,7 @@ const DirectMessaging = () => {
   useEffect(() => {
     console.log("Socket bağlantısı kuruluyor...");
 
-    socketRef.current = io("wss://https-alb-1608684852.eu-north-1.elb.amazonaws.com", {
+    socketRef.current = io("https://HTTPS-ALB-1608684852.eu-north-1.elb.amazonaws.com", {
       path: "/socket.io",
       transports: ["websocket", "polling"],
       secure: true,
