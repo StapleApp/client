@@ -51,7 +51,7 @@ function AnimatedSwitch() {
       <AnimatePresence mode="wait">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/home" element={<Home />} />
+          <Route path="/Home" element={<Home />} />
           <Route path="/Settings" element={<Settings />} />
           <Route path="/AddFriends" element={<AddFriends />} />
           <Route path="/SearchServer" element={<SearchServer />} />
