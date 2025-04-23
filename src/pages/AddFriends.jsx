@@ -81,14 +81,14 @@ const ArkadasEkle = () => {
             transition={{ duration: 0.4 }} // Animasyon süresi 0.6 saniye
             className="relative w-110 h-110 mx-auto bg-[var(--primary-bg)] rounded-lg pt-5"
           >
-            <div className="relative w-110 h-110 mx-auto bg-[var(--primary-bg)] rounded-lg pt-5">
+            <div className="relative w-110 h-100 mx-auto bg-[var(--primary-bg)] rounded-lg pt-5">
               {/* Profil Fotoğrafı ve Kullanıcı Bilgileri */}
               <div
                 className="flex items-center justify-start relative w-100 h-30 bg-[var(--secondary-bg)] mx-auto pl-10 rounded-lg bg-cover bg-center"
                 style={{ backgroundImage: `url(${profileBackground2_small})` }}
               >
                 {/* Profil Fotoğrafı Dönen Kart */}
-                <div className="relative w-22 h-22 group">
+                <div className="relative w-22 h-22 group mt-4">
                   <div className="w-full h-full relative transition-transform duration-700 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)]">
                     {/* Ön Yüz (Profil Fotoğrafı) */}
                     <div className="absolute w-full h-full backface-hidden">
@@ -119,7 +119,18 @@ const ArkadasEkle = () => {
                   </p>
                   <span className="text-green-500 text-sm">● Çevrimiçi</span>
                 </div>
+
+                {/* Arkadaş Ekle Butonu  */}
+                <div className="absolute bottom-2 right-2">
+                  <button
+                    className="p-2 bg-[var(--primary-bg)] text-white rounded-sm z-10 shadow-[0_0_5px_var(--tertiary-bg)] hover:bg-[var(--tertiary-bg)] transition-all duration-700"
+                    onClick={() => handleAddFriend(userData, friendData)}
+                  >
+                    <IoMdPersonAdd size={24} />
+                  </button>
+                </div>
               </div>
+
               {/* Biyografi Alanı */}
               <div className="p-4">
                 <h3 className="text-lg font-semibold">Biyografi</h3>
