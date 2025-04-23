@@ -63,8 +63,7 @@ const DirectMessaging = () => {
   useEffect(() => {
     console.log("Socket bağlantısı kuruluyor...");
 
-    // web.stapleapp.com domaini üzerinden erişiyorsanız
-    socketRef.current = io("https://web.stapleapp.com", {
+    socketRef.current = io("wss://https-alb-1608684852.eu-north-1.elb.amazonaws.com", {
       path: "/socket.io",
       transports: ["websocket", "polling"],
       secure: true,
@@ -72,7 +71,8 @@ const DirectMessaging = () => {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      autoConnect: false,
+      timeout: 20000, 
+      autoConnect: true,
       withCredentials: true
     });
 
