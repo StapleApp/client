@@ -63,7 +63,8 @@ const DirectMessaging = () => {
   useEffect(() => {
     console.log("Socket bağlantısı kuruluyor...");
 
-    socketRef.current = io("https://HTTPS-ALB-1608684852.eu-north-1.elb.amazonaws.com", {
+    // web.stapleapp.com domaini üzerinden erişiyorsanız
+    socketRef.current = io("https://web.stapleapp.com", {
       path: "/socket.io",
       transports: ["websocket", "polling"],
       secure: true,
@@ -72,7 +73,7 @@ const DirectMessaging = () => {
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       autoConnect: false,
-      withCredentials: true // backend CORS'da credentials true ise bu da lazım olabilir
+      withCredentials: true
     });
 
     const socket = socketRef.current;
