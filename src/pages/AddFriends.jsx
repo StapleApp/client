@@ -3,7 +3,7 @@ import pfp from "../assets/360.png";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { IoIosSearch, IoMdPersonAdd } from "react-icons/io"; 
+import { IoIosSearch, IoMdPersonAdd } from "react-icons/io";
 import profileBackground2_small from "../assets/profileBackground2_small.png";
 import { useAuth } from "../context/AuthContext";
 import { GetUserByFriendshipID } from "../../firebase";
@@ -12,13 +12,11 @@ import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { div } from "framer-motion/client";
 import { AddFriend } from "../../firebase";
 
-
 const ArkadasEkle = () => {
   const { currentUser, userData } = useAuth();
   const [searchId, setSearchId] = useState("");
   const [showProfile, setShowProfile] = useState(false);
   const [friendData, setFriendData] = useState(null);
-
 
   const handleSearch = () => {
     if (searchId) {
@@ -61,16 +59,13 @@ const ArkadasEkle = () => {
             onKeyDown={(e) => e.key === "Enter" && handleSearch()} // Enter tuşu ile arama yap
             className="w-90 p-2 rounded-lg border-2 border-[var(--secondary-border)] focus:outline-none focus:border-[var(--tertiary-border)] bg-[var(--primary-bg)]"
           />
-          <button
-            onClick={handleSearch}
-            className="icon ml-2 p-2"
-          >
+          <button onClick={handleSearch} className="icon ml-2 p-2">
             <IoIosSearch size={20} /> {/* Arama ikonu */}
           </button>
         </div>
 
         {/* Animasyon: İlk başta profil gözükmezken gösterilecek */}
-        { !showProfile && !friendData && (
+        {!showProfile && !friendData && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
             {addFriendAnim()}
             <span className="block text-lg font-semibold text-[var(--quaternary-text)]">
@@ -86,14 +81,14 @@ const ArkadasEkle = () => {
             transition={{ duration: 0.4 }} // Animasyon süresi 0.6 saniye
             className="relative w-110 h-110 mx-auto bg-[var(--primary-bg)] rounded-lg pt-5"
           >
-            <div className="relative w-110 h-110 mx-auto bg-[var(--primary-bg)] rounded-lg pt-5">
+            <div className="relative w-110 h-100 mx-auto bg-[var(--primary-bg)] rounded-lg pt-5">
               {/* Profil Fotoğrafı ve Kullanıcı Bilgileri */}
               <div
                 className="flex items-center justify-start relative w-100 h-30 bg-[var(--secondary-bg)] mx-auto pl-10 rounded-lg bg-cover bg-center"
                 style={{ backgroundImage: `url(${profileBackground2_small})` }}
               >
                 {/* Profil Fotoğrafı Dönen Kart */}
-                <div className="relative w-22 h-22 group">
+                <div className="relative w-22 h-22 group mt-4">
                   <div className="w-full h-full relative transition-transform duration-700 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)]">
                     {/* Ön Yüz (Profil Fotoğrafı) */}
                     <div className="absolute w-full h-full backface-hidden">
@@ -107,7 +102,7 @@ const ArkadasEkle = () => {
                     <div className="absolute w-full h-full flex items-center justify-center bg-[var(--secondary-bg)] rounded-full border-4 border-[var(--tertiary-border)] shadow-lg [transform:rotateY(180deg)] backface-hidden">
                       <button
                         className="text-white text-xl"
-                        onClick={() => handleAddFriend(userData,friendData)}
+                        onClick={() => handleAddFriend(userData, friendData)}
                       >
                         <IoMdPersonAdd />
                       </button>
@@ -124,7 +119,18 @@ const ArkadasEkle = () => {
                   </p>
                   <span className="text-green-500 text-sm">● Çevrimiçi</span>
                 </div>
+
+                {/* Arkadaş Ekle Butonu  */}
+                <div className="absolute bottom-2 right-2">
+                  <button
+                    className="p-2 bg-[var(--primary-bg)] text-white rounded-sm z-10 shadow-[0_0_5px_var(--tertiary-bg)] hover:bg-[var(--tertiary-bg)] transition-all duration-700"
+                    onClick={() => handleAddFriend(userData, friendData)}
+                  >
+                    <IoMdPersonAdd size={24} />
+                  </button>
+                </div>
               </div>
+
               {/* Biyografi Alanı */}
               <div className="p-4">
                 <h3 className="text-lg font-semibold">Biyografi</h3>
@@ -184,20 +190,20 @@ const ArkadasEkle = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <p className="text-gray-500 text-xl font-semibold">Kullanıcı bulunamadı</p>
+            <p className="text-gray-500 text-xl font-semibold">
+              Kullanıcı bulunamadı
+            </p>
           </motion.div>
         )}
-
       </motion.div>
     </>
   );
 };
 
-const handleAddFriend = (userData,friendData) => {
-  
-  AddFriend(userData.userID,friendData.userID,"Friend")
-  AddFriend(friendData.userID,userData.userID,"Friend")
-    
+const handleAddFriend = (userData, friendData) => {
+  AddFriend(userData.userID, friendData.userID, "Friend");
+  AddFriend(friendData.userID, userData.userID, "Friend");
+
   // Eğer mesaj zaten varsa, tekrar ekleme
   if (document.querySelector(".friend-request-message")) return;
 
