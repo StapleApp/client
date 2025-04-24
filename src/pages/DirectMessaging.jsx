@@ -63,7 +63,7 @@ const DirectMessaging = () => {
   useEffect(() => {
     console.log("Socket bağlantısı kuruluyor...");
 
-    socketRef.current = io("https://HTTPS-ALB-1608684852.eu-north-1.elb.amazonaws.com", {
+    socketRef.current = io("https://https-alb-1341665491.eu-north-1.elb.amazonaws.com", {
       path: "/socket.io",
       transports: ["websocket", "polling"],
       secure: true,
@@ -71,10 +71,13 @@ const DirectMessaging = () => {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      timeout: 20000, 
+      timeout: 20000,
       autoConnect: true,
       withCredentials: true
     });
+
+    // ssh -i C:\ssh_keys\StapleServerKey.pem ubuntu@13.60.96.194
+    // scp -i C:\ssh_keys\StapleServerKey.pem .\server.cjs ubuntu@13.60.96.194:
 
     const socket = socketRef.current;
 
