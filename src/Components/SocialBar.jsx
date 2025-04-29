@@ -123,6 +123,7 @@ const RightBarImg = ({ src, toggleExpand }) => {
                         posY={position.top}
                         userName={selectedUser.name} 
                         userID={selectedUser.id}
+                        self={false}
                     />
                 )}
 
