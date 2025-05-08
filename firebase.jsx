@@ -111,6 +111,26 @@ async function writeUserData(uid, name, surname,birthdate, email) {
     }
 }
 
+async function writeServerData(serverID, serverName, ownerID, description, tags = []) {
+    try {
+        await setDoc(doc(db, "Servers", serverID), {
+            ServerId: serverID,
+            ServerName: serverName,
+            ServerOwnerID: ownerID,
+            ServerPhotoURL: "",
+            ServerBannerURL: "",
+            ServerDescription: description,
+            ServerTags: tags,
+            ServerType: "Public",
+            CreatedDate: serverTimestamp(),
+        });
+
+        console.log("Server data added to Firestore");
+    } catch (error) {
+        console.error("Database write failed:", error);
+    }
+}
+
 // ** Login **
 export const loginWithMail = async (email, password, navigate) => {
     try {
