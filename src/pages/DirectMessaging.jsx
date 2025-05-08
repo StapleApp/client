@@ -18,8 +18,6 @@ const DirectMessaging = () => {
   const [hasFocus, setHasFocus] = useState(true); 
   const [hasNewMessage, setHasNewMessage] = useState(false); 
   const [typingTimeout, setTypingTimeout] = useState(null); 
-  const [gifs, setGifs] = useState([]);
-  const [gifSearchTerm, setGifSearchTerm] = useState("");
   
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -28,8 +26,6 @@ const DirectMessaging = () => {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const { userData } = useAuth();
   const originalTitle = useRef(document.title);
-
-  const GIPHY_API_KEY = import.meta.env.VITE_GIPHY_API_KEY;
 
   const groupInfo = {
     name: "Free Eren",
@@ -195,32 +191,6 @@ const DirectMessaging = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showMediaMenu, showGifPicker]);
-
-  useEffect(() => {
-    if (showGifPicker) {  // sadece picker açıldığında GIF çekelim
-      fetch(`https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=20&rating=pg`)
-        .then(res => res.json())
-        .then(data => {
-          const gifUrls = data.data.map(gif => gif.images.fixed_height.url);
-          setGifs(gifUrls);
-        })
-        .catch(err => console.error('Giphy yüklenirken hata:', err));
-    }
-  }, [showGifPicker]);
-
-  const searchGifs = async (query) => {
-    if (query.trim() === "") return;
-  
-    try {
-      const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(query)}&limit=20&rating=pg`);
-      const data = await res.json();
-      const gifUrls = data.data.map(gif => gif.images.fixed_height.url);
-      setGifs(gifUrls);
-    } catch (error) {
-      console.error('Giphy arama sırasında hata:', error);
-    }
-  };
-  
 
   const sendMessage = (msg) => {
     if (!msg.trim() || !isConnected || !socketRef.current) return;
@@ -665,29 +635,6 @@ const DirectMessaging = () => {
                   exit="exit"
                 >
                   <div className="flex justify-between items-center mb-2 border-b border-secondary-light pb-1">
-                    <div className="mb-3">
-                      <input
-                        type="text"
-                        value={gifSearchTerm}
-                        onChange={(e) => {
-                          setGifSearchTerm(e.target.value);
-                          if (e.target.value.trim() === "") {
-                            // boş ise trending gif'leri tekrar çek
-                            fetch(`https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=20&rating=pg`)
-                              .then(res => res.json())
-                              .then(data => {
-                                const gifUrls = data.data.map(gif => gif.images.fixed_height.url);
-                                setGifs(gifUrls);
-                              })
-                              .catch(err => console.error('Giphy trending yüklenirken hata:', err));
-                          } else {
-                            searchGifs(e.target.value);
-                          }
-                        }}
-                        placeholder="GIF ara..."
-                        className="w-full p-2 text-sm rounded-md bg-secondary-light border border-secondary focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
                     <span className="text-sm font-medium">GIF Seç</span>
                     <motion.button
                       className="text-light hover:text-white"
@@ -698,27 +645,22 @@ const DirectMessaging = () => {
                       ✕
                     </motion.button>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
-                    {gifs.map((gif, index) => (
-                      <motion.div
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-64 overflow-y-auto">
+                    {exampleGifs.map((gif, index) => (
+                      <motion.img
                         key={index}
-                        className="w-full aspect-[1/1] rounded-lg overflow-hidden border border-secondary-light cursor-pointer"
+                        src={gif}
+                        alt="GIF"
+                        className="h-40 w-full object-cover rounded-lg cursor-pointer border border-secondary-light"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => {
                           sendMessage(gif);
                           toggleGifPicker(false);
                         }}
-                      >
-                        <img
-                          src={gif}
-                          alt="GIF"
-                          className="w-full h-full object-cover"
-                        />
-                      </motion.div>
+                      />
                     ))}
                   </div>
-
                 </motion.div>
               )}
             </AnimatePresence>

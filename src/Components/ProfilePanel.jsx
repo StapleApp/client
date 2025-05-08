@@ -8,7 +8,7 @@ import profileBackground2_small from "../assets/profileBackground2_small.png";
 import icon from "../assets/360.png";
 import { useAuth } from "../context/AuthContext";
 
-const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDate, self}) => {
+const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDate}) => {
   const formattedUID = `${userID}`.padStart(6, '0');
   const panelRef = useRef(null); // Create a reference to the panel
   const { currentUser, userData } = useAuth();
@@ -97,9 +97,9 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDat
 
           {/* Alt Arkaplan */}
           <div className="flex my-auto">
-            <ProfileButton self={self} />
-            {self ? null : <AddFriendButton />}
-            <DMButton self={self} />
+            <ProfileButton />
+            <AddFriendButton />
+            <DMButton />
             <SideBarIconClose toggleExpand={() => setCheck(false)} />
           </div>
         </div>
@@ -126,12 +126,12 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDat
   );
 };
 
-const ProfileButton = ({ self }) => {
+const ProfileButton = () => {
   const navigate = useNavigate();
   return (
     <>
       <div
-        className={`flex icon group cursor-pointer hover:scale-105 h-7 ${self ? "w-28" : "w-20"} mt-1 mb-0 mx-auto}`}
+        className="flex icon group cursor-pointer hover:scale-105 h-7 w-20 mt-1 mb-0 mx-auto"
         onClick={() => navigate("/Profile")}
       >
         <span
@@ -165,12 +165,12 @@ const AddFriendButton = () => {
   );
 };
 
-const DMButton = ({ self }) => {
+const DMButton = () => {
   const navigate = useNavigate();
   return (
     <>
       <div
-        className={`flex icon group cursor-pointer hover:scale-105 h-7 ${self ? "w-28" : "w-20"} mt-1 mb-0 mx-auto`}
+        className="flex icon group cursor-pointer hover:scale-105 h-7 w-20 mt-1 mb-0 mx-auto"
         onClick={() => navigate("/DirectMessaging")}
       >
         <span

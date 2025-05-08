@@ -27,7 +27,6 @@ const Navigator = () => {
         userName={userData?.nickName}
         userID={userData?.friendshipID}
         memberDate={userData?.createdDate}
-        self={true}
       />
       <div
         className={`fixed flex flex-col top-0 left-0 h-screen gap-0 z-1
