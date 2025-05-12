@@ -1,55 +1,58 @@
+// src/contexts/AuthContext.js
+
 import { createContext, useContext, useState, useEffect } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 
-// AuthContext: Uygulamanın herhangi bir yerinden erişilebilecek kullanıcı verisi sağlayan context
+// 1. Context oluştur
 const AuthContext = createContext();
 
-// AuthProvider bileşeni, tüm alt bileşenlere kullanıcı verisini sağlar
+// 2. Provider bileşeni
 export const AuthProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(null);   // Firebase auth ile giriş yapan kullanıcı
-  const [userData, setUserData] = useState(null);         // Firestore'dan çekilen kullanıcıya ait diğer bilgiler
+  const [currentUser, setCurrentUser] = useState(null);     // Firebase Auth kullanıcısı
+  const [userData, setUserData] = useState(null);           // Firestore'daki ek kullanıcı verisi
+  const [loading, setLoading] = useState(true);             // Veriler yükleniyor mu?
 
-  const auth = getAuth();          // Firebase authentication örneği
-  const db = getFirestore();       // Firestore veritabanı örneği
+  const auth = getAuth();
+  const db = getFirestore();
 
   useEffect(() => {
-    // Firebase üzerinden kullanıcı oturum durumunu izler
+    // Firebase Auth dinleyicisi
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        // Giriş yapan kullanıcı varsa state'e ata
-        setCurrentUser(user);
+      setLoading(true);
 
+      if (user) {
+        setCurrentUser(user);
         try {
-          // Firestore'dan kullanıcı bilgilerini al
-          const userDoc = await getDoc(doc(db, "Users", user.uid));
-          if (userDoc.exists()) {
-            setUserData(userDoc.data()); // Kullanıcı verisi mevcutsa state'e ata
+          const userRef = doc(db, "Users", user.uid);
+          const userSnap = await getDoc(userRef);
+
+          if (userSnap.exists()) {
+            setUserData(userSnap.data());
           } else {
-            setUserData(null); // Kullanıcı dokümanı yoksa null olarak ayarla
+            setUserData(null);
           }
         } catch (error) {
-          console.error("Kullanıcı verisi alınamadı:", error);
-          setUserData(null); // Hata oluşursa kullanıcı verisini sıfırla
+          console.error("Firestore kullanıcı verisi alınamadı:", error);
+          setUserData(null);
         }
       } else {
-        // Kullanıcı çıkış yaptıysa verileri sıfırla
         setCurrentUser(null);
         setUserData(null);
       }
+
+      setLoading(false);
     });
 
-    // Bileşen unmount olduğunda dinleyiciyi iptal et
-    return () => unsubscribe();
+    return () => unsubscribe(); // Temizlik
   }, [auth, db]);
 
   return (
-    // Sağlanan context ile tüm çocuk bileşenler currentUser ve userData'ya erişebilir
-    <AuthContext.Provider value={{ currentUser, userData }}>
-      {children}
+    <AuthContext.Provider value={{ currentUser, userData, loading }}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
 
-// useAuth: Diğer bileşenlerin kolayca AuthContext'e erişmesini sağlayan custom hook
+// 3. Custom hook: Context'e erişimi kolaylaştırır
 export const useAuth = () => useContext(AuthContext);
