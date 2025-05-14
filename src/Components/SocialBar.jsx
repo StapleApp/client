@@ -94,12 +94,12 @@ const RightBarImg = ({ src, toggleExpand }) => {
     };
     
     
-    return (
+  return (
         <div className="flex-1 overflow-y-auto w-40 mb-1 
             bg-[var(--secondary-bg)] text-[var(--primary-text)] 
             rounded-md text-xs font-bold max-h-[calc(100vh-74px)]
             shadow-xl mx-auto mt-16"
-            >
+        >
             <div className="grid gap-2 p-1">
                 {Array(5).fill("Sunucu").map((user, UID) => (
                     <div key={UID} ref={(element) => (userRefs.current[UID] = element)}
@@ -125,8 +125,9 @@ const RightBarImg = ({ src, toggleExpand }) => {
                         userID={selectedUser.id}
                     />
                 )}
-
             </div>
+
+
         </div>
     )
 }
