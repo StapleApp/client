@@ -7,14 +7,15 @@ import SearchServer from "./pages/SearchServer";
 import Profile from "./pages/Profile";
 import DirectMessaging from "./pages/DirectMessaging";
 import Notifications from "./pages/Notifications";
+import CreateServer from "./pages/CreateServer";
 import { AnimatePresence } from "framer-motion";
+
 
 import SignIn from "./auth/signin";
 import Login from "./auth/login"; 
 import EmailVerification from "./auth/emailVerification";
 import Terms from "./auth/terms";
 import CreateProfile from "./auth/createProfile";
-
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -58,12 +59,17 @@ function AnimatedSwitch() {
           <Route path="/Profile" element={<Profile />} />
           <Route path="/DirectMessaging" element={<DirectMessaging />} />
           <Route path="/Notifications" element={<Notifications />} />
+          <Route path="/create-server" element={<CreateServer />} />
+          
+          {/* Auth Routes */}
 
           <Route path="/login" element={<Login />} />
           <Route path="/signin" element={<SignIn />} />      
           <Route path="/forgetPassword" element={<EmailVerification />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/create_profile" element={<CreateProfile />} />
+          
+          
         </Routes>
       </AnimatePresence>
     </>
