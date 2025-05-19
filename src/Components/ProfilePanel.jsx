@@ -99,7 +99,7 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDat
           <div className="flex my-auto">
             <ProfileButton />
             <AddFriendButton />
-            <DMButton />
+            <DMButton userID={userID} />
             <SideBarIconClose toggleExpand={() => setCheck(false)} />
           </div>
         </div>
@@ -165,22 +165,18 @@ const AddFriendButton = () => {
   );
 };
 
-const DMButton = () => {
+const DMButton = ({ userID }) => {
   const navigate = useNavigate();
   return (
-    <>
-      <div
-        className="flex icon group cursor-pointer hover:scale-105 h-7 w-20 mt-1 mb-0 mx-auto"
-        onClick={() => navigate("/DirectMessaging")}
-      >
-        <span
-          className="bg-[var(--primary-bg)] text-[var(--primary-text)] text-sm font-bold mr-1"
-        >
-          DM
-        </span>
-        <FaTelegramPlane size="15" />
-      </div>
-    </>
+    <div
+      className="flex icon group cursor-pointer hover:scale-105 h-7 w-20 mt-1 mb-0 mx-auto"
+      onClick={() => navigate(`/DirectMessaging/${userID}`)}
+    >
+      <span className="bg-[var(--primary-bg)] text-[var(--primary-text)] text-sm font-bold mr-1">
+        DM
+      </span>
+      <FaTelegramPlane size="15" />
+    </div>
   );
 };
 
