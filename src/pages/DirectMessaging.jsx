@@ -24,6 +24,9 @@ const DirectMessaging = () => {
   const [gifs, setGifs] = useState([]);
   const [gifSearchTerm, setGifSearchTerm] = useState("");
   const [roomId, setRoomId] = useState(null);
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   
   const messagesEndRef = useRef(null);
@@ -36,6 +39,11 @@ const DirectMessaging = () => {
   const { userData } = useAuth();
   const originalTitle = useRef(document.title);
   const { receiverId } = useParams();
+<<<<<<< Updated upstream
+=======
+
+  const GIPHY_API_KEY = import.meta.env.VITE_GIPHY_API_KEY;
+>>>>>>> Stashed changes
 
   const groupInfo = {
     name: "Free Eren",
@@ -271,6 +279,9 @@ const DirectMessaging = () => {
     }
   };
   
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   const sendMessage = (msg) => {
     if (!msg.trim() || !isConnected || !socketRef.current || !roomIdRef.current) return;
