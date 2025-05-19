@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import io from "socket.io-client";
 import { motion, AnimatePresence } from "framer-motion";
+import { useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "../Dm.css";
 
@@ -18,14 +19,23 @@ const DirectMessaging = () => {
   const [hasFocus, setHasFocus] = useState(true); 
   const [hasNewMessage, setHasNewMessage] = useState(false); 
   const [typingTimeout, setTypingTimeout] = useState(null); 
+<<<<<<< Updated upstream
+=======
+  const [gifs, setGifs] = useState([]);
+  const [gifSearchTerm, setGifSearchTerm] = useState("");
+  const [roomId, setRoomId] = useState(null);
+>>>>>>> Stashed changes
   
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const fileInputRef = useRef(null);
   const socketRef = useRef(null); 
+  const roomIdRef = useRef(null);
+  const myUserIdRef = useRef(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const { userData } = useAuth();
   const originalTitle = useRef(document.title);
+  const { receiverId } = useParams();
 
   const groupInfo = {
     name: "Free Eren",
@@ -40,6 +50,26 @@ const DirectMessaging = () => {
     "https://media.giphy.com/media/3o7bu3XilJ5BOiSGic/giphy.gif",
     "https://media.giphy.com/media/l46Cy1rHbQ92uuLXa/giphy.gif"
   ];
+
+  useEffect(() => {
+    if (!receiverId || !userData || !socketRef.current) return;
+  
+    const myUserId = userData.friendshipID;
+    console.log(myUserId);
+    const orderedRoomId = [myUserId, receiverId].sort().join("_");
+  
+    roomIdRef.current = orderedRoomId;
+    myUserIdRef.current = myUserId;
+  
+    socketRef.current.emit("joinRoom", { roomId: orderedRoomId, userId: myUserId });
+    console.log(orderedRoomId)
+    console.log(roomIdRef.current);
+  
+    return () => {
+      socketRef.current.emit("leaveRoom", { roomId: orderedRoomId });
+    };
+  }, [receiverId, userData]);
+  
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -76,8 +106,8 @@ const DirectMessaging = () => {
       withCredentials: true
     });
 
-    // ssh -i C:\ssh_keys\StapleServerKey.pem ubuntu@13.60.96.194
-    // scp -i C:\ssh_keys\StapleServerKey.pem .\server.cjs ubuntu@13.60.96.194:
+    // ssh -i C:\ssh_keys\StapleServerKey.pem ubuntu@16.171.44.1
+    // scp -i C:\ssh_keys\StapleServerKey.pem .\server.cjs ubuntu@16.171.44.1:
 
     const socket = socketRef.current;
 
@@ -118,7 +148,29 @@ const DirectMessaging = () => {
     });
 
     socket.on("receiveMessage", (data) => {
-      if (data.senderId !== socket.id) {
+      console.log("Mesaj alındı:", data);
+      console.log("Benim ID:", myUserIdRef.current);
+      console.log("Gönderen ID:", data.senderId);
+
+      // Gönderen kendisiyse, mesajı sağda göster
+      // Değilse, mesajı solda göster
+      if (data.senderId === myUserIdRef.current) {
+        // Bu mesaj kendimden geldi, ancak başka bir tarayıcı/cihazdan gönderilmiş olabilir
+        // Eğer bu mesajı zaten gösteriyorsak, tekrar göstermeyelim
+        const isDuplicate = messages.some(msg => 
+          msg.message === data.message && 
+          msg.timestamp === data.timestamp &&
+          msg.senderId === data.senderId
+        );
+        
+        if (!isDuplicate) {
+          setMessages((prev) => [...prev, { 
+            ...data, 
+            position: "right" 
+          }]);
+        }
+      } else {
+        // Bu mesaj başka bir kullanıcıdan geldi
         setMessages((prev) => [...prev, { 
           ...data, 
           position: "left" 
@@ -192,26 +244,60 @@ const DirectMessaging = () => {
     };
   }, [showMediaMenu, showGifPicker]);
 
+<<<<<<< Updated upstream
+=======
+  useEffect(() => {
+    if (showGifPicker) {  // sadece picker açıldığında GIF çekelim
+      fetch(`https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=20&rating=pg`)
+        .then(res => res.json())
+        .then(data => {
+          const gifUrls = data.data.map(gif => gif.images.fixed_height.url);
+          setGifs(gifUrls);
+        })
+        .catch(err => console.error('Giphy yüklenirken hata:', err));
+    }
+  }, [showGifPicker]);
+
+  const searchGifs = async (query) => {
+    if (query.trim() === "") return;
+  
+    try {
+      const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(query)}&limit=20&rating=pg`);
+      const data = await res.json();
+      const gifUrls = data.data.map(gif => gif.images.fixed_height.url);
+      setGifs(gifUrls);
+    } catch (error) {
+      console.error('Giphy arama sırasında hata:', error);
+    }
+  };
+  
+>>>>>>> Stashed changes
   const sendMessage = (msg) => {
-    if (!msg.trim() || !isConnected || !socketRef.current) return;
-    
+    if (!msg.trim() || !isConnected || !socketRef.current || !roomIdRef.current) return;
+
     const messageData = {
       message: msg,
-      username: userData?.nickName || username || "Misafir",
+      username: userData.nickName || "Misafir",
+      senderId: myUserIdRef.current,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      senderId: socketRef.current.id
+      roomId: roomIdRef.current
     };
-    
-    setMessages((prev) => [...prev, { ...messageData, position: "right" }]);
-    
-    socketRef.current.emit("sendMessage", messageData, (ack) => {
-      if (!ack || ack.error) {
+
+    // Mesajı hemen göstermeyi devre dışı bırakıyoruz, server'dan dönen yanıta göre göstereceğiz
+    // setMessages((prev) => [...prev, { ...messageData, position: "right" }]);
+
+    socketRef.current.emit("sendPrivateMessage", messageData, (ack) => {
+      if (ack && ack.success) {
+        // Mesaj başarıyla gönderildi, UI'da göster
+        setMessages((prev) => [...prev, { ...messageData, position: "right" }]);
+      } else {
         console.error("Mesaj gönderilemedi:", ack?.error || "Bilinmeyen hata");
+        // Kullanıcıya bir hata göstermek isteyebilirsiniz
       }
     });
-    
+
     sendTypingStatus(false);
-    
+
     setMessage("");
     setShowGifPicker(false);
     setShowMediaMenu(false);
@@ -222,21 +308,22 @@ const DirectMessaging = () => {
       clearTimeout(typingTimeout);
     }
     
-    if (isConnected && socketRef.current) {
+    if (isConnected && socketRef.current && roomIdRef.current) {
       socketRef.current.emit("userTyping", {
         isTyping: isTyping,
         username: userData?.nickName || username || "Misafir",
-        userId: socketRef.current.id
+        userId: socketRef.current.id,
+        roomId: roomIdRef.current // Oda ID'sini gönderiyoruz
       });
-      
       
       if (isTyping) {
         const timeout = setTimeout(() => {
-          if (socketRef.current) {
+          if (socketRef.current && roomIdRef.current) {
             socketRef.current.emit("userTyping", {
-              isTyping: false,
+              isTyping: isTyping,
               username: userData?.nickName || username || "Misafir",
-              userId: socketRef.current.id
+              userId: socketRef.current.id,
+              roomId: roomIdRef.current // Oda ID'sini gönderiyoruz
             });
           }
         }, 2000);
