@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import { getFriendsList } from '../../firebase';
 import icon from "../assets/360.png";
 import { getUser } from '../../firebase';
+import { useNavigate } from "react-router-dom";
 
 const SocialBar = () => {
     const [isFlagSetted, setIsFlagSetted] = useState(false);
@@ -60,6 +61,9 @@ const ServerBarExpand = ({ toggleExpand, isFlagSetted}) => {
 }
  
 const RightBarImg = ({ src, toggleExpand }) => {
+
+
+
     return (
       <>
         <div
@@ -77,6 +81,7 @@ const RightBarImg = ({ src, toggleExpand }) => {
     const [position, setPosition] = useState({ top: 0, left: 0 });
     const userRefs = useRef({}); // Her kullanıcı için ref saklamak için obje
     const [selectedUser, setSelectedUser] = useState(null);
+    const navigate = useNavigate();
 
     const handleUserClick = (id, name) => {
         if (userRefs.current[id]) {
@@ -126,7 +131,14 @@ const RightBarImg = ({ src, toggleExpand }) => {
                     />
                 )}
             </div>
-
+            <div 
+            onClick={() => navigate("/create-server")}
+            className="text-center p-2 mt-2 cursor-pointer text-sm font-semibold
+               hover:underline hover:text-[var(--accent-color)] transition-all duration-200"
+            >
+            Sunucu Oluştur
+            </div>
+            
 
         </div>
     )
