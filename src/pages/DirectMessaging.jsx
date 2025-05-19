@@ -19,15 +19,9 @@ const DirectMessaging = () => {
   const [hasFocus, setHasFocus] = useState(true); 
   const [hasNewMessage, setHasNewMessage] = useState(false); 
   const [typingTimeout, setTypingTimeout] = useState(null); 
-<<<<<<< Updated upstream
-=======
   const [gifs, setGifs] = useState([]);
   const [gifSearchTerm, setGifSearchTerm] = useState("");
   const [roomId, setRoomId] = useState(null);
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
   
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -39,11 +33,8 @@ const DirectMessaging = () => {
   const { userData } = useAuth();
   const originalTitle = useRef(document.title);
   const { receiverId } = useParams();
-<<<<<<< Updated upstream
-=======
 
   const GIPHY_API_KEY = import.meta.env.VITE_GIPHY_API_KEY;
->>>>>>> Stashed changes
 
   const groupInfo = {
     name: "Free Eren",
@@ -252,8 +243,6 @@ const DirectMessaging = () => {
     };
   }, [showMediaMenu, showGifPicker]);
 
-<<<<<<< Updated upstream
-=======
   useEffect(() => {
     if (showGifPicker) {  // sadece picker açıldığında GIF çekelim
       fetch(`https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=20&rating=pg`)
@@ -279,10 +268,6 @@ const DirectMessaging = () => {
     }
   };
   
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
   const sendMessage = (msg) => {
     if (!msg.trim() || !isConnected || !socketRef.current || !roomIdRef.current) return;
 
