@@ -5,19 +5,6 @@ import toast from 'react-hot-toast';
 
 
 
-
-const createServerID = async () => {
-
-
-
-
-
-    return serverID;
-}
-
-
-
-
 const CreateServer = () => {
     
     const [serverName, setServerName] = useState("");

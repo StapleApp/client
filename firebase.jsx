@@ -111,7 +111,8 @@ async function writeUserData(uid, name, surname,birthdate, email) {
     }
 }
 
-async function writeServerData(serverID, serverName, ownerID, description, tags = []) {
+async function writeServerData(serverName, ownerID) {
+    const serverID = await createServerID();
     try {
         await setDoc(doc(db, "Servers", serverID), {
             ServerId: serverID,
@@ -119,10 +120,69 @@ async function writeServerData(serverID, serverName, ownerID, description, tags 
             ServerOwnerID: ownerID,
             ServerPhotoURL: "",
             ServerBannerURL: "",
-            ServerDescription: description,
-            ServerTags: tags,
+            ServerDescription: "",
+            ServerTags: [],
             ServerType: "Public",
             CreatedDate: serverTimestamp(),
+            InviteLinks: [],
+            Roles: [
+                {
+                    RoleID: "0",
+                    RoleColor: "#FF5733",
+                    RoleName: "Admin",
+                    Permissions: [
+                        "MANAGE_MESSAGES",
+                        "BAN_MEMBERS",
+                        "MANAGE_ROLES"
+                    ]
+                }
+            ],
+            Rooms: [
+                {
+                    RoomID: "0",
+                    RoomName: "General",
+                    Type: "TextRoom",
+                    Position: 1,
+                    Messages: [
+                        {
+                            MessageID: "1",
+                            SenderID: "1",
+                            SendDate: 1234567890,
+                            Type: "sent",
+                            Message: "Hello, how are you?"
+                        },
+                        {
+                            MessageID: "2",
+                            SenderID: "1",
+                            SendDate: 1234567891,
+                            Type: "edited",
+                            Message: "Hello, how are you doing?"
+                        },
+                        {
+                            MessageID: "3",
+                            SenderID: "1",
+                            SendDate: 1234567892,
+                            Type: "deleted",
+                            Message: ""
+                        }
+                    ]
+                },
+                {
+                    RoomID: "1",
+                    RoomName: "General",
+                    Type: "VoiceRoom",
+                    Position: 2,
+                    GroupName: "",
+                }
+
+            ],
+            Users: [
+                {
+                    UserID: ownerID,
+                    RoleID: "0",
+                    JoinDate: 1234567890
+                }
+            ]
         });
 
         console.log("Server data added to Firestore");
@@ -173,6 +233,29 @@ const createFriendshipID = async () => {
 
     return friendshipID; 
 };
+
+
+const createServerID = async () => {
+      const usersRef = collection(db, "Servers"); 
+      let ServerID;
+      let isUnique = false;
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  
+      while (!isUnique) {
+          ServerID = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");        
+          const q = query(usersRef, where("ServerID", "==", ServerID));
+          const querySnapshot = await getDocs(q);
+  
+          if (querySnapshot.empty) {
+              isUnique = true; 
+          }
+      }
+
+
+    return serverID;
+}
+
+
 
 // ** Nickname Güncelleme **
 export const UpdateNickname = async (uid, newValue) => {
