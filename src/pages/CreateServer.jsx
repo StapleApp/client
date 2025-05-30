@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from 'react-hot-toast';
+import { saveServerToFirestore } from "../../firebase";
 
 
 
@@ -12,7 +13,26 @@ const CreateServer = () => {
 
     const navigate = useNavigate(); // Sayfa yönlendirmeleri için hook
 
+    try {
+        const handleSubmit = async (e) => {
+            e.preventDefault(); // Sayfanın yenilenmesini engeller
 
+            // Sunucu adı boş bırakılmışsa uyarı ver
+            if (serverName === "") {
+                toast.error("Server name cannot be blank");
+                return;
+            }
+
+            // Sunucu adını Firestore'a kaydet
+            await saveServerToFirestore(serverName);
+            toast.success("Server created successfully!");
+            navigate('/home'); // Kullanıcı ana sayfaya yönlendirilir
+        };
+    }
+    catch (error) {
+        console.error("Error creating server:", error);
+        toast.error("Failed to create server. Please try again.");
+    }
 
     return (
     <div className="flex items-center justify-center min-h-screen">

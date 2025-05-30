@@ -84,6 +84,17 @@ export const signInWithGoogle = async (navigate) => {
     }
 };
 
+export const saveServerToFirestore = async (serverName, ownerID, navigate) => {
+    try {
+        await writeServerData(serverName, ownerID);
+        toast.success("Server created successfully!");
+        navigate("/home");
+    } catch (error) {
+        console.error("Error creating server:", error);
+        toast.error("Failed to create server. Please try again.");
+    }
+}
+
 
 // **Kullanıcı bilgilerini Firestore'a yazma fonksiyonu**
 async function writeUserData(uid, name, surname,birthdate, email) {
