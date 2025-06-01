@@ -3,7 +3,7 @@ import io from "socket.io-client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import "../Dm.css";
+import "../Dm.css"; // CSS dosyasını içe aktar
 
 const DirectMessaging = () => {
   const [messages, setMessages] = useState([]);
