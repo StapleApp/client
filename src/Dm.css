@@ -1,0 +1,140 @@
+#root {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem;
+    text-align: center;
+    --color-primary: #222831;
+    --color-secondary: #393E46;
+    --color-secondary-light: #4d525a;
+    --color-accent: #FFD369;
+    --color-accent-dark: #e6b94f;
+    --color-light: #EEEEEE;
+  }
+  
+  .bg-primary {
+    background-color: var(--color-primary);
+  }
+  
+  .bg-secondary {
+    background-color: var(--color-secondary);
+  }
+  
+  .bg-secondary-light {
+    background-color: var(--color-secondary-light);
+  }
+  
+  .bg-accent {
+    background-color: var(--color-accent);
+  }
+  
+  .bg-accent-dark {
+    background-color: var(--color-accent-dark);
+  }
+  
+  .text-light {
+    color: var(--color-light);
+  }
+  
+  .border-primary {
+    border-color: var(--color-primary);
+  }
+  
+  .border-secondary {
+    border-color: var(--color-secondary);
+  }
+  
+  .border-secondary-light {
+    border-color: var(--color-secondary-light);
+  }
+  
+  .border-accent {
+    border-color: var(--color-accent);
+  }
+  
+  .hover\:bg-secondary:hover {
+    background-color: var(--color-secondary);
+  }
+  
+  .hover\:bg-accent-dark:hover {
+    background-color: var(--color-accent-dark);
+  }
+  
+  .hover\:text-light:hover {
+    color: var(--color-light);
+  }
+  
+  .logo {
+    height: 6em;
+    padding: 1.5em;
+    will-change: filter;
+    transition: filter 300ms;
+  }
+  .logo:hover {
+    filter: drop-shadow(0 0 2em #646cffaa);
+  }
+  .logo.react:hover {
+    filter: drop-shadow(0 0 2em #61dafbaa);
+  }
+  
+  @keyframes logo-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  @media (prefers-reduced-motion: no-preference) {
+    a:nth-of-type(2) .logo {
+      animation: logo-spin infinite 20s linear;
+    }
+  }
+  
+  .card {
+    padding: 2em;
+  }
+  
+  .read-the-docs {
+    color: #888;
+  }
+
+  /* Yazıyor animasyonu için CSS */
+.typing-animation {
+  display: inline-flex;
+  align-items: center;
+}
+
+.dot {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--accent-color, #fff);
+  margin: 0 2px;
+  opacity: 0.6;
+}
+
+.dot:nth-child(1) {
+  animation: dot-flashing 1s infinite alternate 0s;
+}
+
+.dot:nth-child(2) {
+  animation: dot-flashing 1s infinite 0.3s alternate;
+}
+
+.dot:nth-child(3) {
+  animation: dot-flashing 1s infinite alternate 0.6s;
+}
+
+@keyframes dot-flashing {
+  0% {
+    opacity: 0.2;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+  

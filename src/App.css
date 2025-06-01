@@ -1,0 +1,127 @@
+@import "tailwindcss";
+
+/* WebKit (Chrome, Safari) */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: none;
+}
+
+@layer components {
+  
+  .background {
+    background-image: url("./assets/background_tile.png");
+    background-position: center;
+    background-repeat: repeat;
+    background-attachment: scroll;
+    background-size: 7vw 7vw;
+    height: 100vh;
+    width: 100vw;
+  }
+  
+
+  .icon {
+    @apply relative flex items-center justify-center
+           h-12 w-12 mt-2 mb-2 mx-auto shadow-lg
+           bg-[var(--primary-bg)] text-[var(--primary-text)] border-3 border-[var(--primary-border)]
+           hover:bg-[var(--tertiary-text)] hover:text-[var(--tertiary-bg)] hover:border-3 hover:border-[var(--tertiary-border)]
+           rounded-xl
+           transition-all duration-300 ease-linear
+           cursor-pointer; 
+  }
+
+  .hovered-icon {
+    @apply relative flex items-center justify-center
+           h-12 w-12 mt-2 mb-2 mx-auto shadow-lg
+           bg-[var(--tertiary-text)] text-[var(--tertiary-bg)] border-3 border-[var(--tertiary-border)]
+           rounded-xl
+           transition-all duration-300 ease-linear
+           cursor-pointer;
+  }
+
+  .sidebar-tooltip {
+    @apply absolute w-auto p-2 m-2 min-w-max left-14 rounded-md shadow-md
+    bg-[var(--tertiary-text)] text-[var(--tertiary-bg)]
+    text-xs font-bold
+    transition-all duration-100 scale-0 origin-left;
+  }
+
+  .sidebar-expand {
+    @apply mr-auto ml-2;
+  }
+
+  .sidebar-settings {
+    @apply mr-auto ml-2;
+  }
+
+  .expanded-text {
+    @apply pr-2 text-[var(--primary-text)] text-sm font-bold
+  }
+}
+
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+  
+  /* --primary-bg: #89A8B2;
+  --secondary-bg: #7496a1;
+  --primary-text: #354950;
+  --secondary-text: #B3C8CF;
+  --primary-border: #B3C8CF;
+  --secondary-border: #526f78; */
+
+  --primary-bg: #222831;
+  --secondary-bg: #393E46;
+  --tertiary-bg: #ffbc1f;
+  --quaternary-bg: #fff3a1;
+
+  --primary-text: #BBBBBB;
+  --secondary-text: #DDDDDD;
+  --tertiary-text: #222831;
+  --quaternary-text: #ffbc1f;
+
+  --primary-border: #393E46;
+  --secondary-border: #222831;
+  --tertiary-border: #ffbc1f;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
