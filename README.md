@@ -25,34 +25,38 @@ Staple App is a modern, real-time, browser-based communication platform built fo
 
 Staple App follows a modular **client-server architecture** built with modern technologies and best practices, developed in Agile sprints.
 
-| Layer         | Stack                                    |
-|--------------|-------------------------------------------|
-| Frontend     | React, Vite, Tailwind CSS                 |
-| Backend      | Node.js, Express.js, Socket.io            |
-| Database     | Firebase Firestore, Google Drive API      |
-| Authentication | Firebase Auth                          |
-| Hosting      | Vercel (Frontend), AWS (Backend)          |
-| Real-Time     | Socket.io                                |
-| Dev Method    | Agile                                     |
+| Layer          | Stack                                |
+| -------------- | ------------------------------------ |
+| Frontend       | React, Vite, Tailwind CSS            |
+| Backend        | Node.js, Express.js, Socket.io       |
+| Database       | Firebase Firestore, Google Drive API |
+| Authentication | Firebase Auth                        |
+| Hosting        | Vercel (Frontend), AWS (Backend)     |
+| Real-Time      | Socket.io                            |
+| Dev Method     | Agile                                |
 
 ---
 
 ## 🏗 System Overview
 
 ### 1. 🔐 Authentication & Session
+
 - Users log in using Firebase Auth.
 - JWT tokens are used for secure API and Socket.io interactions.
 
 ### 2. 🗣 Real-Time Messaging
+
 - WebSocket-based communication using Socket.io.
 - Messages are stored in Firestore and broadcast to all connected clients.
 - Room/channel support to be implemented in future versions.
 
 ### 3. 📁 File Sharing
+
 - Uploads handled via backend to Google Drive.
 - Drive file links stored in Firestore and shared in real-time.
 
 ### 4. 📡 Socket Management
+
 - Realtime event broadcasting (messages, file uploads, etc.).
 
 ---
@@ -102,8 +106,8 @@ npm run dev
 cd ../server
 node server.sjs
 ```
-## 🤝 Contribution
 
+## 🤝 Contribution
 
 Feel free to open issues for bug reports, feature requests, or general feedback.
 
@@ -114,6 +118,7 @@ This project is licensed under the **MIT License**. You are free to use, modify,
 ## 👨‍💻 Developers
 
 Staple App is developed by a team of students with a goal to deliver a sleek, scalable, and secure web communication platform.
+
 - **Mustafa AYKUT**
 - **Eren KÖSE**
 - **Eren GÜRELİ**
