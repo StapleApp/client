@@ -97,10 +97,19 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDat
 
           {/* Alt Arkaplan */}
           <div className="flex my-auto">
+            {userData.friendshipID == userID ?
+            <div className="flex gap-3 pl-1">
+            <ProfileButton />
+            <SideBarIconClose toggleExpand={() => setCheck(false)} />
+            </div>
+            :
+            <>
             <ProfileButton />
             <AddFriendButton />
             <DMButton userID={userID} />
             <SideBarIconClose toggleExpand={() => setCheck(false)} />
+            </> 
+            }
           </div>
         </div>
         <textarea
