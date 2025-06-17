@@ -112,8 +112,8 @@ async function writeUserData(uid, name, surname,birthdate, email) {
             email: email,
             friendshipID: friendshipID,
             friends: {},
-            servers: {},
-            groups: {}
+            servers: [],
+            groups: []
         });
 
         console.log("User data added to Firestore");
