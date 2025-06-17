@@ -6,12 +6,13 @@ import { FaTelegramPlane } from "react-icons/fa";
 import { useEffect, useRef } from "react"; // Import useEffect and useRef
 import profileBackground2_small from "../assets/profileBackground2_small.png";
 import icon from "../assets/360.png";
+import { getGroupById, createGroup } from "../../firebase";
 import { useAuth } from "../context/AuthContext";
 
 const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDate}) => {
   const formattedUID = `${userID}`.padStart(6, '0');
   const panelRef = useRef(null); // Create a reference to the panel
-  const { currentUser, userData } = useAuth();
+  const { userData } = useAuth();
 
   const clampPosition = (x, y, panelWidth, panelHeight) => {
     const screenWidth = window.innerWidth;
@@ -106,7 +107,7 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDat
             <>
             <ProfileButton />
             <AddFriendButton />
-            <DMButton userID={userID} />
+            <DMButton userID={userID} userData={userData} />
             <SideBarIconClose toggleExpand={() => setCheck(false)} />
             </> 
             }
@@ -174,12 +175,26 @@ const AddFriendButton = () => {
   );
 };
 
-const DMButton = ({ userID }) => {
+const DMButton = ({ userID, userData }) => {
   const navigate = useNavigate();
   return (
     <div
       className="flex icon group cursor-pointer hover:scale-105 h-7 w-20 mt-1 mb-0 mx-auto"
-      onClick={() => navigate(`/DirectMessaging`)}
+      onClick={() => {
+        userData.groups.forEach((groupID) => {
+          getGroupById(groupID).then((group) => {
+            if (group.users.includes(userID)) {
+              navigate(`/DirectMessaging`);
+            }
+          });
+        });
+
+        createGroup("DM", [userData.userID, userID]).then((groupID) => {
+          if (groupID) {
+            navigate(`/DirectMessaging`);
+          }
+        });
+      }}
     >
       <span className="bg-[var(--primary-bg)] text-[var(--primary-text)] text-sm font-bold mr-1">
         DM

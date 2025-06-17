@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,signInWithEmailAndPassword} from "firebase/auth";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, doc, setDoc,getDocs,getDoc,where,query,collection,serverTimestamp,updateDoc } from "firebase/firestore"; 
+import { getFirestore, doc, setDoc,getDocs,getDoc,where,query,collection,serverTimestamp,updateDoc,addDoc } from "firebase/firestore"; 
 import toast from 'react-hot-toast';
 
 const firebaseConfig = {
@@ -368,7 +368,6 @@ export const getUser = async (uid) => {
     }
 };
 
-
 export const getGroupById = async (groupID) => {
     try {
         const groupRef = doc(db, "Groups", groupID);
@@ -383,6 +382,33 @@ export const getGroupById = async (groupID) => {
     } catch (error) {
         console.error("Error fetching group by ID:", error);
         return null; // Hata durumunda null döndür
+    }
+}
+
+export async function createGroup(groupName, users) {
+    try {
+        const groupsCollectionRef = collection(db, 'Groups');
+        const docRef = await addDoc(groupsCollectionRef, {
+            groupName,
+            users,
+            messages: []
+        });
+
+        users.forEach(async (userId) => {
+            const userDocRef = doc(db, 'Users', userId);
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                const groups = userData.groups || [];
+                groups.push(docRef.id);
+                await userDocRef.update({ groups });
+            }
+        });
+
+        return docRef.id;
+    } catch (error) {
+        console.error('Error creating group:', error);
+        throw error;
     }
 }
 

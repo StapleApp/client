@@ -9,7 +9,6 @@ const DirectMessaging = () => {
   // Mock userData for demonstration
   const { userData } = useAuth();
 
-  
   const [groupList, setGroupList] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [messages, setMessages] = useState([]);
