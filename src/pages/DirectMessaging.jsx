@@ -22,6 +22,8 @@ const DirectMessaging = () => {
   const [gifs, setGifs] = useState([]);
   const [gifSearchTerm, setGifSearchTerm] = useState("");
   const [roomId, setRoomId] = useState(null);
+
+  const [groupList, setGroupList] = useState([]);
   
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -30,7 +32,9 @@ const DirectMessaging = () => {
   const roomIdRef = useRef(null);
   const myUserIdRef = useRef(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
+
   const { userData } = useAuth();
+
   const originalTitle = useRef(document.title);
   const { receiverId } = useParams();
 
@@ -50,24 +54,19 @@ const DirectMessaging = () => {
     "https://media.giphy.com/media/l46Cy1rHbQ92uuLXa/giphy.gif"
   ];
 
+  // İlk girdiğinde kullanıcı firebaseden kendi kullancısına erişip group listine erişecek
   useEffect(() => {
-    if (!receiverId || !userData || !socketRef.current) return;
-  
-    const myUserId = userData.friendshipID;
-    console.log(myUserId);
-    const orderedRoomId = [myUserId, receiverId].sort().join("_");
-  
-    roomIdRef.current = orderedRoomId;
-    myUserIdRef.current = myUserId;
-  
-    socketRef.current.emit("joinRoom", { roomId: orderedRoomId, userId: myUserId });
-    console.log(orderedRoomId)
-    console.log(roomIdRef.current);
-  
-    return () => {
-      socketRef.current.emit("leaveRoom", { roomId: orderedRoomId });
-    };
-  }, [receiverId, userData]);
+
+    console.log("Kullanıcı verisi yüklendi:", userData);
+
+    if (userData && userData.groups) {
+      setGroupList(userData.groups);
+      console.log("Kullanıcının grup listesi yüklendi:", userData.groups);
+    } else {
+      console.warn("Kullanıcı verisi veya grup listesi bulunamadı.");
+    }
+
+  }); 
   
 
   useEffect(() => {
