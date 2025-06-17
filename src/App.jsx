@@ -57,7 +57,7 @@ function AnimatedSwitch() {
           <Route path="/AddFriends" element={<AddFriends />} />
           <Route path="/SearchServer" element={<SearchServer />} />
           <Route path="/Profile" element={<Profile />} />
-          <Route path="/DirectMessaging/:receiverId" element={<DirectMessaging />} />
+          <Route path="/DirectMessaging" element={<DirectMessaging />} />
           <Route path="/Notifications" element={<Notifications />} />
           <Route path="/create-server" element={<CreateServer />} />
           
