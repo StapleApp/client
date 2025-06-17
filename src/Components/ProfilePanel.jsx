@@ -179,7 +179,7 @@ const DMButton = ({ userID }) => {
   return (
     <div
       className="flex icon group cursor-pointer hover:scale-105 h-7 w-20 mt-1 mb-0 mx-auto"
-      onClick={() => navigate(`/DirectMessaging/${userID}`)}
+      onClick={() => navigate(`/DirectMessaging`)}
     >
       <span className="bg-[var(--primary-bg)] text-[var(--primary-text)] text-sm font-bold mr-1">
         DM
