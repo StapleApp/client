@@ -24,7 +24,7 @@ const db = getFirestore(app);
 
 
 // **E-posta ile Kayıt Olma**
-export const register = async (name, surname, email, password,birthdate, navigate) => {
+export const register = async (name, surname, email, password, birthdate, navigate) => {
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
@@ -113,7 +113,7 @@ async function writeUserData(uid, name, surname,birthdate, email) {
             friendshipID: friendshipID,
             friends: {},
             servers: {},
-
+            groups: {}
         });
 
         console.log("User data added to Firestore");
