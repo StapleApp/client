@@ -369,5 +369,21 @@ export const getUser = async (uid) => {
 };
 
 
+export const getGroupById = async (groupID) => {
+    try {
+        const groupRef = doc(db, "Groups", groupID);
+        const groupSnap = await getDoc(groupRef);
+
+        if (groupSnap.exists()) {
+            return groupSnap.data(); // Belge varsa verisini döndür
+        } else {
+            console.warn("No group found with ID:", groupID);
+            return null; // Belge yoksa null döndür
+        }
+    } catch (error) {
+        console.error("Error fetching group by ID:", error);
+        return null; // Hata durumunda null döndür
+    }
+}
 
 export default app;
