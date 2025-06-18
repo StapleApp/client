@@ -347,14 +347,36 @@ export const getFriendsList = async (uid) => {
     }
 };
 
+// Kullanıcının üyesi olduğu sunucuları getir
 export const getServersList = async (uid) => {
     try {
         
+        const serversRef = collection(db, "Servers");
+        const querySnapshot = await getDocs(serversRef);
+
+        const userServers = [];
+
+        querySnapshot.forEach((doc) => {
+            const serverData = doc.data();
+            const users = serverData.Users || [];
+
+            const isMember = users.some(user => user.UserID === uid);
+
+            if (isMember) {
+                userServers.push({
+                    serverID: doc.id, // belge ID'si
+                    ...serverData
+                });
+            }
+        });
+
+        return userServers;
     } catch (error) {
         console.error("Error getting servers list:", error);
         return [];
     }
 }
+
 
 // ** ID ile Kullanıcıya Ulaşma **
 export const getUser = async (uid) => {
