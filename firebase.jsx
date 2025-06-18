@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,signInWithEmailAndPassword} from "firebase/auth";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, doc, setDoc,getDocs,getDoc,where,query,collection,serverTimestamp,updateDoc,addDoc } from "firebase/firestore"; 
+import { getFirestore, doc, setDoc, getDocs, getDoc, where, query, collection, serverTimestamp, updateDoc, addDoc, arrayUnion } from "firebase/firestore"; 
 import toast from 'react-hot-toast';
 
 const firebaseConfig = {
@@ -265,8 +265,6 @@ const createServerID = async () => {
     return ServerID;
 }
 
-
-
 // ** Nickname Güncelleme **
 export const UpdateNickname = async (uid, newValue) => {
     try {
@@ -402,16 +400,12 @@ export async function createGroup(groupName, users) {
             messages: []
         });
 
-        users.forEach(async (userId) => {
+        for (const userId of users) {
             const userDocRef = doc(db, 'Users', userId);
-            const userDoc = await getDoc(userDocRef);
-            if (userDoc.exists()) {
-                const userData = userDoc.data();
-                const groups = userData.groups || [];
-                groups.push(docRef.id);
-                await updateDoc(userDocRef, { groups });
-            }
-        });
+            await updateDoc(userDocRef, {
+                groups: arrayUnion(docRef.id)
+            });
+        }
 
         return docRef.id;
     } catch (error) {
