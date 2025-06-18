@@ -179,20 +179,19 @@ const DMButton = ({ userID, userData }) => {
   return (
     <div
       className="flex icon group cursor-pointer hover:scale-105 h-7 w-20 mt-1 mb-0 mx-auto"
-      onClick={() => {
-        userData.groups.forEach((groupID) => {
-          getGroupById(groupID).then((group) => {
-            if (group.users.includes(userID)) {
-              navigate(`/DirectMessaging`);
-            }
-          });
-        });
-
-        createGroup("DM", [userData.userID, userID]).then((groupID) => {
-          if (groupID) {
-            navigate(`/DirectMessaging`);
-          }
-        });
+      onClick={async () => {
+        for (const groupID of userData.groups) {
+        const group = await getGroupById(groupID);
+        if (group && group.users.includes(userID)) {
+          navigate(`/DirectMessaging`);
+          return;
+        }
+      }
+      // Hiçbiri yoksa yeni grup oluştur
+      const groupID = await createGroup("DM", [userData.userID, userID]);
+      if (groupID) {
+        navigate(`/DirectMessaging`);
+      }
       }}
     >
       <span className="bg-[var(--primary-bg)] text-[var(--primary-text)] text-sm font-bold mr-1">

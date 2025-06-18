@@ -156,7 +156,6 @@ const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
                 const fullFriendData = await Promise.all(
                     friendList.map(async (friend) => {
                         const userInfo = await getUser(friend.uid);
-                        console.log("ananasaldırdım" , userInfo)
                         return { uid: friend.uid, nickName: userInfo.nickName , friendshipID: userInfo.friendshipID};
                     })
                 );
