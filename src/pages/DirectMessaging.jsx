@@ -10,6 +10,7 @@ const DirectMessaging = () => {
 const { userData } = useAuth();
 
 const [groupList, setGroupList] = useState([]);
+const [groupDataList, setGroupDataList] = useState([]);
 const [selectedGroup, setSelectedGroup] = useState(null);
 const [messages, setMessages] = useState([]);
 const [newMessage, setNewMessage] = useState("");
@@ -27,26 +28,30 @@ useEffect(() => {
 }, []);
 
 useEffect(() => {
-// Eğer groupList bir dizi ise ve içinde sadece ID'ler varsa:
-if (Array.isArray(groupList) && groupList.length > 0 && typeof groupList[0] === "string") {
-	Promise.all(groupList.map((groupID) => getGroupById(groupID)))
-	.then((groups) => {
-		// Sadece geçerli grupları filtrele
-		const validGroups = groups
-		.filter(Boolean)
-		.map((group) => ({
-			id: group.id,
-			name: group.name,
-			lastMessage: group.lastMessage,
-			unreadCount: group.unreadCount,
-		}));
-		setGroupList(validGroups);
-	})
-	.catch((error) => {
-		console.error("Gruplar yüklenirken hata oluştu:", error);
-	});
-	}
+  if (userData && Array.isArray(userData.groups)) {
+    setGroupList(userData.groups);
+  }
 }, [userData]);
+
+useEffect(() => {
+  const fetchGroups = async () => {
+    if (Array.isArray(groupList) && groupList.length > 0) {
+      const groupsData = [];
+      for (const groupID of groupList) {
+        const group = await getGroupById(groupID);
+        if (group) groupsData.push(group);
+      }
+      setGroupDataList(groupsData);
+    } else {
+      setGroupDataList([]);
+    }
+  };
+  fetchGroups();
+}, [groupList]);
+
+useEffect(() => {
+	console.log("Grup verilerinin listesi:", groupDataList)
+}, [groupDataList]);
 
 useEffect(() => {
 	if (selectedGroup) {
@@ -97,9 +102,9 @@ return (
 		{/* Grup Listesi */}
 		<div className="flex-1 overflow-y-auto">
 		<AnimatePresence>
-			{groupList.map((group, index) => (
+			{groupDataList.map((group, index) => (
 			<motion.div
-				key={`${group.id}-${index}`} // Benzersiz bir key oluşturmak için id ve index kombinasyonu kullanılıyor
+				key={`${group.id || index}-${index}`}
 				initial={{ opacity: 0, x: -20 }}
 				animate={{ opacity: 1, x: 0 }}
 				exit={{ opacity: 0, x: -20 }}
@@ -114,21 +119,11 @@ return (
 					<Users className="w-5 h-5 text-white" />
 					</div>
 					<div className="flex-1">
-					<h3 className="font-medium text-[var(--primary-text)]">{group.name}</h3>
-					<p className="text-sm text-[var(--secondary-text)] truncate max-w-40">
-						{group.lastMessage}
-					</p>
+					<h3 className="font-medium text-[var(--primary-text)]">{group.groupName}</h3>
+					<div className="text-xs text-[var(--secondary-text)]">
+					</div>
 					</div>
 				</div>
-				{group.unreadCount > 0 && (
-					<motion.div
-					initial={{ scale: 0 }}
-					animate={{ scale: 1 }}
-					className="w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-medium"
-					>
-					{group.unreadCount}
-					</motion.div>
-				)}
 				</div>
 			</motion.div>
 			))}

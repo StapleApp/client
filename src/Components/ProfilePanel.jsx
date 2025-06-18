@@ -6,7 +6,7 @@ import { FaTelegramPlane } from "react-icons/fa";
 import { useEffect, useRef } from "react"; // Import useEffect and useRef
 import profileBackground2_small from "../assets/profileBackground2_small.png";
 import icon from "../assets/360.png";
-import { getGroupById, createGroup } from "../../firebase";
+import { getGroupById, getUser, createGroup } from "../../firebase";
 import { useAuth } from "../context/AuthContext";
 
 const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDate, UID}) => {
@@ -188,7 +188,8 @@ const DMButton = ({ userID, userData }) => {
         }
       }
       // Hiçbiri yoksa yeni grup oluştur
-      const groupID = await createGroup("DM", [userData.userID, userID]);
+      const friendData = await getUser(userID)
+      const groupID = await createGroup(friendData.nickName + " & " + userData.nickName, [userData.userID, userID]);
       if (groupID) {
         navigate(`/DirectMessaging`);
       }
