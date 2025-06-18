@@ -37,6 +37,8 @@ const Profile = () => {
         }
     }, [userData]);
 
+    console.log(profileData)
+
     const statusOptions = [
         { id: "online", label: "Çevrimiçi", icon: <Wifi size={18} /> },
         { id: "offline", label: "Çevrimdışı", icon: <WifiOff size={18} /> },
@@ -110,7 +112,6 @@ const Profile = () => {
                                             {profileData.name} {profileData.surname}
                                         </h1>
                                         <div className="flex items-center gap-2 text-[var(--quaternary-text)]">
-                                            <Hash size={16} />
                                             <span>{profileData.nickname}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-[var(--quaternary-text)] mt-1">
@@ -119,10 +120,14 @@ const Profile = () => {
                                         </div>
                                         <div className="flex items-center gap-2 text-[var(--quaternary-text)] mt-1">
                                             <Calendar size={16} />
-                                            <span>Doğum Tarihi: {new Date(profileData.birthdate).toLocaleDateString('tr-TR')}</span>
+                                            <span>Doğum Tarihi: {new Date(profileData.birthdate.seconds * 1000).toLocaleDateString('tr-TR')}</span>
                                         </div>
                                         <div className="text-sm text-[var(--quaternary-text)] mt-2">
-                                            Katılma Tarihi: {new Date(profileData.createdDate).toLocaleDateString('tr-TR')}
+                                            Katılma Tarihi: {new Date(profileData.createdDate.seconds * 1000).toLocaleDateString('tr-TR', {
+                                            day: "2-digit",
+                                            month: "2-digit",
+                                            year: "numeric",
+                                            })}
                                         </div>
                                     </div>
                                     <button 
