@@ -86,8 +86,9 @@ export const signInWithGoogle = async (navigate) => {
 
 export const saveServerToFirestore = async (serverName, ownerID, navigate) => {
     try {
+        console.log("Saving server to Firestore:", serverName, ownerID);
         await writeServerData(serverName, ownerID);
-        toast.success("Server created successfully!");
+        toast.success("Server başarıyla oluşturuldu!");
         navigate("/home");
     } catch (error) {
         console.error("Error creating server:", error);
@@ -261,9 +262,7 @@ const createServerID = async () => {
               isUnique = true; 
           }
       }
-
-
-    return serverID;
+    return ServerID;
 }
 
 
@@ -349,6 +348,15 @@ export const getFriendsList = async (uid) => {
         return [];
     }
 };
+
+export const getServersList = async (uid) => {
+    try {
+        
+    } catch (error) {
+        console.error("Error getting servers list:", error);
+        return [];
+    }
+}
 
 // ** ID ile Kullanıcıya Ulaşma **
 export const getUser = async (uid) => {
