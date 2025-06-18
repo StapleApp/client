@@ -62,21 +62,19 @@ const ServerBarExpand = ({ toggleExpand, isFlagSetted}) => {
  
 const RightBarImg = ({ src, toggleExpand }) => {
 
-
-
     return (
-      <>
-        <div
-          className="group cursor-pointer rounded-full"
-          onClick={toggleExpand}
-        >
-          <img src={src} className="w-10 h-10 rounded-full" alt={"logo"} />
-        </div>
-      </>
+        <>
+            <div
+            className="group cursor-pointer rounded-full"
+            onClick={toggleExpand}
+            >
+            <img src={src} className="w-10 h-10 rounded-full" alt={"logo"} />
+            </div>
+        </>
     );
-  };
+};
 
-  const ServerList = ({isExpanded, setIsExpanded}) => {
+const ServerList = ({isExpanded, setIsExpanded}) => {
 
     const [position, setPosition] = useState({ top: 0, left: 0 });
     const userRefs = useRef({}); // Her kullanıcı için ref saklamak için obje
@@ -86,20 +84,19 @@ const RightBarImg = ({ src, toggleExpand }) => {
     const handleUserClick = (id, name) => {
         if (userRefs.current[id]) {
             const rect = userRefs.current[id].getBoundingClientRect();
-    
+
             let top = rect.top;
             let left = rect.right;
-    
+
             setPosition({ top, left });
-    
+
             // Seçilen kullanıcıyı state'e kaydet
             setSelectedUser({ id, name });
             setIsExpanded(true);
         }
     };
-    
-    
-  return (
+
+    return (
         <div className="flex-1 overflow-y-auto w-40 mb-1 
             bg-[var(--secondary-bg)] text-[var(--primary-text)] 
             rounded-md text-xs font-bold max-h-[calc(100vh-74px)]
@@ -155,17 +152,16 @@ const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
             if (userData) {
                 const friendList = await getFriendsList(userData.userID);
 
-
                 // UID listesi üzerinden isimleri çek
                 const fullFriendData = await Promise.all(
                     friendList.map(async (friend) => {
                         const userInfo = await getUser(friend.uid);
-                        return { uid: friend.uid, nickName: userInfo.nickName , friendshipID : userInfo.friendshipID};
+                        console.log("ananasaldırdım" , userInfo)
+                        return { uid: friend.uid, nickName: userInfo.nickName , friendshipID: userInfo.friendshipID};
                     })
                 );
     
                 setFriends(fullFriendData);
-
             }
         };
     
@@ -180,7 +176,7 @@ const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
             setPosition({ top: rect.top, left: rect.right });
     
             // 👇 Artık friendshipID'yi profile panelde göstermek için gönderiyoruz
-            setSelectedUser({ id: friendshipID, nickName: nickName });
+            setSelectedUser({ userID: uid, id: friendshipID, nickName: nickName });
             setIsExpanded(true);
         }
     };
@@ -218,7 +214,8 @@ const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
                         posX={position.left} 
                         posY={position.top}
                         userName={selectedUser.nickName} 
-                        userID={selectedUser.id}
+                        userID={selectedUser.id} // friendship ID
+                        UID={selectedUser.userID} // user ID
                     />
                 )}
             </div>

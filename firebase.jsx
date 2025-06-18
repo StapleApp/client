@@ -409,7 +409,7 @@ export async function createGroup(groupName, users) {
                 const userData = userDoc.data();
                 const groups = userData.groups || [];
                 groups.push(docRef.id);
-                await userDocRef.update({ groups });
+                await updateDoc(userDocRef, { groups });
             }
         });
 

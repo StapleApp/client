@@ -9,7 +9,7 @@ import icon from "../assets/360.png";
 import { getGroupById, createGroup } from "../../firebase";
 import { useAuth } from "../context/AuthContext";
 
-const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDate}) => {
+const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDate, UID}) => {
   const formattedUID = `${userID}`.padStart(6, '0');
   const panelRef = useRef(null); // Create a reference to the panel
   const { userData } = useAuth();
@@ -44,7 +44,6 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDat
     });
     creadetDateText = "Şu tarihten beri üye : " + formattedDate;
   }
-
 
   // Panel açılınca, panel dışı her yeri dinleyen listener ekledim
   useEffect(() => {
@@ -107,7 +106,7 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDat
             <>
             <ProfileButton />
             <AddFriendButton />
-            <DMButton userID={userID} userData={userData} />
+            <DMButton userID={UID} userData={userData} />
             <SideBarIconClose toggleExpand={() => setCheck(false)} />
             </> 
             }
