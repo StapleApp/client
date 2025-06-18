@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, Users, Send, Smile } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
-import { getGroupById } from "../../firebase"; 
+import { getGroupById, sendMessageToGroup, listenGroupMessages } from "../../firebase"; 
 
 const DirectMessaging = () => {
 // Mock userData for demonstration
@@ -39,7 +39,7 @@ useEffect(() => {
       const groupsData = [];
       for (const groupID of groupList) {
         const group = await getGroupById(groupID);
-        if (group) groupsData.push(group);
+        if (group) groupsData.push({id: groupID, group});
       }
       setGroupDataList(groupsData);
     } else {
@@ -63,6 +63,18 @@ useEffect(() => {
 	scrollToBottom();
 }, [messages]);
 
+useEffect(() => {
+    let unsubscribe;
+    if (selectedGroup && selectedGroup.id) {
+        unsubscribe = listenGroupMessages(selectedGroup.id, (msgs) => {
+            setMessages(msgs);
+        });
+    }
+    return () => {
+        if (unsubscribe) unsubscribe();
+    };
+}, [selectedGroup]);
+
 const scrollToBottom = () => {
 	messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 };
@@ -71,18 +83,21 @@ const handleGroupSelect = (group) => {
 	setSelectedGroup(group);
 };
 
-const handleSendMessage = (e) => {
-	if (e) e.preventDefault();
-	if (newMessage.trim() && selectedGroup) {
-	const message = {
-		id: messages.length + 1,
-		sender: userData.name,
-		content: newMessage.trim(),
-		time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
-	};
-	setMessages([...messages, message]);
-	setNewMessage("");
-	}
+const handleSendMessage = async (e) => {
+    if (e) e.preventDefault();
+    if (newMessage.trim() && selectedGroup) {
+        const message = {
+            id: Date.now().toString(),
+            sender: userData.nickName,
+            senderId: userData.userID,
+            content: newMessage.trim(),
+            time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+            createdAt: Date.now()
+        };
+        await sendMessageToGroup(selectedGroup.id, message);
+		console.log("Mesaj gönderildi:", message, "Grup ID:", selectedGroup.id);
+        setNewMessage("");
+    }
 };
 
 console.log("Grup listesi:", groupList);
@@ -111,7 +126,7 @@ return (
 				className={`p-4 border-b border-[var(--primary-border)] cursor-pointer transition-colors hover:bg-[var(--secondary-bg)] ${
 				selectedGroup?.id === group.id ? 'bg-[var(--secondary-bg)] border-[var(--primary-border)]' : ''
 				}`}
-				onClick={() => handleGroupSelect(group)}
+				onClick={() => handleGroupSelect(group.group)}
 			>
 				<div className="flex items-center justify-between">
 				<div className="flex items-center gap-3">
@@ -119,7 +134,7 @@ return (
 					<Users className="w-5 h-5 text-white" />
 					</div>
 					<div className="flex-1">
-					<h3 className="font-medium text-[var(--primary-text)]">{group.groupName}</h3>
+					<h3 className="font-medium text-[var(--primary-text)]">{group.group.groupName}</h3>
 					<div className="text-xs text-[var(--secondary-text)]">
 					</div>
 					</div>
@@ -156,19 +171,19 @@ return (
 					key={`${message.id}-${index}`} // Benzersiz bir key oluşturmak için id ve index kombinasyonu kullanılıyor
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
-					className={`flex ${message.sender === userData.name ? 'justify-end' : 'justify-start'}`}
+					className={`flex ${message.senderId === userData.userID ? 'justify-end' : 'justify-start'}`}
 				>
 					<div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-					message.sender === userData.name
+					message.senderId === userData.userID
 						? 'bg-blue-500 text-white'
 						: 'bg-[var(--primary-bg)] text-[var(--primary-text)] border border-[var(--primary-border)]'
 					}`}>
-					{message.sender !== userData.name && (
+					{message.senderId !== userData.userID && (
 						<p className="text-xs font-medium mb-1 text-[var(--secondary-text)]">{message.sender}</p>
 					)}
 					<p className="text-sm">{message.content}</p>
 					<p className={`text-xs mt-1 ${
-						message.sender === userData.name ? 'text-blue-100' : 'text-[var(--secondary-text)]'
+						message.senderId === userData.userID ? 'text-blue-100' : 'text-[var(--secondary-text)]'
 					}`}>
 						{message.time}
 					</p>

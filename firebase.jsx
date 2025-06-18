@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,signInWithEmailAndPassword} from "firebase/auth";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDocs, getDoc, where, query, collection, serverTimestamp, updateDoc, addDoc, arrayUnion } from "firebase/firestore"; 
+import { getFirestore, doc, setDoc, getDocs, getDoc, where, query, collection, serverTimestamp, updateDoc, addDoc, arrayUnion, onSnapshot } from "firebase/firestore"; 
 import toast from 'react-hot-toast';
 
 const firebaseConfig = {
@@ -402,14 +402,14 @@ export const getGroupById = async (groupID) => {
         const groupSnap = await getDoc(groupRef);
 
         if (groupSnap.exists()) {
-            return groupSnap.data(); // Belge varsa verisini döndür
+            return { id: groupID, ...groupSnap.data() }; // id alanı eklendi
         } else {
             console.warn("No group found with ID:", groupID);
-            return null; // Belge yoksa null döndür
+            return null;
         }
     } catch (error) {
         console.error("Error fetching group by ID:", error);
-        return null; // Hata durumunda null döndür
+        return null;
     }
 }
 
@@ -435,5 +435,47 @@ export async function createGroup(groupName, users) {
         throw error;
     }
 }
+
+// Mesajları çekme fonksiyonu
+export const getMessages = async (roomID) => {
+    try {
+        const roomRef = doc(db, "Rooms", roomID);
+        const roomSnap = await getDoc(roomRef);
+
+        if (roomSnap.exists()) {
+            return roomSnap.data().Messages || []; // Mesajları döndür
+        } else {
+            console.warn("No room found with ID:", roomID);
+            return []; // Belge yoksa boş dizi döndür
+        }
+    } catch (error) {
+        console.error("Error fetching messages by room ID:", error);
+        return []; // Hata durumunda boş dizi döndür
+    }
+};
+
+// Gruba mesaj ekle
+export const sendMessageToGroup = async (groupID, messageObj) => {
+    try {
+        const groupRef = doc(db, "Groups", groupID);
+        await updateDoc(groupRef, {
+            messages: arrayUnion(messageObj)
+        });
+    } catch (error) {
+        console.error("Error sending message:", error);
+    }
+};
+
+// Grubun mesajlarını anlık olarak dinle
+export const listenGroupMessages = (groupID, callback) => {
+    const groupRef = doc(db, "Groups", groupID);
+    return onSnapshot(groupRef, (docSnap) => {
+        if (docSnap.exists()) {
+            callback(docSnap.data().messages || []);
+        } else {
+            callback([]);
+        }
+    });
+};
 
 export default app;
