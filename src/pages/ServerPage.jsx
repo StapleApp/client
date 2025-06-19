@@ -18,7 +18,7 @@ const ServerPage = () => {
   }, [serverId]);
 
 
-  // Şu anlık dummy veri gönderiyoruz sadece render olup olmadığını test etmek için
+  
   return (
     <div className="flex">
       {serverData && <SvSidebar serverData={serverData} />} {/* serverData prop'u eklendi */}
