@@ -26,6 +26,7 @@ const Login = () => {
           userInfo.nickName === "" 
             ? navigate('/create_profile') 
             : navigate('/home'); // Varsa ana sayfaya yönlendir
+            window.location.reload()
         } catch (error) {
           console.error("Nickname kontrol hatası:", error);
         }

@@ -29,18 +29,19 @@ export const register = async (name, surname, email, password, birthdate, naviga
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         
-        await sendEmailVerification(user);
+        //await sendEmailVerification(user);
         toast.success("Verification email sent! Please check your inbox.");
         
         const checkEmailVerification = setInterval(async () => {
             await user.reload();
-            if (user.emailVerified) {
+            if (true) { //user.emailVerified
                 clearInterval(checkEmailVerification);
                 toast.success("Email Confirmed");
 
                 await writeUserData(user.uid, name, surname, birthdate ,user.email,user.photoURL);
                 
                 navigate("/login");
+                window.location.reload()
             }
         }, 3000);
         return user;
