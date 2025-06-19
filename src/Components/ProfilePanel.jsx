@@ -188,7 +188,7 @@ const DMButton = ({ userID, userData }) => {
         for (const groupID of userData.groups) {
         const group = await getGroupById(groupID);
         if (group && group.users.includes(userID)) {
-          navigate(`/DirectMessaging`);
+          navigate(`/DirectMessaging`, { state: { userID } });
           return;
         }
       }
@@ -196,7 +196,7 @@ const DMButton = ({ userID, userData }) => {
       const friendData = await getUser(userID)
       const groupID = await createGroup(friendData.nickName + " & " + userData.nickName, [userData.userID, userID]);
       if (groupID) {
-        navigate(`/DirectMessaging`);
+        navigate(`/DirectMessaging`, { state: { userID } });
       }
       }}
     >
