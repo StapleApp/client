@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, use } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, Users, Send, Smile } from "lucide-react";
 import { useLocation } from "react-router-dom";
+import EmojiPicker from "emoji-picker-react";
 
 import { useAuth } from "../context/AuthContext";
 import { getGroupById, sendMessageToGroup, listenGroupMessages } from "../../firebase"; 
@@ -16,6 +17,7 @@ const DirectMessaging = () => {
     const [selectedGroup, setSelectedGroup] = useState(null);
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState("");
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
@@ -116,6 +118,11 @@ const DirectMessaging = () => {
 
     // Mesaj içeriğini işleyen yardımcı fonksiyon
     const renderMessageContent = (content) => {
+        // Sadece emoji ise büyük göster
+        const onlyEmoji = /^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F|\p{Emoji_Modifier_Base}\p{Emoji_Modifier}?|\s)+$/u;
+        if (onlyEmoji.test(content.trim())) {
+            return <span style={{ fontSize: "2.2rem", lineHeight: "2.5rem" }}>{content}</span>;
+        }
         // Youtube linki
         const youtubeMatch = content.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
         if (youtubeMatch) {
@@ -155,6 +162,11 @@ const DirectMessaging = () => {
     };
 
     console.log("Grup listesi:", groupList);
+
+    const handleEmojiClick = (emojiData) => {
+        setNewMessage((prev) => prev + emojiData.emoji);
+        setShowEmojiPicker(false);
+    };
 
     return (
         <motion.div
@@ -273,9 +285,15 @@ const DirectMessaging = () => {
                                 <button
                                     type="button"
                                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[var(--secondary-text)] hover:text-[var(--primary-text)]"
+                                    onClick={() => setShowEmojiPicker((v) => !v)}
                                 >
                                     <Smile className="w-5 h-5" />
                                 </button>
+                                {showEmojiPicker && (
+                                    <div style={{ position: "absolute", bottom: "50px", right: "0", zIndex: 10 }}>
+                                        <EmojiPicker onEmojiClick={handleEmojiClick} theme="dark" />
+                                    </div>
+                                )}
                                 </div>
                                 <motion.button
                                 onClick={handleSendMessage}
