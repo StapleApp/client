@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { onAuthStateChanged } from "firebase/auth";
 import { UpdateNickname } from "../../firebase";
 import profileImage from "../assets/360.png";
-
+import { useAuth } from "../context/AuthContext";
 
 
 const CreateProfile = () => {
@@ -13,7 +13,7 @@ const CreateProfile = () => {
   const [nickname, setNickname] = useState('');
   // Kullanıcının profil fotoğrafını tutmak için state
   const [profilePhoto, setProfilePhoto] = useState(null);
-
+  const { userData } = useAuth();
   const navigate = useNavigate(); // Sayfalar arasında geçiş yapmak için hook
   const auth = getAuth(); // Firebase kimlik doğrulama nesnesi
 
@@ -51,7 +51,12 @@ const CreateProfile = () => {
     });
   };
 
-
+  useEffect(() => {
+     console.log(userData.nickName)
+     if(userData.nickName !== ""){
+      navigate("/home")
+     }
+  });
 
 return (
   <div className="flex items-center justify-center min-h-screen">
