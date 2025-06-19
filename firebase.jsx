@@ -397,6 +397,21 @@ export const getUser = async (uid) => {
     }
 };
 
+export const getServerById = async (serverID) => {
+  try {
+    const serverRef = doc(db, "Servers", serverID);
+    const serverSnap = await getDoc(serverRef);
+    if (serverSnap.exists()) {
+      return serverSnap.data();
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching server by ID:", error);
+    return null;
+  }
+};
+
 export const getGroupById = async (groupID) => {
     try {
         const groupRef = doc(db, "Groups", groupID);

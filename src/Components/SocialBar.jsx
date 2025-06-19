@@ -110,6 +110,7 @@ const ServerList = ({isExpanded, setIsExpanded}) => {
 
     const handleServerClick = (serverID, serverName) => {
         if (serverRefs.current[serverID]) {
+            navigate(`/server/${serverID}`);
             const rect = serverRefs.current[serverID].getBoundingClientRect();
             setPosition({ top: rect.top, left: rect.right });
 
