@@ -16,7 +16,7 @@ const SvSidebar = ({ serverData, setActiveChannel }) => {
     }
   }, [serverData]);
 
-  // Yeni kanal ekle
+  // Yeni kanal ekle.
   const addChannel = (type) => {
     const channelCount = channels.filter((c) => c.type === type).length + 1;
     const defaultName =
