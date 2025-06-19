@@ -1,31 +1,38 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import profileBackground2_small from "../assets/profileBackground2_small.png";
 
-const SvSidebar = ({ setActiveChannel }) => {
-  const [channels, setChannels] = useState([
-    { id: 1, name: "Voice Channel #1", type: "voice" },
-    { id: 2, name: "Text Channel #1", type: "text" },
-  ]);
+const SvSidebar = ({ serverData, setActiveChannel }) => {
+  const [channels, setChannels] = useState([]);
   const [activeChannel, setActiveStateChannel] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [channelOptions, setChannelOptions] = useState(null);
   const [editingChannel, setEditingChannel] = useState(null);
   const [newChannelName, setNewChannelName] = useState("");
 
+  // Gelen serverData değişince kanalları güncelle
+  useEffect(() => {
+    if (serverData?.channels) {
+      setChannels(serverData.channels);
+    }
+  }, [serverData]);
+
+  // Yeni kanal ekle
   const addChannel = (type) => {
-    const channelCount = channels.filter((channel) => channel.type === type).length + 1;
+    const channelCount = channels.filter((c) => c.type === type).length + 1;
     const defaultName =
       type === "voice" ? `Voice Channel #${channelCount}` : `Text Channel #${channelCount}`;
-    const newChannel = { id: Date.now(), name: defaultName, type };
+    const newChannel = { id: Date.now().toString(), name: defaultName, type };
     setChannels([...channels, newChannel]);
     setShowDropdown(false);
   };
 
+  // Kanal seçildiğinde
   const handleChannelClick = (channel) => {
-    setActiveChannel(channel);
+    setActiveChannel && setActiveChannel(channel);
     setActiveStateChannel(channel);
   };
 
+  // Kanal ismini değiştir
   const renameChannel = (id) => {
     setChannels(
       channels.map((channel) =>
@@ -33,16 +40,20 @@ const SvSidebar = ({ setActiveChannel }) => {
       )
     );
     setEditingChannel(null);
+    setNewChannelName("");
   };
 
+  // Kanalı sil
   const deleteChannel = (id) => {
     if (activeChannel && activeChannel.id === id) {
-      setActiveChannel(null);
+      setActiveChannel && setActiveChannel(null);
+      setActiveStateChannel(null);
     }
     setChannels(channels.filter((channel) => channel.id !== id));
     setChannelOptions(null);
   };
 
+  // Kanalları türlerine göre ayır
   const textChannels = channels.filter((channel) => channel.type === "text");
   const voiceChannels = channels.filter((channel) => channel.type === "voice");
 
@@ -56,7 +67,9 @@ const SvSidebar = ({ setActiveChannel }) => {
             style={{ backgroundImage: `url(${profileBackground2_small})` }}
           >
             <div className="absolute top-0 left-0 right-0 bottom-0 flex justify-center items-center">
-              <h1 className="text-white font-bold text-xl">Demo Server</h1>
+              <h1 className="text-white font-bold text-xl">
+                {serverData?.name || "Loading..."}
+              </h1>
             </div>
           </div>
 
@@ -93,7 +106,9 @@ const SvSidebar = ({ setActiveChannel }) => {
               <li
                 key={channel.id}
                 className={`relative w-full p-1 text-sm cursor-pointer flex justify-between items-center ${
-                  channel === activeChannel ? "bg-[#393E46] text-[#FFD369]" : "bg-transparent text-white"
+                  channel === activeChannel
+                    ? "bg-[#393E46] text-[#FFD369]"
+                    : "bg-transparent text-white"
                 } transition-all duration-200`}
                 onClick={() => handleChannelClick(channel)}
               >
@@ -151,7 +166,9 @@ const SvSidebar = ({ setActiveChannel }) => {
               <li
                 key={channel.id}
                 className={`relative w-full p-1 text-sm cursor-pointer flex justify-between items-center ${
-                  channel === activeChannel ? "bg-[#393E46] text-[#FFD369]" : "bg-transparent text-white"
+                  channel === activeChannel
+                    ? "bg-[#393E46] text-[#FFD369]"
+                    : "bg-transparent text-white"
                 } transition-all duration-200`}
                 onClick={() => handleChannelClick(channel)}
               >
