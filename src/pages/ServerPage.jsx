@@ -1,4 +1,4 @@
-import SvSidebar from "../components/SvSidebar";
+import SvSidebar from "../Components/SvSidebar";
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getServerById } from "../../firebase";
