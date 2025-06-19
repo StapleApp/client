@@ -1,30 +1,28 @@
-import SvSidebar from "../Components/SvSidebar"; // Sidebar bileşeni (senin kodun)
+import SvSidebar from "../components/SvSidebar";
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { getServerById } from "../../firebase"; 
+import { getServerById } from "../../firebase";
 
 const ServerPage = () => {
   const { serverId } = useParams();
   const [serverData, setServerData] = useState(null);
 
   useEffect(() => {
-    console.log("Server ID:", serverId); 
     const fetchServer = async () => {
       const data = await getServerById(serverId);
-      console.log("Sunucu verisi:", data); // Tüm server bilgilerini burada yazdır
+      console.log("Sunucu verisi:", data);
       setServerData(data);
     };
     fetchServer();
   }, [serverId]);
 
+  if (!serverData) return <div>Loading...</div>;
 
-  
   return (
     <div className="flex">
-      {serverData && <SvSidebar serverData={serverData} />} {/* serverData prop'u eklendi */}
+      <SvSidebar serverData={serverData} />
     </div>
   );
-
 };
 
 export default ServerPage;

@@ -266,6 +266,25 @@ const createServerID = async () => {
     return ServerID;
 }
 
+const createRoomID = async () => {
+    const roomsRef = collection(db, "Servers"); 
+    let RoomID;
+    let isUnique = false;
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+    while (!isUnique) {
+        RoomID = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");        
+        const q = query(roomsRef, where("RoomID", "==", RoomID));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            isUnique = true; 
+        }
+    }
+
+    return RoomID; 
+}
+
 // ** Nickname Güncelleme **
 export const UpdateNickname = async (uid, newValue) => {
     try {

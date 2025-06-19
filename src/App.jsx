@@ -9,6 +9,7 @@ import DirectMessaging from "./pages/DirectMessaging";
 import Notifications from "./pages/Notifications";
 import CreateServer from "./pages/CreateServer";
 import Server from "./pages/ServerPage";
+
 import { AnimatePresence } from "framer-motion";
 
 
@@ -61,7 +62,7 @@ function AnimatedSwitch() {
           <Route path="/DirectMessaging" element={<DirectMessaging />} />
           <Route path="/Notifications" element={<Notifications />} />
           <Route path="/create-server" element={<CreateServer />} />
-          <Route path="/server/:serverId" element={<Server />} />
+          <Route path="/server/:serverId/*" element={<Server />} />
 
 
           {/* Auth Routes */}
