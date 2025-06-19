@@ -2,12 +2,15 @@ import SocialBar from "../Components/SocialBar";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import React, { useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
 
 const Home = () => {
       const navigate = useNavigate();
+      const { userData } = useAuth();
+      
+      console.log(userData)
       useEffect(() => {
-        const storedUser = localStorage.getItem("user") || sessionStorage.getItem("user");
-        if (!storedUser) {
+        if (userData === null) {
             navigate("/login");
         }
       }, [navigate]);

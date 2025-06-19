@@ -96,21 +96,26 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDat
           </div>
 
           {/* Alt Arkaplan */}
-          <div className="flex my-auto">
-            {userData.friendshipID == userID ?
-            <div className="flex gap-3 pl-1">
-            <ProfileButton />
-            <SideBarIconClose toggleExpand={() => setCheck(false)} />
+          {!userData ? (
+            <LoadingSpinner /> // Veya boş div veya skeleton
+          ) : (
+            <div className="flex my-auto">
+              {userData.friendshipID === userID ? (
+                <div className="flex gap-3 pl-1">
+                  <ProfileButton />
+                  <SideBarIconClose toggleExpand={() => setCheck(false)} />
+                </div>
+              ) : (
+                <>
+                  <ProfileButton />
+                  <AddFriendButton />
+                  <DMButton userID={UID} userData={userData} />
+                  <SideBarIconClose toggleExpand={() => setCheck(false)} />
+                </>
+              )}
             </div>
-            :
-            <>
-            <ProfileButton />
-            <AddFriendButton />
-            <DMButton userID={UID} userData={userData} />
-            <SideBarIconClose toggleExpand={() => setCheck(false)} />
-            </> 
-            }
-          </div>
+          )}
+
         </div>
         <textarea
           className="expanded-text text-sm bg-[var(--secondary-bg)]
