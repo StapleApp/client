@@ -1,7 +1,7 @@
 import { useState } from "react";
 import profileBackground2_small from "../assets/profileBackground2_small.png";
 
-const Sidebar = ({ setActiveChannel }) => {
+const SvSidebar = ({ setActiveChannel }) => {
   const [channels, setChannels] = useState([
     { id: 1, name: "Voice Channel #1", type: "voice" },
     { id: 2, name: "Text Channel #1", type: "text" },
@@ -12,22 +12,20 @@ const Sidebar = ({ setActiveChannel }) => {
   const [editingChannel, setEditingChannel] = useState(null);
   const [newChannelName, setNewChannelName] = useState("");
 
-  // Kanal ekleme fonksiyonu
   const addChannel = (type) => {
     const channelCount = channels.filter((channel) => channel.type === type).length + 1;
-    const defaultName = type === "voice" ? `Voice Channel #${channelCount}` : `Text Channel #${channelCount}`;
+    const defaultName =
+      type === "voice" ? `Voice Channel #${channelCount}` : `Text Channel #${channelCount}`;
     const newChannel = { id: Date.now(), name: defaultName, type };
     setChannels([...channels, newChannel]);
     setShowDropdown(false);
   };
 
-  // Kanal seçme fonksiyonu
   const handleChannelClick = (channel) => {
-    setActiveChannel(channel); // Kanal tıklandığında aktif kanal olarak set edilir
-    setActiveStateChannel(channel); // Aktif kanal durumunu da güncelleriz
+    setActiveChannel(channel);
+    setActiveStateChannel(channel);
   };
 
-  // Kanal ismini değiştirme
   const renameChannel = (id) => {
     setChannels(
       channels.map((channel) =>
@@ -37,35 +35,31 @@ const Sidebar = ({ setActiveChannel }) => {
     setEditingChannel(null);
   };
 
-  // Kanal silme
   const deleteChannel = (id) => {
-    // Aktif kanal siliniyorsa, aktif kanalı sıfırlıyoruz
     if (activeChannel && activeChannel.id === id) {
       setActiveChannel(null);
     }
     setChannels(channels.filter((channel) => channel.id !== id));
-    setChannelOptions(null); // Silme sonrası açılan paneli kapatıyoruz
+    setChannelOptions(null);
   };
 
-  // Kanalları türlerine göre ayırmak
   const textChannels = channels.filter((channel) => channel.type === "text");
   const voiceChannels = channels.filter((channel) => channel.type === "voice");
 
   return (
     <div className="relative h-screen">
-      <div className="fixed left-0 top-0 h-screen w-64 bg-[#222831] text-white shadow-lg flex flex-col justify-between">
+      {/* Sağdaki Sidebar */}
+      <div className="fixed right-0 top-0 h-screen w-64 bg-[#222831] text-white shadow-lg flex flex-col justify-between">
         <div>
-          {/* Sunucu Banner ve Adı */}
           <div
             className="relative bg-cover bg-center h-32 w-full"
-            style={{ backgroundImage: `url(${profileBackground2_small})` }} // Arka plan görseli
+            style={{ backgroundImage: `url(${profileBackground2_small})` }}
           >
             <div className="absolute top-0 left-0 right-0 bottom-0 flex justify-center items-center">
               <h1 className="text-white font-bold text-xl">Demo Server</h1>
             </div>
           </div>
 
-          {/* Kanal ekleme butonu */}
           <button
             onClick={() => setShowDropdown(!showDropdown)}
             className="w-full bg-[#222831] text-white border-2 border-[#393E46] p-2 text-sm"
@@ -92,10 +86,8 @@ const Sidebar = ({ setActiveChannel }) => {
 
           <h2 className="text-md font-bold p-2">Channels</h2>
 
-          {/* Yazı Kanalları */}
           <h3 className="text-sm font-semibold p-2 text-[#FFD369]"># Text Channels</h3>
-
-          <div className="border-t border-[#393E46] mb-2"></div> {/* İnce çizgi */}
+          <div className="border-t border-[#393E46] mb-2" />
           <ul className="flex flex-col">
             {textChannels.map((channel) => (
               <li
@@ -103,9 +95,8 @@ const Sidebar = ({ setActiveChannel }) => {
                 className={`relative w-full p-1 text-sm cursor-pointer flex justify-between items-center ${
                   channel === activeChannel ? "bg-[#393E46] text-[#FFD369]" : "bg-transparent text-white"
                 } transition-all duration-200`}
-                onClick={() => handleChannelClick(channel)} // Kanal tıklandığında aktif kanal olarak set edilir
+                onClick={() => handleChannelClick(channel)}
               >
-                {/* Kanal İsmi */}
                 {editingChannel === channel.id ? (
                   <input
                     type="text"
@@ -119,8 +110,6 @@ const Sidebar = ({ setActiveChannel }) => {
                 ) : (
                   <span>{channel.name}</span>
                 )}
-
-                {/* Üç Nokta Menüsü */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -130,8 +119,6 @@ const Sidebar = ({ setActiveChannel }) => {
                 >
                   ...
                 </button>
-
-                {/* Kanal Ayarları Dropdown */}
                 {channelOptions === channel.id && (
                   <div className="absolute right-0 top-full mt-1 bg-[#222831] text-white text-sm border border-[#393E46] p-1 shadow-lg z-10">
                     <button
@@ -156,11 +143,9 @@ const Sidebar = ({ setActiveChannel }) => {
             ))}
           </ul>
 
-          <div className="border-t border-[#393E46] mt-2 mb-2"></div> {/* İnce çizgi */}
-
-          {/* Ses Kanalları */}
+          <div className="border-t border-[#393E46] mt-2 mb-2" />
           <h3 className="text-sm font-semibold p-2 text-[#FFD369]">🔊 Voice Channels</h3>
-          <div className="border-t border-[#393E46] mb-2"></div> {/* İnce çizgi */}
+          <div className="border-t border-[#393E46] mb-2" />
           <ul className="flex flex-col">
             {voiceChannels.map((channel) => (
               <li
@@ -168,9 +153,8 @@ const Sidebar = ({ setActiveChannel }) => {
                 className={`relative w-full p-1 text-sm cursor-pointer flex justify-between items-center ${
                   channel === activeChannel ? "bg-[#393E46] text-[#FFD369]" : "bg-transparent text-white"
                 } transition-all duration-200`}
-                onClick={() => handleChannelClick(channel)} // Kanal tıklandığında aktif kanal olarak set edilir
+                onClick={() => handleChannelClick(channel)}
               >
-                {/* Kanal İsmi */}
                 {editingChannel === channel.id ? (
                   <input
                     type="text"
@@ -184,8 +168,6 @@ const Sidebar = ({ setActiveChannel }) => {
                 ) : (
                   <span>{channel.name}</span>
                 )}
-
-                {/* Üç Nokta Menüsü */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -195,8 +177,6 @@ const Sidebar = ({ setActiveChannel }) => {
                 >
                   ...
                 </button>
-
-                {/* Kanal Ayarları Dropdown */}
                 {channelOptions === channel.id && (
                   <div className="absolute right-0 top-full mt-1 bg-[#222831] text-white text-sm border border-[#393E46] p-1 shadow-lg z-10">
                     <button
@@ -222,31 +202,29 @@ const Sidebar = ({ setActiveChannel }) => {
           </ul>
         </div>
 
-        {/* Ses, Mikrofon ve Video Butonları */}
         {activeChannel && activeChannel.type === "voice" && (
           <div className="flex justify-around items-center p-2 border-t border-[#393E46]">
             <button className="p-2 border-2 border-[#393E46] rounded">🔊</button>
             <button className="p-2 border-2 border-[#393E46] rounded">🎤</button>
             <button className="p-2 border-2 border-[#393E46] rounded">🎥</button>
-            <button className="p-2 border-2 border-[#393E46] rounded">🖥️</button> {/* Ekran paylaşma butonu */}
+            <button className="p-2 border-2 border-[#393E46] rounded">🖥️</button>
           </div>
         )}
       </div>
 
-      {/* Sağdaki Panel */}
+      {/* Sol Panel - Kanal içeriği */}
       {activeChannel && (
         <div
-          className="fixed right-0 top-0 h-screen w-full bg-[#393E46] text-white z-50 p-4"
-          style={{ width: "calc(100vw - 256px)" }} // Sidebar'ın genişliği çıkarılarak tam ekran kaplanacak
+          className="fixed left-0 top-0 h-screen w-full bg-[#393E46] text-white z-50 p-4"
+          style={{ width: "calc(100vw - 256px)" }}
         >
           <h2 className="text-2xl font-bold">{activeChannel.name}</h2>
           <p>Type: {activeChannel.type}</p>
           <p>Content of the channel will go here...</p>
-          {/* Buraya kanala özel içerik ekleyebilirsiniz */}
         </div>
       )}
     </div>
   );
 };
 
-export default Sidebar;
+export default SvSidebar;
