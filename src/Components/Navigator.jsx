@@ -1,6 +1,6 @@
 import { BsGearFill } from "react-icons/bs";
 import { FaStapler } from "react-icons/fa6";
-import { MdHome, MdSearch  } from "react-icons/md";
+import { MdHome, MdSearch, MdOutlineMessage } from "react-icons/md";
 import { IoMdNotifications } from "react-icons/io";
 
 import logo from "../assets/logoDark.svg";
@@ -69,6 +69,12 @@ const Navigator = () => {
           >
             <SideBarNotification />
           </div>
+          <div
+          className={`flex flex-col h-16 transition-all duration-250 ease-in-out delay-300
+                     ${isExpanded ? '-translate-y-15' : 'translate-y-0'}`}
+          >
+            <SideBarDM />
+          </div>
         </div>
         <div
           className={`flex flex-col h-16 transition-all duration-250 ease-in-out delay-300
@@ -77,26 +83,6 @@ const Navigator = () => {
           <SideBarIconSettings />
         </div>
       </div>
-    </>
-  );
-};
-
-const SideBarNotification = () => {
-  const navigate = useNavigate();
-  return(
-    <>
-      <div
-        className={
-          window.location.pathname === "/Notifications"
-            ? `hovered-icon group`
-            : `icon group hover:scale-105`
-        }
-        onClick={() => navigate("/Notifications")}
-      >
-        <IoMdNotifications size="25" />
-        <span className="sidebar-tooltip group-hover:scale-100">Bildirimler</span>
-      </div>
-      <hr className="border-[var(--primary-border)] border" />
     </>
   );
 };
@@ -170,6 +156,45 @@ const SideBarSearch = () => {
         <MdSearch  size="25" />
         <span className="sidebar-tooltip group-hover:scale-100">Sunucu Ara</span>
       </div>
+    </>
+  );
+};
+
+const SideBarNotification = () => {
+  const navigate = useNavigate();
+  return(
+    <>
+      <div
+        className={
+          window.location.pathname === "/Notifications"
+            ? `hovered-icon group`
+            : `icon group hover:scale-105`
+        }
+        onClick={() => navigate("/Notifications")}
+      >
+        <IoMdNotifications size="25" />
+        <span className="sidebar-tooltip group-hover:scale-100">Bildirimler</span>
+      </div>
+    </>
+  );
+};
+
+const SideBarDM = () => {
+  const navigate = useNavigate();
+  return(
+    <>
+      <div
+        className={
+          window.location.pathname === "/DirectMessaging"
+            ? `hovered-icon group`
+            : `icon group hover:scale-105`
+        }
+        onClick={() => navigate("/DirectMessaging")}
+      >
+        <MdOutlineMessage size="25" />
+        <span className="sidebar-tooltip group-hover:scale-100">Bildirimler</span>
+      </div>
+      <hr className="border-[var(--primary-border)] border" />
     </>
   );
 };
