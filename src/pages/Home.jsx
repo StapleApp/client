@@ -27,9 +27,6 @@ const Home = () => {
         className="background fixed grid grid-cols-3 
         bg-[var(--secondary-bg)] text-[var(--secondary-text)] h-screen w-screen top-0 z-0"
       >
-        <div>
-          <SocialBar />
-        </div>
         <div className="w-auto h-auto col-start-2 my-auto text-5xl font-bold">
           ANA SAYFA
         </div>

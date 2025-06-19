@@ -192,7 +192,7 @@ const SideBarDM = () => {
         onClick={() => navigate("/DirectMessaging")}
       >
         <MdOutlineMessage size="25" />
-        <span className="sidebar-tooltip group-hover:scale-100">Bildirimler</span>
+        <span className="sidebar-tooltip group-hover:scale-100">Mesajlar</span>
       </div>
       <hr className="border-[var(--primary-border)] border" />
     </>

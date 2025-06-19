@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { User, Edit2, Check, Moon, BellOff, Wifi, WifiOff, Mail, Calendar, Hash } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import SocialBar from "../Components/SocialBar";
 
 const Profile = () => {
     const { userData } = useAuth();
@@ -86,6 +87,9 @@ const Profile = () => {
             transition={{ duration: 0.3 }}  
             className="fixed top-0 left-0 w-full h-screen overflow-y-auto"
         >
+            <div>
+                <SocialBar />
+            </div>
             <div className="background bg-[var(--primary-bg)] text-[var(--primary-text)] min-h-screen w-full">
                 {/* Profile Content */}
                 <div className="max-w-4xl mx-auto px-4 py-10">
