@@ -5,6 +5,7 @@ import { useState, useRef ,useEffect} from "react";
 import ProfilePanel from './ProfilePanel'
 import { useAuth } from "../context/AuthContext";
 import { getFriendsList } from '../../firebase';
+import { getServersList } from '../../firebase';
 import icon from "../assets/360.png";
 import { getUser } from '../../firebase';
 import { useNavigate } from "react-router-dom";
@@ -80,66 +81,91 @@ const ServerList = ({isExpanded, setIsExpanded}) => {
     const userRefs = useRef({}); // Her kullanıcı için ref saklamak için obje
     const [selectedUser, setSelectedUser] = useState(null);
     const navigate = useNavigate();
+    const [servers, setServers] = useState([]); // Sunucuları burada tutacağız
+    const [selectedServer, setSelectedServer] = useState(null);
+    const { currentUser } = useAuth();
+    const serverRefs = useRef({});
 
-    const handleUserClick = (id, name) => {
-        if (userRefs.current[id]) {
-            const rect = userRefs.current[id].getBoundingClientRect();
 
-            let top = rect.top;
-            let left = rect.right;
+    useEffect(() => {
+        const fetchServers = async () => {
+            if (currentUser) {
+                const serverList = await getServersList(currentUser.uid);
 
-            setPosition({ top, left });
+                const formatted = serverList.map((server) => ({
+                    serverID: server.ServerId,
+                    serverName: server.ServerName,
+                    serverType: server.ServerType,
+                    serverPhoto: server.ServerPhotoURL || icon
+                }));
 
-            // Seçilen kullanıcıyı state'e kaydet
-            setSelectedUser({ id, name });
+                setServers(formatted);
+            }
+        };
+
+        fetchServers();
+    }, [currentUser]);
+
+
+
+    const handleServerClick = (serverID, serverName) => {
+        if (serverRefs.current[serverID]) {
+            const rect = serverRefs.current[serverID].getBoundingClientRect();
+            setPosition({ top: rect.top, left: rect.right });
+
+            setSelectedServer({ id: serverID, name: serverName });
             setIsExpanded(true);
         }
     };
 
-    return (
+        return (
         <div className="flex-1 overflow-y-auto w-40 mb-1 
             bg-[var(--secondary-bg)] text-[var(--primary-text)] 
             rounded-md text-xs font-bold max-h-[calc(100vh-74px)]
             shadow-xl mx-auto mt-16"
         >
             <div className="grid gap-2 p-1">
-                {Array(5).fill("Sunucu").map((user, UID) => (
-                    <div key={UID} ref={(element) => (userRefs.current[UID] = element)}
-                        onClick={() => handleUserClick(UID, user)}
+                {servers.map((server) => (
+                    <div
+                        key={server.serverID}
+                        ref={(el) => (serverRefs.current[server.serverID] = el)}
+                        onClick={() => handleServerClick(server.serverID, server.serverName)}
                         className="flex items-center w-full h-14 bg-[var(--primary-bg)] rounded-md p-2
-                        border-3 border-[var(--primary-border)] shadow-xl
-                        hover:border-3 hover:border-[var(--tertiary-border)]
-                        transition-all duration-300 ease-linear hover:scale-105 cursor-pointer">
+                            border-3 border-[var(--primary-border)] shadow-xl
+                            hover:border-3 hover:border-[var(--tertiary-border)]
+                            transition-all duration-300 ease-linear hover:scale-105 cursor-pointer"
+                    >
                         <span className="group cursor-pointer ml-1 mr-3 rounded-full">
-                            <RightBarImg src={icon} toggleExpand={() => setIsExpanded(true)} />
+                            <RightBarImg src={server.serverPhoto} toggleExpand={() => setIsExpanded(true)} />
                         </span>
-                        <span>{user + UID}</span>
+                        <span>{server.serverName}</span>
                     </div>
                 ))}
 
-                {selectedUser && (
+                {selectedServer && (
                     <ProfilePanel 
-                        check={isExpanded} 
+                        check={isExpanded}
                         setCheck={setIsExpanded}
-                        posX={position.left} 
+                        posX={position.left}
                         posY={position.top}
-                        userName={selectedUser.name} 
-                        userID={selectedUser.id}
+                        userName={selectedServer.name}
+                        userID={selectedServer.id}
                     />
                 )}
             </div>
-            <div 
-            onClick={() => navigate("/create-server")}
-            className="text-center p-2 mt-2 cursor-pointer text-sm font-semibold
-               hover:underline hover:text-[var(--accent-color)] transition-all duration-200"
-            >
-            Sunucu Oluştur
-            </div>
-            
 
+            <div 
+                onClick={() => navigate("/create-server")}
+                className="text-center p-2 mt-2 cursor-pointer text-sm font-semibold
+                    hover:underline hover:text-[var(--accent-color)] transition-all duration-200"
+            >
+                Sunucu Oluştur
+            </div>
         </div>
-    )
-}
+    );
+};
+
+
 
 const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
     const [friends, setFriends] = useState([]);
