@@ -53,8 +53,8 @@ function AnimatedSwitch() {
       <Toaster />
       <AnimatePresence mode="wait">
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/Home" element={<Home />} />
+          <Route path="/" element={<Profile />} />
+          <Route path="/Home" element={<Profile />} />
           <Route path="/Settings" element={<Settings />} />
           <Route path="/AddFriends" element={<AddFriends />} />
           <Route path="/SearchServer" element={<SearchServer />} />
