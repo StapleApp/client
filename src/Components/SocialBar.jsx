@@ -183,7 +183,7 @@ const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
                 const fullFriendData = await Promise.all(
                     friendList.map(async (friend) => {
                         const userInfo = await getUser(friend.uid);
-                        return { uid: friend.uid, nickName: userInfo.nickName , friendshipID: userInfo.friendshipID};
+                        return { uid: friend.uid, nickName: userInfo.nickName , friendshipID: userInfo.friendshipID, photoURL: userInfo.photoURL};
                     })
                 );
     
@@ -195,14 +195,13 @@ const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
     }, [userData]);
     
 
-    const handleUserClick = (uid, nickName, friendshipID) => {
+    const handleUserClick = (uid, nickName, friendshipID, photoURL) => {
         if (userRefs.current[uid]) {
             console.log(userRefs)
             const rect = userRefs.current[uid].getBoundingClientRect();
             setPosition({ top: rect.top, left: rect.right });
-    
-            // 👇 Artık friendshipID'yi profile panelde göstermek için gönderiyoruz
-            setSelectedUser({ userID: uid, id: friendshipID, nickName: nickName });
+            // Artık friendshipID'yi profile panelde göstermek için gönderiyoruz
+            setSelectedUser({ userID: uid, id: friendshipID, photoURL: photoURL, nickName: nickName });
             setIsExpanded(true);
         }
     };
@@ -219,16 +218,16 @@ const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
             <div
                 key={user.uid}
                 ref={(el) => (userRefs.current[user.uid] = el)}
-                onClick={() => handleUserClick(user.uid, user.nickName, user.friendshipID)}
+                onClick={() => handleUserClick(user.uid, user.nickName, user.friendshipID, user.photoURL)}
                 className="flex items-center w-full h-14 bg-[var(--primary-bg)] rounded-md p-2
                     border-3 border-[var(--primary-border)] shadow-xl
                     hover:border-3 hover:border-[var(--tertiary-border)]
                     transition-all duration-300 ease-linear hover:scale-105 cursor-pointer"
             >
                 <span className="group cursor-pointer ml-1 mr-3 rounded-full">
-                    <RightBarImg src={icon} toggleExpand={() => setIsExpanded(true)} />
+                    <RightBarImg src={user.photoURL} toggleExpand={() => setIsExpanded(true)} />
                 </span>
-                <span>{user.nickName}</span> {/* 👈 Burada artık isim gözüküyor */}
+                <span>{user.nickName}</span> {/* Burada artık isim gözüküyor */}
             </div>
         ))}
 
@@ -240,6 +239,7 @@ const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
                         posX={position.left} 
                         posY={position.top}
                         userName={selectedUser.nickName} 
+                        photoURL={selectedUser.photoURL}
                         userID={selectedUser.id} // friendship ID
                         UID={selectedUser.userID} // user ID
                     />

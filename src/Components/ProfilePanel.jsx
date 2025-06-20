@@ -9,7 +9,7 @@ import icon from "../assets/360.png";
 import { getGroupById, getUser, createGroup } from "../../firebase";
 import { useAuth } from "../context/AuthContext";
 
-const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDate, UID}) => {
+const ProfilePanel = ({ check, setCheck, posX, posY, userName, photoURL, userID ,memberDate, UID}) => {
   const formattedUID = `${userID}`.padStart(6, '0');
   const panelRef = useRef(null); // Create a reference to the panel
   const { userData } = useAuth();
@@ -86,7 +86,7 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, userID ,memberDat
 
           {/* Ortada Duracak İkon */}
           <div className="absolute top-1/12 grid grid-cols-3 w-76">
-            <ProfilePicture src={icon} />
+            <ProfilePicture src={photoURL || "/1.png"} />
             <div className="grid col-span-2 expanded-text bg-[var(--primary-bg)] h-6 my-auto rounded-md mr-3 p-0">
               <div className="flex text-sm justify-between">
                 <span className="ml-2">{userName}</span>

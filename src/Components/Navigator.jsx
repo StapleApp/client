@@ -25,6 +25,7 @@ const Navigator = () => {
         posX={242}
         posY={30}
         userName={userData?.nickName}
+        photoURL={userData?.photoURL || "/1.png"}
         userID={userData?.friendshipID}
         memberDate={userData?.createdDate}
       />
@@ -41,7 +42,7 @@ const Navigator = () => {
                         : 'opacity-100 translate-y-0'}`}
           >
             <SideBarImg
-              src={icon}
+              src={userData?.photoURL || "/1.png"}
               toggleExpand={() => setIsExpanded(!isExpanded)}
             />
           </div>

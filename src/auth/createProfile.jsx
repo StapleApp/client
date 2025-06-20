@@ -17,6 +17,18 @@ const CreateProfile = () => {
   const navigate = useNavigate(); // Sayfalar arasında geçiş yapmak için hook
   const auth = getAuth(); // Firebase kimlik doğrulama nesnesi
 
+  const profileImages = [
+    "/0.png",
+    "/1.png",
+    "/2.png",
+    "/3.png",
+    "/4.png",
+    "/5.png",
+    "/6.png",
+  ];
+
+  const [selectedImage, setSelectedImage] = useState(profileImages[0]);
+
   // Profil fotoğrafı değiştirildiğinde çalışacak fonksiyon
   const handleChangeImage = (e) => {
     const file = e.target.files[0]; // Seçilen ilk dosyayı al
@@ -43,7 +55,7 @@ const CreateProfile = () => {
     onAuthStateChanged(auth, (user) => {
       if (user) {
         console.log("Current User:", user); // Kullanıcı konsola yazdırılır
-        UpdateNickname(user.uid, nickname); // Takma ad güncellenir (UpdateNickname fonksiyonu senin tanımladığın bir fonksiyon olmalı)
+        UpdateNickname(user.uid, nickname, selectedImage); // Takma ad güncellenir (UpdateNickname fonksiyonu senin tanımladığın bir fonksiyon olmalı)
         navigate('/home'); // Kullanıcı ana sayfaya yönlendirilir
       } else {
         console.log("No user is signed in."); // Oturum açan kullanıcı yoksa bilgi ver
@@ -85,6 +97,18 @@ return (
               className="hidden"
             />
           </label>
+        </div>
+
+        <div className="flex gap-2 mb-4">
+          {profileImages.map((img, idx) => (
+            <img
+              key={idx}
+              src={img}
+              alt={`profile-${idx}`}
+              className={`w-14 h-14 rounded-full cursor-pointer border-2 ${selectedImage === img ? "border-blue-500" : "border-gray-300"}`}
+              onClick={() => setSelectedImage(img)}
+            />
+          ))}
         </div>
 
         <input

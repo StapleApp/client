@@ -29,7 +29,7 @@ const ArkadasEkle = () => {
       }, 100); // 0.1 saniye sonra animasyon başlasın
 
       GetUserByFriendshipID(searchId).then((friend) => {
-        if (friend) {
+        if (friend && userData.friendshipID != searchId) {
           setFriendData(friend);
           console.log("User found:", friend);
         } else {

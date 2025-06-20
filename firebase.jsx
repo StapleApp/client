@@ -286,11 +286,12 @@ const createRoomID = async () => {
 }
 
 // ** Nickname Güncelleme **
-export const UpdateNickname = async (uid, newValue) => {
+export const UpdateNickname = async (uid, newValue, photo) => {
     try {
         const userDocRef = doc(db, "Users", uid);
         await updateDoc(userDocRef, {
-            nickName: newValue
+            nickName: newValue,
+            photoURL: photo
         });
 
         console.log("User name updated in Firestore");
