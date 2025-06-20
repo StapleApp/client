@@ -95,7 +95,7 @@ const Login = () => {
   }, [navigate]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen -100">
+    <div className="fixed left-0 top-0 background flex items-center justify-center min-h-screen -100">
       <div className="w-full max-w-md p-12 bg-white border border-gray-300 rounded-2xl shadow-md">
         <h2 className="mb-8 text-center text-2xl font-bold tracking-tight text-gray-900">
           Welcome to STAPLE
