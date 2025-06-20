@@ -87,10 +87,6 @@ return (
             className="w-full h-full object-cover rounded-full"
           />
           <label className="absolute bottom-2 right-2 p-2 bg-white border border-gray-300 rounded-full cursor-pointer shadow hover:bg-blue-100 transition">
-            <img src="https://img.icons8.com/?size=100&id=35635&format=png&color=000000" 
-              alt="Edit Icon" 
-              className="w-6 h-6"
-            />
             <input 
               type="file" 
               accept="image/*" 
