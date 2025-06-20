@@ -25,6 +25,7 @@ const CreateProfile = () => {
     "/4.png",
     "/5.png",
     "/6.png",
+    "/7.png",
   ];
 
   const [selectedImage, setSelectedImage] = useState(profileImages[0]);
@@ -71,21 +72,21 @@ const CreateProfile = () => {
   });
 
 return (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="flex min-h-full w-96 flex-col justify-center px-10 py-12 lg:px-12 bg-white border border-gray-300 rounded-2xl shadow-lg">
-      <h3 className="mb-4 text-center text-2xl font-bold tracking-tight text-gray-900">
+  <div className="fixed flex background left-0 top-0 items-center justify-center">
+    <div className="flex w-full max-w-md flex-col justify-center px-8 py-10 bg-white border border-gray-200 rounded-3xl shadow-2xl">
+      <h3 className="mb-6 text-center text-3xl font-extrabold tracking-tight text-blue-700">
         Create Your Profile
       </h3>
 
       <div className="flex flex-col items-center relative">
-        <div className="w-32 h-32 mb-4 rounded-full bg-gray-300 flex items-center justify-center">
-        <img
-            src={profileImage}
-            alt="Profile"
+        {/* Seçilen profil görseli büyük şekilde yukarıda */}
+        <div className="w-32 h-32 mb-4 rounded-full bg-gray-200 flex items-center justify-center shadow-md border-4 border-blue-200 relative">
+          <img
+            src={selectedImage}
+            alt="Selected Profile"
             className="w-full h-full object-cover rounded-full"
           />
-  
-        <label className="absolute bottom-28 right-20 p-1 bg-gray-200 rounded-full cursor-pointer shadow-lg">
+          <label className="absolute bottom-2 right-2 p-2 bg-white border border-gray-300 rounded-full cursor-pointer shadow hover:bg-blue-100 transition">
             <img src="https://img.icons8.com/?size=100&id=35635&format=png&color=000000" 
               alt="Edit Icon" 
               className="w-6 h-6"
@@ -99,16 +100,32 @@ return (
           </label>
         </div>
 
-        <div className="flex gap-2 mb-4">
-          {profileImages.map((img, idx) => (
-            <img
-              key={idx}
-              src={img}
-              alt={`profile-${idx}`}
-              className={`w-14 h-14 rounded-full cursor-pointer border-2 ${selectedImage === img ? "border-blue-500" : "border-gray-300"}`}
-              onClick={() => setSelectedImage(img)}
-            />
-          ))}
+        {/* 8 görseli 4 üstte 4 altta grid olarak göster */}
+        <div className="mb-6">
+          <div className="grid grid-cols-4 gap-3">
+            {profileImages.slice(0, 4).map((img, idx) => (
+              <img
+                key={idx}
+                src={img}
+                alt={`profile-${idx}`}
+                className={`w-14 h-14 rounded-full cursor-pointer border-4 transition-all duration-200 shadow-sm hover:scale-105 ${selectedImage === img ? "border-blue-500 ring-2 ring-blue-300" : "border-gray-200"}`}
+                onClick={() => setSelectedImage(img)}
+                draggable={false}
+              />
+            ))}
+          </div>
+          <div className="grid grid-cols-4 gap-3 mt-3">
+            {profileImages.slice(4, 8).map((img, idx) => (
+              <img
+                key={idx + 4}
+                src={img}
+                alt={`profile-${idx + 4}`}
+                className={`w-14 h-14 rounded-full cursor-pointer border-4 transition-all duration-200 shadow-sm hover:scale-105 ${selectedImage === img ? "border-blue-500 ring-2 ring-blue-300" : "border-gray-200"}`}
+                onClick={() => setSelectedImage(img)}
+                draggable={false}
+              />
+            ))}
+          </div>
         </div>
 
         <input
@@ -117,12 +134,12 @@ return (
           value={nickname}
           onChange={(e) => setNickname(e.target.value)}
           required
-          className="mb-4 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+          className="mb-5 px-5 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400 text-center text-lg shadow"
         />
 
         <button
           onClick={handleSubmit}
-          className="px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
+          className="px-6 py-3 bg-blue-500 text-white rounded-full font-semibold shadow hover:bg-blue-600 transition"
         >
           Save
         </button>
