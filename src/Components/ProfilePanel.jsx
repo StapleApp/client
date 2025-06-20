@@ -5,7 +5,6 @@ import { CgProfile } from "react-icons/cg";
 import { FaTelegramPlane } from "react-icons/fa";
 import { useEffect, useRef } from "react"; // Import useEffect and useRef
 import profileBackground2_small from "../assets/profileBackground2_small.png";
-import icon from "../assets/360.png";
 import { getGroupById, getUser, createGroup } from "../../firebase";
 import { useAuth } from "../context/AuthContext";
 
