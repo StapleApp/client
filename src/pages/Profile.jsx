@@ -33,7 +33,7 @@ const Profile = () => {
                 createdDate: userData.createdDate || "",
                 friendshipId: userData.friendshipID || "",
                 email: userData.email || "@",
-                profileImage: userData.photoURL || "/api/placeholder/150/150",
+                profileImage: userData.photoURL || "/1.png",
             }));
         }
     }, [userData]);
