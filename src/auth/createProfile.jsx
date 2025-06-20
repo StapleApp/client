@@ -4,9 +4,7 @@ import { getAuth } from "firebase/auth";
 import toast from 'react-hot-toast';
 import { onAuthStateChanged } from "firebase/auth";
 import { UpdateNickname } from "../../firebase";
-import profileImage from "../assets/360.png";
 import { useAuth } from "../context/AuthContext";
-
 
 const CreateProfile = () => {
   // Kullanıcının takma adını tutmak için state
@@ -74,26 +72,18 @@ const CreateProfile = () => {
 return (
   <div className="fixed flex background left-0 top-0 items-center justify-center">
     <div className="flex w-full max-w-md flex-col justify-center px-8 py-10 bg-white border border-gray-200 rounded-3xl shadow-2xl">
-      <h3 className="mb-6 text-center text-3xl font-extrabold tracking-tight text-blue-700">
+      <h3 className="mb-6 text-center text-3xl font-extrabold tracking-tight text-[var(--primary-bg)]">
         Create Your Profile
       </h3>
 
       <div className="flex flex-col items-center relative">
         {/* Seçilen profil görseli büyük şekilde yukarıda */}
-        <div className="w-32 h-32 mb-4 rounded-full bg-gray-200 flex items-center justify-center shadow-md border-4 border-blue-200 relative">
+        <div className="w-32 h-32 mb-4 rounded-full bg-gray-200 flex items-center justify-center shadow-md border-4 border-[var(--tertiary-bg)] relative">
           <img
             src={selectedImage}
             alt="Selected Profile"
             className="w-full h-full object-cover rounded-full"
           />
-          <label className="absolute bottom-2 right-2 p-2 bg-white border border-gray-300 rounded-full cursor-pointer shadow hover:bg-blue-100 transition">
-            <input 
-              type="file" 
-              accept="image/*" 
-              onChange={handleChangeImage} 
-              className="hidden"
-            />
-          </label>
         </div>
 
         {/* 8 görseli 4 üstte 4 altta grid olarak göster */}
@@ -104,7 +94,7 @@ return (
                 key={idx}
                 src={img}
                 alt={`profile-${idx}`}
-                className={`w-14 h-14 rounded-full cursor-pointer border-4 transition-all duration-200 shadow-sm hover:scale-105 ${selectedImage === img ? "border-blue-500 ring-2 ring-blue-300" : "border-gray-200"}`}
+                className={`w-14 h-14 rounded-full cursor-pointer border-4 transition-all duration-200 shadow-sm hover:scale-105 ${selectedImage === img ? "border-[var(--tertiary-bg)] ring-2 ring-[var(--primary-bg)]" : "border-gray-200"}`}
                 onClick={() => setSelectedImage(img)}
                 draggable={false}
               />
@@ -116,7 +106,7 @@ return (
                 key={idx + 4}
                 src={img}
                 alt={`profile-${idx + 4}`}
-                className={`w-14 h-14 rounded-full cursor-pointer border-4 transition-all duration-200 shadow-sm hover:scale-105 ${selectedImage === img ? "border-blue-500 ring-2 ring-blue-300" : "border-gray-200"}`}
+                className={`w-14 h-14 rounded-full cursor-pointer border-4 transition-all duration-200 shadow-sm hover:scale-105 ${selectedImage === img ? "border-[var(--tertiary-bg)] ring-2 ring-[var(--primary-bg)]" : "border-gray-200"}`}
                 onClick={() => setSelectedImage(img)}
                 draggable={false}
               />
@@ -135,7 +125,7 @@ return (
 
         <button
           onClick={handleSubmit}
-          className="px-6 py-3 bg-blue-500 text-white rounded-full font-semibold shadow hover:bg-blue-600 transition"
+          className="px-6 py-3 bg-[var(--secondary-bg)] text-white rounded-full font-semibold shadow hover:[var(--primary-bg)] transition"
         >
           Save
         </button>
