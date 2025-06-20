@@ -3,9 +3,6 @@ import { FaStapler } from "react-icons/fa6";
 import { MdHome, MdSearch, MdOutlineMessage } from "react-icons/md";
 import { IoMdNotifications } from "react-icons/io";
 
-import logo from "../assets/logoDark.svg";
-import icon from "../assets/360.png";
-
 import ProfilePanel from './ProfilePanel'
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
