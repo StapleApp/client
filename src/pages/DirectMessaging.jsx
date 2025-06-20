@@ -5,7 +5,26 @@ import { useLocation } from "react-router-dom";
 import EmojiPicker from "emoji-picker-react";
 
 import { useAuth } from "../context/AuthContext";
-import { getGroupById, sendMessageToGroup, listenGroupMessages } from "../../firebase"; 
+import { getGroupById, sendMessageToGroup, listenGroupMessages, getUser } from "../../firebase"; 
+
+async function fetchFriendData(userID) {
+    try {
+        const user = await getUser(userID);
+        if (user) {
+            return {
+                userID: user.userID,
+                nickName: user.nickName,
+                photoURL: user.photoURL || "/1.png"
+            };
+        } else {
+            console.error("Kullanıcı bulunamadı:", userID);
+            return null;
+        }
+    } catch (error) {
+        console.error("Kullanıcı verisi alınırken hata oluştu:", error);
+        return null;
+    }
+}
 
 const DirectMessaging = () => {
     const location = useLocation();
@@ -18,6 +37,8 @@ const DirectMessaging = () => {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState("");
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [friendData, setFriendData] = useState(null);
+    const [allFriendsData, setAllFriendsData] = useState({});
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
@@ -64,7 +85,18 @@ const DirectMessaging = () => {
             (g) => g.group.users && g.group.users.includes(selectedUserID)
             );
             if (found) {
-            setSelectedGroup(found.group);
+                setSelectedGroup(found.group);
+                fetchFriendData(selectedUserID)
+                    .then(data => {
+                        if (data) {
+                            setFriendData(data);
+                        } else {
+                            console.warn("Arkadaş verisi bulunamadı:", selectedUserID);
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Arkadaş verisi alınırken hata oluştu:", error);
+                    });
             }
         }
     }, [selectedUserID, groupDataList]);
@@ -74,6 +106,10 @@ const DirectMessaging = () => {
         setMessages([] || []); // burada gerçek mesajları yüklemek için API çağrısı yapılabilir
         }
     }, [selectedGroup]);
+
+    useEffect(() => {
+        console.log("araba", friendData);
+    }, [friendData]);
 
     useEffect(() => {
         scrollToBottom();
@@ -168,6 +204,29 @@ const DirectMessaging = () => {
         setShowEmojiPicker(false);
     };
 
+    useEffect(() => {
+        const fetchAllFriends = async () => {
+            if (groupDataList.length > 0) {
+                // Tüm kullanıcı ID'lerini tek bir dizide topla (tekrarsız)
+                const userIDs = [
+                    ...new Set(
+                        groupDataList.flatMap(g => g.group.users || [])
+                            .filter(id => id !== userData?.userID) // kendi ID'ni çıkarabilirsin
+                    )
+                ];
+                // Her kullanıcı için veriyi çek
+                const friendDataArr = await Promise.all(userIDs.map(id => fetchFriendData(id)));
+                // Objeye çevir
+                const friendDataObj = {};
+                friendDataArr.forEach(fd => {
+                    if (fd) friendDataObj[fd.userID] = fd;
+                });
+                setAllFriendsData(friendDataObj);
+            }
+        };
+        fetchAllFriends();
+    }, [groupDataList, userData]);
+
     return (
         <motion.div
         initial={{ opacity: 0, x: -100 }}
@@ -191,31 +250,39 @@ const DirectMessaging = () => {
                         {/* Grup Listesi */}
                         <div className="flex-1 overflow-y-auto">
                         <AnimatePresence>
-                            {groupDataList.map((group, index) => (
-                                <motion.div
-                                    key={`${group.id || index}-${index}`}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -20 }}
-                                    className={`p-4 border-b border-[var(--primary-border)] cursor-pointer transition-colors hover:bg-[var(--secondary-bg)] ${
-                                        selectedGroup?.id === group.group.id ? 'bg-[var(--secondary-bg)] border-l-4 border-blue-500' : ''
-                                    }`}
-                                    onClick={() => handleGroupSelect(group.group)}
-                                >
-                                    <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                                        <Users className="w-5 h-5 text-white" />
+                            {groupDataList.map((group, index) => {
+                                // Kendi ID'ni hariç tut, ilk kullanıcıyı al
+                                const otherUserId = (group.group.users || []).find(id => id !== userData?.userID);
+                                const otherUser = allFriendsData[otherUserId];
+                                return (
+                                    <motion.div
+                                        key={`${group.id || index}-${index}`}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -20 }}
+                                        className={`p-4 border-b border-[var(--primary-border)] cursor-pointer transition-colors hover:bg-[var(--secondary-bg)] ${
+                                            selectedGroup?.id === group.group.id ? 'bg-[var(--secondary-bg)] border-l-4 border-blue-500' : ''
+                                        }`}
+                                        onClick={() => handleGroupSelect(group.group)}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                                                    <img
+                                                        src={otherUser?.photoURL || "/1.png"}
+                                                        alt="Avatar"
+                                                        className="w-8 h-8 rounded-full"
+                                                    />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <h3 className="font-medium text-[var(--primary-text)]">{group.group.groupName}</h3>
+                                                    <div className="text-xs text-[var(--secondary-text)]"></div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="flex-1">
-                                        <h3 className="font-medium text-[var(--primary-text)]">{group.group.groupName}</h3>
-                                        <div className="text-xs text-[var(--secondary-text)]">
-                                        </div>
-                                        </div>
-                                    </div>
-                                    </div>
-                                </motion.div>
-                            ))}
+                                    </motion.div>
+                                );
+                            })}
                         </AnimatePresence>
                         </div>
                     </div>
@@ -226,14 +293,24 @@ const DirectMessaging = () => {
                         <>
                             {/* Chat Header */}
                             <div className="p-4 bg-[var(--primary-bg)] border-b border-[var(--primary-border)]">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                                <Users className="w-5 h-5 text-white" />
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                                        {(() => {
+                                            const otherUserId = (selectedGroup.users || []).find(id => id !== userData?.userID);
+                                            const otherUser = allFriendsData[otherUserId];
+                                            return (
+                                                <img
+                                                    src={otherUser?.photoURL || "/1.png"}
+                                                    alt="Avatar"
+                                                    className="w-8 h-8 rounded-full"
+                                                />
+                                            );
+                                        })()}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-[var(--primary-text)]">{selectedGroup.groupName}</h3>
+                                    </div>
                                 </div>
-                                <div>
-                                <h3 className="font-semibold text-[var(--primary-text)]">{selectedGroup.groupName}</h3>
-                                </div>
-                            </div>
                             </div>
 
                             {/* Mesajlar Alanı */}
