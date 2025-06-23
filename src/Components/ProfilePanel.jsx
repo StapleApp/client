@@ -8,29 +8,44 @@ import profileBackground2_small from "../assets/profileBackground2_small.png";
 import { getGroupById, getUser, createGroup } from "../../firebase";
 import { useAuth } from "../context/AuthContext";
 
-const ProfilePanel = ({ check, setCheck, posX, posY, userName, photoURL, userID ,memberDate, UID}) => {
-  const formattedUID = `${userID}`.padStart(6, '0');
+const ProfilePanel = ({
+  check,
+  setCheck,
+  posX,
+  posY,
+  userName,
+  photoURL,
+  userID,
+  memberDate,
+  UID,
+}) => {
+  const formattedUID = `${userID}`.padStart(6, "0");
   const panelRef = useRef(null); // Create a reference to the panel
   const { userData } = useAuth();
 
   const clampPosition = (x, y, panelWidth, panelHeight) => {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-  
+
     // Sağ ve sol sınırlar
     let clampedX = Math.min(Math.max(x, 0), screenWidth - panelWidth);
-  
+
     // Üst ve alt sınırlar
     let clampedY = Math.min(Math.max(y, 0), screenHeight - panelHeight);
-  
+
     return { clampedX, clampedY };
   };
 
   const panelWidth = 340;
   const panelHeight = 304;
-  const { clampedX, clampedY } = clampPosition(posX, posY, panelWidth, panelHeight);
+  const { clampedX, clampedY } = clampPosition(
+    posX,
+    posY,
+    panelWidth,
+    panelHeight
+  );
 
- // Database'den gelen Timestamp verisini Date nesnesine dönüştürme
+  // Database'den gelen Timestamp verisini Date nesnesine dönüştürme
   let creadetDateText = "Üyelik tarihi mevcut değil";
 
   if (userData && memberDate) {
@@ -47,7 +62,11 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, photoURL, userID 
   // Panel açılınca, panel dışı her yeri dinleyen listener ekledim
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (check && panelRef.current && !panelRef.current.contains(event.target)) {
+      if (
+        check &&
+        panelRef.current &&
+        !panelRef.current.contains(event.target)
+      ) {
         setCheck(false);
       }
     };
@@ -70,9 +89,11 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, photoURL, userID 
               bg-[var(--primary-bg)] shadow-xl
               transition-all duration-300 ease-in-out
               flex flex-col justify-between
-              ${check 
-                  ? `opacity-100 scale-100 translate-y-0` 
-                  : "opacity-0 scale-95 translate-y-2 pointer-events-none"}`}
+              ${
+                check
+                  ? `opacity-100 scale-100 translate-y-0`
+                  : "opacity-0 scale-95 translate-y-2 pointer-events-none"
+              }`}
       style={{ top: `${clampedY - 32}px`, left: `${clampedX - 180}px` }}
     >
       {/* Üst Menü Öğeleri */}
@@ -80,7 +101,10 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, photoURL, userID 
         <div className="grid grid-rows-3">
           {/* Üst Arkaplan */}
           <div className="row-span-2">
-            <img className="rounded-t-md h-32 w-80" src={profileBackground2_small} />
+            <img
+              className="rounded-t-md h-32 w-80"
+              src={profileBackground2_small}
+            />
           </div>
 
           {/* Ortada Duracak İkon */}
@@ -96,25 +120,23 @@ const ProfilePanel = ({ check, setCheck, posX, posY, userName, photoURL, userID 
 
           {/* Alt Arkaplan */}
           {/* Alt Arkaplan */}
-<div className="flex my-auto">
-  {userData && userData.friendshipID === userID ? (
-    <div className="flex gap-3 pl-1">
-      <ProfileButton />
-      <SideBarIconClose toggleExpand={() => setCheck(false)} />
-    </div>
-  ) : (
-    userData && (
-      <>
-        <ProfileButton />
-        <AddFriendButton />
-        <DMButton userID={UID} userData={userData} />
-        <SideBarIconClose toggleExpand={() => setCheck(false)} />
-      </>
-    )
-  )}
-</div>
-
-
+          <div className="flex my-auto">
+            {userData && userData.friendshipID === userID ? (
+              <div className="flex gap-3 pl-1">
+                <ProfileButton />
+                <SideBarIconClose toggleExpand={() => setCheck(false)} />
+              </div>
+            ) : (
+              userData && (
+                <>
+                  <ProfileButton />
+                  <AddFriendButton />
+                  <DMButton userID={UID} userData={userData} />
+                  <SideBarIconClose toggleExpand={() => setCheck(false)} />
+                </>
+              )
+            )}
+          </div>
         </div>
         <textarea
           className="expanded-text text-sm bg-[var(--secondary-bg)]
@@ -147,9 +169,7 @@ const ProfileButton = () => {
         className="flex icon group cursor-pointer hover:scale-105 h-7 w-20 mt-1 mb-0 mx-auto"
         onClick={() => navigate("/Profile")}
       >
-        <span
-          className="bg-[var(--primary-bg)] text-[var(--primary-text)] text-sm font-bold mr-1"
-        >
+        <span className="bg-[var(--primary-bg)] text-[var(--primary-text)] text-sm font-bold mr-1">
           Profil
         </span>
         <CgProfile size="15" />
@@ -185,18 +205,21 @@ const DMButton = ({ userID, userData }) => {
       className="flex icon group cursor-pointer hover:scale-105 h-7 w-20 mt-1 mb-0 mx-auto"
       onClick={async () => {
         for (const groupID of userData.groups) {
-        const group = await getGroupById(groupID);
-        if (group && group.users.includes(userID)) {
-          navigate(`/DirectMessaging`, { state: { userID } });
-          return;
+          const group = await getGroupById(groupID);
+          if (group && group.users.includes(userID)) {
+            navigate(`/DirectMessaging`, { state: { userID } });
+            return;
+          }
         }
-      }
-      // Hiçbiri yoksa yeni grup oluştur
-      const friendData = await getUser(userID)
-      const groupID = await createGroup(friendData.nickName + " & " + userData.nickName, [userData.userID, userID]);
-      if (groupID) {
-        navigate(`/DirectMessaging`, { state: { userID } });
-      }
+        // Hiçbiri yoksa yeni grup oluştur
+        const friendData = await getUser(userID);
+        const groupID = await createGroup(
+          friendData.nickName + " & " + userData.nickName,
+          [userData.userID, userID]
+        );
+        if (groupID) {
+          navigate(`/DirectMessaging`, { state: { userID } });
+        }
       }}
     >
       <span className="bg-[var(--primary-bg)] text-[var(--primary-text)] text-sm font-bold mr-1">
