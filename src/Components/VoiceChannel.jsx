@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Mic, MicOff, PhoneOff, Volume2, Loader2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { socket } from "../lib/socket";
+import { socket } from "../socket";
 
 const ICE = {
   iceServers: [
