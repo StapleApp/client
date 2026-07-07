@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAuth } from "firebase/auth";
 import toast from 'react-hot-toast';
 import { UpdateNickname } from "../../services/userService";
 import { useAuth } from "../../context/AuthContext";
@@ -9,7 +8,6 @@ const CreateProfilePage = () => {
   const [nickname, setNickname] = useState('');
   const { userData, currentUser } = useAuth();
   const navigate = useNavigate();
-  const auth = getAuth();
 
   const profileImages = [
     "/0.png",

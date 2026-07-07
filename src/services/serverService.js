@@ -36,29 +36,6 @@ const createServerID = async () => {
   return ServerID;
 };
 
-// ** Room ID oluşturan fonksiyon **
-const createRoomID = async () => {
-  const roomsRef = collection(db, "Servers");
-  let RoomID;
-  let isUnique = false;
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-  while (!isUnique) {
-    RoomID = Array.from(
-      { length: 10 },
-      () => chars[Math.floor(Math.random() * chars.length)]
-    ).join("");
-    const q = query(roomsRef, where("RoomID", "==", RoomID));
-    const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) {
-      isUnique = true;
-    }
-  }
-
-  return RoomID;
-};
-
 // ** Server verisi yazma **
 async function writeServerData(serverName, ownerID) {
   const serverID = await createServerID();
@@ -92,36 +69,12 @@ async function writeServerData(serverName, ownerID) {
           RoomName: "General",
           Type: "TextRoom",
           Position: 1,
-          Messages: [
-            {
-              MessageID: "1",
-              SenderID: "1",
-              SendDate: 1234567890,
-              Type: "sent",
-              Message: "Hello, how are you?",
-            },
-            {
-              MessageID: "2",
-              SenderID: "1",
-              SendDate: 1234567891,
-              Type: "edited",
-              Message: "Hello, how are you doing?",
-            },
-            {
-              MessageID: "3",
-              SenderID: "1",
-              SendDate: 1234567892,
-              Type: "deleted",
-              Message: "",
-            },
-          ],
         },
         {
           RoomID: "1",
           RoomName: "General",
           Type: "VoiceRoom",
           Position: 2,
-          GroupName: "",
         },
       ],
       Users: [

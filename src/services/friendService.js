@@ -78,7 +78,7 @@ export const getFriendsList = async (uid) => {
       const allFriends = data.friends || {};
 
       const filteredFriendsArray = Object.entries(allFriends)
-        .filter(([_, info]) => info.relation === "Friend")
+        .filter(([, info]) => info.relation === "Friend")
         .map(([uid, info]) => ({
           uid,
           ...info,

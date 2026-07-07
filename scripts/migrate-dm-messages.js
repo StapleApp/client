@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs, doc, writeBatch, addDoc, updateDoc } from "firebase/firestore";
+import { getFirestore, collection, getDocs, doc, addDoc, updateDoc } from "firebase/firestore";
 import fs from "fs";
 import path from "path";
 

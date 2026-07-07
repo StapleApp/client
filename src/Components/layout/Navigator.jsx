@@ -12,7 +12,7 @@ import { useAuth } from "../../context/AuthContext";
 
 const Navigator = () => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { currentUser, userData } = useAuth();
+  const { userData } = useAuth();
 
   return (
     <>

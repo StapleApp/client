@@ -1,6 +1,5 @@
 import {
   createUserWithEmailAndPassword,
-  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -21,8 +20,10 @@ export const register = async (name, surname, email, password, birthdate, naviga
 
     const checkEmailVerification = setInterval(async () => {
       await user.reload();
+      // NOTE: e-posta doğrulama şimdilik kapalı. Açmak için üstteki
+      // sendEmailVerification'ı geri al ve buradaki koşulu user.emailVerified yap.
+      // eslint-disable-next-line no-constant-condition
       if (true) {
-        //user.emailVerified
         clearInterval(checkEmailVerification);
         toast.success("Email Confirmed");
 
@@ -80,13 +81,9 @@ export const signInWithGoogle = async (navigate) => {
 };
 
 // ** Login **
-export const loginWithMail = async (email, password, navigate) => {
+export const loginWithMail = async (email, password) => {
   try {
-    const userCredential = await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
+    await signInWithEmailAndPassword(auth, email, password);
     toast.success("Login successful!");
     return true;
   } catch (error) {

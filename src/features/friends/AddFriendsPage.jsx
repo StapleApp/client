@@ -1,17 +1,15 @@
 import { IoIosAddCircle } from "react-icons/io";
 import pfp from "../../assets/360.png";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { IoIosSearch, IoMdPersonAdd } from "react-icons/io";
 import profileBackground2_small from "../../assets/profileBackground2_small.png";
 import { useAuth } from "../../context/AuthContext";
 import { GetUserByFriendshipID, AddFriend } from "../../services/friendService";
-import toast from "react-hot-toast";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 const AddFriendsPage = () => {
-  const { currentUser, userData } = useAuth();
+  const { userData } = useAuth();
   const [searchId, setSearchId] = useState("");
   const [showProfile, setShowProfile] = useState(false);
   const [friendData, setFriendData] = useState(null);

@@ -85,7 +85,9 @@ const VoiceChannel = ({ serverId, channel }) => {
     if (p) {
       try {
         p.pc.close();
-      } catch (_) {}
+      } catch {
+        /* bağlantı zaten kapalı */
+      }
       delete peersRef.current[socketId];
     }
     removeRemoteAudio(socketId);

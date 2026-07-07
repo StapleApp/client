@@ -40,6 +40,9 @@ const ChatPanel = ({ context, channelName, headerIcon, showHeader = true }) => {
 
     const unsubscribe = listenMessages(context, setMessages);
     return () => unsubscribe && unsubscribe();
+    // Depend on the primitive id fields, not the context object identity,
+    // to avoid re-subscribing on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [context?.serverId, context?.channelId, context?.groupId]);
 
   useEffect(() => {

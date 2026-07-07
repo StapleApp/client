@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 const SocialBar = () => {
     const [isFlagSetted, setIsFlagSetted] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
-    const { currentUser, userData } = useAuth();
+    const { userData } = useAuth();
     return (
         <>
             <div className="fixed top-0 right-0 bg-[var(--primary-bg)] h-screen w-48 shadow-xl">
@@ -78,8 +78,6 @@ const RightBarImg = ({ src, toggleExpand }) => {
 const ServerList = ({isExpanded, setIsExpanded}) => {
 
     const [position, setPosition] = useState({ top: 0, left: 0 });
-    const userRefs = useRef({});
-    const [selectedUser, setSelectedUser] = useState(null);
     const navigate = useNavigate();
     const [servers, setServers] = useState([]);
     const [selectedServer, setSelectedServer] = useState(null);
