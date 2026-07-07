@@ -5,9 +5,8 @@ import { CgProfile } from "react-icons/cg";
 import { FaTelegramPlane } from "react-icons/fa";
 import { useEffect, useRef } from "react";
 import profileBackground2_small from "../assets/profileBackground2_small.png";
-import { getGroupById } from "../services/groupService";
+import { findDMGroup, createGroup } from "../services/groupService";
 import { getUser } from "../services/userService";
-import { createGroup } from "../services/groupService";
 import { useAuth } from "../context/AuthContext";
 
 const ProfilePanel = ({
@@ -197,17 +196,15 @@ const DMButton = ({ userID, userData }) => {
     <div
       className="flex icon group cursor-pointer hover:scale-105 h-7 w-20 mt-1 mb-0 mx-auto"
       onClick={async () => {
-        for (const groupID of userData.groups) {
-          const group = await getGroupById(groupID);
-          if (group && group.users.includes(userID)) {
-            navigate(`/DirectMessaging`, { state: { userID } });
-            return;
-          }
+        const group = await findDMGroup(userData.userID, userID);
+        if (group) {
+          navigate(`/DirectMessaging`, { state: { userID } });
+          return;
         }
         // Hiçbiri yoksa yeni grup oluştur
         const friendData = await getUser(userID);
         const groupID = await createGroup(
-          friendData.nickName + " & " + userData.nickName,
+          (friendData?.nickName || "Arkadaş") + " & " + userData.nickName,
           [userData.userID, userID]
         );
         if (groupID) {

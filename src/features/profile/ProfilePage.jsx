@@ -13,7 +13,8 @@ import {
   ChevronsUp,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import SocialBar from "../../components/layout/SocialBar";
+import SocialBar from "../../Components/layout/SocialBar";
+import { updateUserStatus } from "../../services/userService";
 
 const ProfilePage = () => {
   const { userData } = useAuth();
@@ -47,6 +48,7 @@ const ProfilePage = () => {
         friendshipId: userData.friendshipID || "",
         email: userData.email || "@",
         profileImage: userData.photoURL || "/1.png",
+        status: userData.status || "online",
         about:
           userData.about ||
           "Merhaba! Ben bir yazılım geliştiricisiyim ve yeni teknolojileri öğrenmekten keyif alıyorum.",
@@ -91,11 +93,14 @@ const ProfilePage = () => {
     });
   };
 
-  const handleStatusChange = (status) => {
+  const handleStatusChange = async (status) => {
     setProfileData({
       ...profileData,
       status,
     });
+    if (userData?.userID) {
+      await updateUserStatus(userData.userID, status);
+    }
   };
 
   const handleFlip = () => {

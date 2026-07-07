@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
-import Navigator from "./components/layout/Navigator";
+import Navigator from "./Components/layout/Navigator";
 import SettingsPage from "./features/settings/SettingsPage";
 import AddFriendsPage from "./features/friends/AddFriendsPage";
 import SearchServerPage from "./features/servers/SearchServerPage";
@@ -18,7 +18,7 @@ import LoginPage from "./features/auth/LoginPage";
 import ForgotPasswordPage from "./features/auth/ForgotPasswordPage";
 import TermsPage from "./features/auth/TermsPage";
 import CreateProfilePage from "./features/auth/CreateProfilePage";
-import ProtectedRoute from "./components/layout/ProtectedRoute";
+import ProtectedRoute from "./Components/layout/ProtectedRoute";
 
 function App() {
   return (

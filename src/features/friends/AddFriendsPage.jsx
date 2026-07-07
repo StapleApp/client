@@ -113,7 +113,15 @@ const AddFriendsPage = () => {
                   <p className="text-gray-400">
                     #{friendData?.friendshipID || "ID Bulunamadı"}
                   </p>
-                  <span className="text-green-500 text-sm">● Çevrimiçi</span>
+                  {friendData?.status === "online" || !friendData?.status ? (
+                    <span className="text-green-500 text-sm">● Çevrimiçi</span>
+                  ) : friendData?.status === "offline" ? (
+                    <span className="text-gray-500 text-sm">● Çevrimdışı</span>
+                  ) : friendData?.status === "sleeping" ? (
+                    <span className="text-blue-500 text-sm">● Uykuda</span>
+                  ) : (
+                    <span className="text-red-500 text-sm">● Rahatsız Etmeyin</span>
+                  )}
                 </div>
 
                 {/* Arkadaş Ekle Butonu */}

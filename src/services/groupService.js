@@ -5,6 +5,9 @@ import {
   addDoc,
   updateDoc,
   arrayUnion,
+  query,
+  where,
+  getDocs,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
 
@@ -47,3 +50,24 @@ export async function createGroup(groupName, users) {
     throw error;
   }
 }
+
+export const findDMGroup = async (user1Id, user2Id) => {
+  try {
+    const q = query(
+      collection(db, "Groups"),
+      where("users", "array-contains", user1Id)
+    );
+    const snap = await getDocs(q);
+    let matchedGroup = null;
+    snap.forEach((doc) => {
+      const data = doc.data();
+      if (data.users && data.users.includes(user2Id)) {
+        matchedGroup = { id: doc.id, ...data };
+      }
+    });
+    return matchedGroup;
+  } catch (error) {
+    console.error("Error finding DM group:", error);
+    return null;
+  }
+};

@@ -127,3 +127,13 @@ export const ensureUserDoc = async (user) => {
   }
   return data;
 };
+
+export const updateUserStatus = async (uid, status) => {
+  try {
+    const userDocRef = doc(db, "Users", uid);
+    await updateDoc(userDocRef, { status });
+    console.log("Status updated successfully:", status);
+  } catch (error) {
+    console.error("Error updating status:", error);
+  }
+};

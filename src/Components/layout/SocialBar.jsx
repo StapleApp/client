@@ -174,6 +174,16 @@ const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
     const userRefs = useRef({});
     const [selectedUser, setSelectedUser] = useState(null);
 
+    const getStatusColor = (status) => {
+        switch (status) {
+            case "online": return "bg-green-500";
+            case "offline": return "bg-gray-500";
+            case "sleeping": return "bg-blue-500";
+            case "dnd": return "bg-red-500";
+            default: return "bg-gray-500";
+        }
+    };
+
     useEffect(() => {
         const fetchFriends = async () => {
             if (userData) {
@@ -182,7 +192,13 @@ const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
                 const fullFriendData = await Promise.all(
                     friendList.map(async (friend) => {
                         const userInfo = await getUser(friend.uid);
-                        return { uid: friend.uid, nickName: userInfo.nickName , friendshipID: userInfo.friendshipID, photoURL: userInfo.photoURL};
+                        return { 
+                            uid: friend.uid, 
+                            nickName: userInfo.nickName, 
+                            friendshipID: userInfo.friendshipID, 
+                            photoURL: userInfo.photoURL,
+                            status: userInfo.status || "offline"
+                        };
                     })
                 );
     
@@ -220,10 +236,11 @@ const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
                 className="flex items-center w-full h-14 bg-[var(--primary-bg)] rounded-md p-2
                     border-3 border-[var(--primary-border)] shadow-xl
                     hover:border-3 hover:border-[var(--tertiary-border)]
-                    transition-all duration-300 ease-linear hover:scale-105 cursor-pointer"
+                    transition-all duration-300 ease-linear hover:scale-105 cursor-pointer relative"
             >
-                <span className="group cursor-pointer ml-1 mr-3 rounded-full">
+                <span className="group cursor-pointer ml-1 mr-3 rounded-full relative">
                     <RightBarImg src={user.photoURL} toggleExpand={() => setIsExpanded(true)} />
+                    <span className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-[var(--primary-bg)] ${getStatusColor(user.status)}`} />
                 </span>
                 <span>{user.nickName}</span>
             </div>

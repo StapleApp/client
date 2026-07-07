@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import profileBackground2_small from "../../assets/profileBackground2_small.png";
-import ChatPanel from "../../components/chat/ChatPanel";
+import ChatPanel from "../../Components/chat/ChatPanel";
 import VoiceChannel from "./VoiceChannel";
 import { saveServerRooms } from "../../services/serverService";
 

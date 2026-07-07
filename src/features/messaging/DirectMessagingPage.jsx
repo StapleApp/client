@@ -5,7 +5,7 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getGroupById } from "../../services/groupService";
 import { getUser } from "../../services/userService";
-import ChatPanel from "../../components/chat/ChatPanel";
+import ChatPanel from "../../Components/chat/ChatPanel";
 
 async function fetchFriendData(userID) {
   try {
