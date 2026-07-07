@@ -12,7 +12,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import profileBackground2_small from "../../assets/profileBackground2_small.png";
 import ChatPanel from "../../Components/chat/ChatPanel";
-import VoiceChannel from "./VoiceChannel";
+import { useVoice } from "../../context/VoiceContext";
 import { saveServerRooms } from "../../services/serverService";
 
 const toRoomDocs = (channels) =>
@@ -25,10 +25,30 @@ const toRoomDocs = (channels) =>
 
 const SvSidebar = ({ serverData }) => {
   const navigate = useNavigate();
+  const voice = useVoice();
   const serverId = serverData?.ServerId;
 
   const [channels, setChannels] = useState([]);
   const [activeChannel, setActiveChannel] = useState(null);
+
+  // Kanala tıklama: yazı kanalı → içerik panelinde aç, sesli kanal → küresel sese katıl
+  const handleChannelClick = (channel) => {
+    if (channel.type === "voice") {
+      voice.joinVoice({
+        serverId,
+        channelId: channel.id,
+        channelName: channel.name,
+        serverName: serverData?.ServerName,
+      });
+    } else {
+      setActiveChannel(channel);
+    }
+  };
+
+  const isChannelActive = (channel) =>
+    channel.type === "voice"
+      ? voice.active?.serverId === serverId && voice.active?.channelId === channel.id
+      : activeChannel?.id === channel.id;
   const [showDropdown, setShowDropdown] = useState(false);
   const [channelOptions, setChannelOptions] = useState(null);
   const [editingChannel, setEditingChannel] = useState(null);
@@ -143,11 +163,11 @@ const SvSidebar = ({ serverData }) => {
           </p>
           <div className="flex flex-col gap-1">
             {channels.map((channel) => {
-              const active = activeChannel?.id === channel.id;
+              const active = isChannelActive(channel);
               return (
                 <div key={channel.id} className="relative">
                   <div
-                    onClick={() => setActiveChannel(channel)}
+                    onClick={() => handleChannelClick(channel)}
                     className={`group flex items-center justify-between gap-1 px-2 py-1.5 rounded-lg cursor-pointer transition-all duration-200 ${
                       active
                         ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
@@ -224,31 +244,19 @@ const SvSidebar = ({ serverData }) => {
       <div className="fixed top-0 left-16 right-64 h-screen z-20">
         <AnimatePresence mode="wait">
           {activeChannel ? (
-            activeChannel.type === "voice" ? (
-              <motion.div
-                key={`voice-${activeChannel.id}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="w-full h-full"
-              >
-                <VoiceChannel serverId={serverId} channel={activeChannel} />
-              </motion.div>
-            ) : (
-              <motion.div
-                key={activeChannel.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                transition={{ duration: 0.15 }}
-                className="w-full h-full bg-[var(--secondary-bg)]"
-              >
-                <ChatPanel
-                  context={{ serverId, channelId: activeChannel.id }}
-                  channelName={activeChannel.name}
-                />
-              </motion.div>
-            )
+            <motion.div
+              key={activeChannel.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ duration: 0.15 }}
+              className="w-full h-full bg-[var(--secondary-bg)]"
+            >
+              <ChatPanel
+                context={{ serverId, channelId: activeChannel.id }}
+                channelName={activeChannel.name}
+              />
+            </motion.div>
           ) : (
             <motion.div
               key="empty"

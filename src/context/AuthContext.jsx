@@ -38,7 +38,8 @@ export const AuthProvider = ({ children }) => {
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       clearTimeout(failSafe);
-      setLoading(true);
+      // NOT: burada setLoading(true) YOK. Aksi halde her token yenilemesinde
+      // tüm uygulama ağacı yeniden mount olur (aktif sesli görüşme kopardı).
 
       if (user) {
         setCurrentUser(user);

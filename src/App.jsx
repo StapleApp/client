@@ -12,6 +12,8 @@ import ServerPage from "./features/servers/ServerPage";
 import { AnimatePresence } from "framer-motion";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
+import { VoiceProvider } from "./context/VoiceContext";
+import VoiceBar from "./Components/voice/VoiceBar";
 
 import RegisterPage from "./features/auth/RegisterPage";
 import LoginPage from "./features/auth/LoginPage"; 
@@ -24,9 +26,12 @@ import NotFound from "./Components/layout/NotFound";
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <MainLayout />
-      </Router>  
+      <VoiceProvider>
+        <Router>
+          <MainLayout />
+          <VoiceBar />
+        </Router>
+      </VoiceProvider>
     </AuthProvider>
   );
 }
