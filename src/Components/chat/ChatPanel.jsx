@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { Send, Hash, Smile } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker from "emoji-picker-react";
 import { useAuth } from "../../context/AuthContext";
 import { sendMessage, listenMessages } from "../../services/messageService";
@@ -151,69 +150,58 @@ const ChatPanel = ({ context, channelName, headerIcon, showHeader = true }) => {
         </div>
       )}
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+      {/* Messages — Discord tarzı: sola hizalı, baloncuksuz, gruplanmış */}
+      <div className="flex-1 overflow-y-auto py-4">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-[var(--primary-text)] text-sm gap-2">
             <Hash className="w-8 h-8 text-[var(--quaternary-text)]" />
             <span>İlk mesajı sen gönder!</span>
           </div>
         ) : (
-          <AnimatePresence>
-            {messages.map((message, index) => {
-              const isMine = message.senderId === userData?.userID;
-              return (
-                <motion.div
-                  key={message.id || `msg-${index}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${isMine ? "justify-end" : "justify-start"}`}
-                >
-                  <div className="flex items-start gap-3 max-w-xs lg:max-w-md">
-                    {!isMine && (
-                      <img
-                        src={message.senderPhoto || "/1.png"}
-                        alt=""
-                        className="w-9 h-9 rounded-full mt-0.5 border border-[var(--primary-border)]"
-                      />
-                    )}
-                    <div
-                      className={`px-4 py-2 rounded-lg ${
-                        isMine
-                          ? "bg-blue-500 text-white"
-                          : "bg-[var(--primary-bg)] text-[var(--primary-text)] border border-[var(--primary-border)]"
-                      }`}
-                    >
-                      {!isMine && (
-                        <p className="text-xs font-semibold mb-1 text-[var(--secondary-text)]">
-                          {message.senderName}
-                        </p>
-                      )}
-                      <div className="text-sm">
-                        {renderMessageContent(message.content)}
-                      </div>
-                      <p
-                        className={`text-xs mt-1 ${
-                          isMine
-                            ? "text-blue-100"
-                            : "text-[var(--secondary-text)]"
-                        }`}
-                      >
+          messages.map((message, index) => {
+            const prev = messages[index - 1];
+            const grouped = prev && prev.senderId === message.senderId;
+            return (
+              <div
+                key={message.id || `msg-${index}`}
+                className={`group flex items-start gap-3 px-4 hover:bg-[var(--primary-bg)]/40 ${
+                  grouped ? "mt-0.5 py-0.5" : "mt-4 py-0.5"
+                }`}
+              >
+                {/* Avatar sütunu (sabit genişlik) */}
+                <div className="w-10 shrink-0 relative">
+                  {!grouped ? (
+                    <img
+                      src={message.senderPhoto || "/1.png"}
+                      alt=""
+                      className="w-10 h-10 rounded-full mt-0.5"
+                    />
+                  ) : (
+                    <span className="absolute right-1 top-0.5 hidden group-hover:block text-[10px] text-[var(--primary-text)] whitespace-nowrap">
+                      {formatTime(message.createdAt)}
+                    </span>
+                  )}
+                </div>
+
+                {/* İçerik */}
+                <div className="min-w-0 flex-1 text-left">
+                  {!grouped && (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-sm font-semibold text-[var(--secondary-text)]">
+                        {message.senderName}
+                      </span>
+                      <span className="text-xs text-[var(--primary-text)]">
                         {formatTime(message.createdAt)}
-                      </p>
+                      </span>
                     </div>
-                    {isMine && (
-                      <img
-                        src={userData?.photoURL || "/1.png"}
-                        alt=""
-                        className="w-9 h-9 rounded-full mt-0.5 border border-[var(--primary-border)]"
-                      />
-                    )}
+                  )}
+                  <div className="text-sm text-[var(--secondary-text)] break-words">
+                    {renderMessageContent(message.content)}
                   </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+                </div>
+              </div>
+            );
+          })
         )}
         <div ref={messagesEndRef} />
       </div>
