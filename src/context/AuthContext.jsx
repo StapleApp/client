@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { getAuth, onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
-import { ensureUserDoc } from "../services/userService";
+import { ensureUserDoc, getUser } from "../services/userService";
 
 const AuthContext = createContext();
 
@@ -10,6 +10,14 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const auth = getAuth();
+
+  // Re-fetch the current user's Firestore doc (after profile edits, etc.)
+  const refreshUserData = async () => {
+    if (auth.currentUser) {
+      const data = await getUser(auth.currentUser.uid);
+      setUserData(data);
+    }
+  };
 
   // Sign out function — clears Firebase auth + localStorage + sessionStorage
   const signOut = async () => {
@@ -56,7 +64,7 @@ export const AuthProvider = ({ children }) => {
   }, [auth]);
 
   return (
-    <AuthContext.Provider value={{ currentUser, userData, loading, signOut }}>
+    <AuthContext.Provider value={{ currentUser, userData, loading, signOut, refreshUserData }}>
       {loading ? (
         <div
           style={{

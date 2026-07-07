@@ -12,12 +12,14 @@ import {
   ChevronsDown,
   ChevronsUp,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import SocialBar from "../../Components/layout/SocialBar";
-import { updateUserStatus } from "../../services/userService";
+import { updateUserStatus, updateUserProfile } from "../../services/userService";
 
 const ProfilePage = () => {
-  const { userData } = useAuth();
+  const { userData, refreshUserData } = useAuth();
+  const navigate = useNavigate();
 
   const [profileData, setProfileData] = useState({
     name: "",
@@ -27,8 +29,7 @@ const ProfilePage = () => {
     birthdate: "",
     createdDate: "",
     friendshipId: "",
-    about:
-      "Merhaba! Ben bir yazılım geliştiricisiyim ve yeni teknolojileri öğrenmekten keyif alıyorum.",
+    about: "",
     status: "online",
     isEditing: false,
     profileImage: "",
@@ -49,9 +50,7 @@ const ProfilePage = () => {
         email: userData.email || "@",
         profileImage: userData.photoURL || "/1.png",
         status: userData.status || "online",
-        about:
-          userData.about ||
-          "Merhaba! Ben bir yazılım geliştiricisiyim ve yeni teknolojileri öğrenmekten keyif alıyorum.",
+        about: userData.about || "",
       }));
     }
   }, [userData]);
@@ -83,6 +82,15 @@ const ProfilePage = () => {
       ...profileData,
       isEditing: !profileData.isEditing,
     });
+  };
+
+  // "Hakkımda"yı Firestore'a kaydet
+  const handleSaveAbout = async () => {
+    setProfileData((prev) => ({ ...prev, isEditing: false }));
+    if (userData?.userID) {
+      await updateUserProfile(userData.userID, { about: profileData.about });
+      await refreshUserData();
+    }
   };
 
   const handleInputChange = (e) => {
@@ -160,7 +168,11 @@ const ProfilePage = () => {
             >
               <div className="flex flex-col items-center justify-center text-center h-full gap-6 px-6">
                 <div className="relative">
-                  <div className="w-36 h-36 rounded-full overflow-hidden bg-[var(--secondary-bg)]">
+                  <div
+                    onClick={() => navigate("/Settings")}
+                    title="Profil fotoğrafını değiştir"
+                    className="w-36 h-36 rounded-full overflow-hidden bg-[var(--secondary-bg)] cursor-pointer ring-0 hover:ring-4 hover:ring-[var(--tertiary-border)] transition-all"
+                  >
                     <img
                       src={profileData.profileImage || "/1.png"}
                       alt="Profil"
@@ -287,7 +299,7 @@ const ProfilePage = () => {
                 <div className="absolute top-4 right-4 z-10">
                   {profileData.isEditing ? (
                     <button
-                      onClick={handleEditToggle}
+                      onClick={handleSaveAbout}
                       className="bg-green-500 text-white p-3 rounded-full shadow hover:bg-green-600 transition-colors"
                       title="Kaydet"
                     >

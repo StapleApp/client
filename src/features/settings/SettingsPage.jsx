@@ -1,73 +1,166 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import React, { useEffect } from "react";
-import { IoLogInOutline } from "react-icons/io5";
+import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import { FaPowerOff } from "react-icons/fa6";
+import { Check, Loader2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { updateUserProfile } from "../../services/userService";
+
+const AVATARS = ["/0.png", "/1.png", "/2.png", "/3.png", "/4.png", "/5.png", "/6.png", "/7.png"];
 
 const SettingsPage = () => {
-    const navigate = useNavigate();
-    const { signOut, currentUser } = useAuth();
+  const navigate = useNavigate();
+  const { userData, currentUser, signOut, refreshUserData } = useAuth();
 
-    const handleLogout = async () => {
-      console.log("Logging out...");
-      await signOut();
+  const [nickName, setNickName] = useState("");
+  const [about, setAbout] = useState("");
+  const [photoURL, setPhotoURL] = useState("/1.png");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!currentUser) {
       navigate("/login");
-    };
+    }
+  }, [currentUser, navigate]);
 
-    useEffect(() => {
-      if (!currentUser) {
-        navigate("/login");
-      }
-    }, [currentUser, navigate]);
+  useEffect(() => {
+    if (userData) {
+      setNickName(userData.nickName || "");
+      setAbout(userData.about || "");
+      setPhotoURL(userData.photoURL || "/1.png");
+    }
+  }, [userData]);
 
-    return (
-        <>
-            <motion.div
-                initial={{ opacity: 0, x: -100 }}  
-                animate={{ opacity: 1, x: 0 }}   
-                exit={{ opacity: 0, x: 100 }}   
-                transition={{ duration: 0.1 }}  
-                className="fixed top-0 left-0 w-full h-screen"
-                >
-                <div className="fixed grid grid-cols-3 background bg-[var(--secondary-bg)] text-[var(--secondary-text)] h-screen w-screen top-0 z-0">
-                    <div className="w-auto h-auto col-start-2 mt-auto mb-auto text-5xl font-bold">
-                    <div>
-                        <SideBarLogOut handleLogout={handleLogout}/>
-                        <SideBarPowerOff />
-                    </div>
-                    </div>
-                </div>
-            </motion.div>
-        </>
-    );   
+  const handleSave = async () => {
+    if (!userData?.userID) return;
+    if (nickName.trim().length > 12) {
+      toast.error("Takma ad 12 karakterden kısa olmalı");
+      return;
+    }
+    setSaving(true);
+    const ok = await updateUserProfile(userData.userID, {
+      nickName: nickName.trim(),
+      about: about.trim(),
+      photoURL,
+    });
+    await refreshUserData();
+    setSaving(false);
+    ok ? toast.success("Profil güncellendi") : toast.error("Kaydedilemedi");
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/login");
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -60 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 60 }}
+      transition={{ duration: 0.15 }}
+      className="background fixed top-0 left-0 w-full h-screen overflow-y-auto bg-[var(--secondary-bg)] text-[var(--secondary-text)]"
+      style={{ paddingLeft: "80px" }}
+    >
+      <div className="max-w-2xl mx-auto px-4 py-10">
+        <h1 className="text-3xl font-bold mb-8">Ayarlar</h1>
+
+        {/* Hesap / Profil */}
+        <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)] mb-6">
+          <h2 className="text-lg font-semibold mb-4 text-[var(--quaternary-text)]">
+            Profil
+          </h2>
+
+          {/* Seçili avatar önizleme */}
+          <div className="flex items-center gap-4 mb-5">
+            <img
+              src={photoURL}
+              alt="Avatar"
+              className="w-20 h-20 rounded-full border-4 border-[var(--tertiary-border)] object-cover"
+            />
+            <div>
+              <p className="font-bold text-lg">
+                {userData?.name} {userData?.surname}
+              </p>
+              <p className="text-sm text-[var(--primary-text)]">
+                {userData?.email}
+              </p>
+              <p className="text-xs text-[var(--primary-text)]">
+                #{userData?.friendshipID}
+              </p>
+            </div>
+          </div>
+
+          {/* Avatar seçici */}
+          <label className="block text-sm font-medium mb-2">
+            Profil Fotoğrafı
+          </label>
+          <div className="grid grid-cols-8 gap-2 mb-5">
+            {AVATARS.map((img) => (
+              <button
+                key={img}
+                type="button"
+                onClick={() => setPhotoURL(img)}
+                className={`rounded-full overflow-hidden border-4 transition-all hover:scale-105 ${
+                  photoURL === img
+                    ? "border-[var(--tertiary-border)] scale-105"
+                    : "border-transparent"
+                }`}
+              >
+                <img src={img} alt="" className="w-full aspect-square object-cover" />
+              </button>
+            ))}
+          </div>
+
+          {/* Takma ad */}
+          <label className="block text-sm font-medium mb-2">Takma Ad</label>
+          <input
+            type="text"
+            value={nickName}
+            onChange={(e) => setNickName(e.target.value)}
+            maxLength={12}
+            placeholder="Takma adın"
+            className="w-full mb-5 px-4 py-2 rounded-xl bg-[var(--secondary-bg)] text-[var(--secondary-text)] border-2 border-[var(--primary-border)] focus:outline-none focus:border-[var(--tertiary-border)] transition-colors"
+          />
+
+          {/* Hakkında */}
+          <label className="block text-sm font-medium mb-2">Hakkımda</label>
+          <textarea
+            value={about}
+            onChange={(e) => setAbout(e.target.value)}
+            maxLength={200}
+            rows={3}
+            placeholder="Kendinden bahset..."
+            className="w-full mb-5 px-4 py-2 rounded-xl bg-[var(--secondary-bg)] text-[var(--secondary-text)] border-2 border-[var(--primary-border)] focus:outline-none focus:border-[var(--tertiary-border)] resize-none transition-colors"
+          />
+
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-6 py-2 rounded-xl bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] font-semibold hover:bg-[var(--quaternary-bg)] disabled:opacity-50 transition-colors"
+          >
+            {saving ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
+            {saving ? "Kaydediliyor..." : "Kaydet"}
+          </button>
+        </section>
+
+        {/* Hesap işlemleri */}
+        <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)]">
+          <h2 className="text-lg font-semibold mb-4 text-[var(--quaternary-text)]">
+            Hesap
+          </h2>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-6 py-3 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors"
+          >
+            <FaPowerOff size={18} />
+            Çıkış Yap
+          </button>
+        </section>
+      </div>
+    </motion.div>
+  );
 };
 
-const SideBarLogOut = ({ handleLogout }) => {
-    return (
-      <>
-        <div
-          className={`icon group w-100 h-30`}
-          onClick={handleLogout}
-        >
-            <IoLogInOutline size="100" />
-            <span className="ml-4">Log Out</span>
-        </div>
-      </>
-    );
-};
-
-const SideBarPowerOff = () => {
-    return (
-      <>
-        <div
-          className={`icon group w-100 h-30`}
-        >
-          <FaPowerOff size="80" />
-          <span className="ml-4">Kapat</span>
-        </div>
-      </>
-    );
-};
-  
 export default SettingsPage;

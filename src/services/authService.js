@@ -47,30 +47,24 @@ export const register = async (name, surname, email, password, birthdate, naviga
   }
 };
 
-// **Google ile kayıt fonksiyonu**
-export const signInWithGoogle = async (navigate) => {
+// **Google ile giriş/kayıt fonksiyonu**
+// Yönlendirmeyi çağıran bileşen (auth state üzerinden) yapar.
+export const signInWithGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
 
-    const userName = user.displayName.split(" ")[0];
-    const userSurname = user.displayName.split(" ")[1];
-
     const usersRef = collection(db, "Users");
 
-    // Kullanıcıyı Firestore'da ara
+    // Kullanıcı Firestore'da yoksa oluştur
     const q = query(usersRef, where("email", "==", user.email));
     const querySnapshot = await getDocs(q);
 
-    // Eğer kullanıcı zaten varsa, direk "home" sayfasına geç
-    if (!querySnapshot.empty) {
-      console.log("User already exists, redirecting to home.");
-      navigate("/home");
-      return user;
+    if (querySnapshot.empty) {
+      const userName = (user.displayName || "").split(" ")[0] || "";
+      const userSurname = (user.displayName || "").split(" ")[1] || "";
+      await writeUserData(user.uid, userName, userSurname, "--", user.email);
     }
-
-    // Eğer kullanıcı yoksa, Firestore'a ekle ve "home" sayfasına geç
-    await writeUserData(user.uid, userName, userSurname, "--", user.email);
 
     return user;
   } catch (error) {

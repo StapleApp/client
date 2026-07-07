@@ -1,53 +1,46 @@
 import React, { useState, useEffect } from "react";
-import { FaEye, FaEyeSlash } from 'react-icons/fa'; 
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useNavigate } from "react-router-dom";
 import toast from 'react-hot-toast';
+import {
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+} from "firebase/auth";
 import { loginWithMail, signInWithGoogle } from "../../services/authService";
-import { getUser } from "../../services/userService";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { auth } from "../../config/firebase";
+import { useAuth } from "../../context/AuthContext";
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   const navigate = useNavigate();
-  const auth = getAuth();
+  const { currentUser, userData } = useAuth();
 
-  const handleAuthState = () => {
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
-          const userInfo = await getUser(user.uid);
-          if (userInfo) {
-            if (userInfo.nickName === "") {
-              navigate('/create_profile');
-            } else {
-              navigate('/home');
-            }
-          }
-        } catch (error) {
-          console.error("Nickname check error:", error);
-        }
+  // Zaten giriş yapılmışsa yönlendir. Tek kaynak: Firebase auth durumu.
+  useEffect(() => {
+    if (currentUser && userData) {
+      if (userData.nickName === "") {
+        navigate("/create_profile", { replace: true });
+      } else {
+        navigate("/", { replace: true });
       }
-    });
-  };
+    }
+  }, [currentUser, userData, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
-      const success = await loginWithMail(email, password, navigate);
-
-      if (success && auth.currentUser) {
-        const userJSONData = { email, token: auth.currentUser.uid };
-        rememberMe
-          ? localStorage.setItem("user", JSON.stringify(userJSONData))
-          : sessionStorage.setItem("user", JSON.stringify(userJSONData));
-
-        handleAuthState();
-      }
+      // "Beni hatırla" → kalıcı oturum, aksi halde sadece bu sekme
+      await setPersistence(
+        auth,
+        rememberMe ? browserLocalPersistence : browserSessionPersistence
+      );
+      await loginWithMail(email, password);
+      // Başarılıysa yukarıdaki effect yönlendirir.
     } catch (error) {
       toast.error("Login failed");
       console.log(error);
@@ -56,16 +49,11 @@ const LoginPage = () => {
 
   const googleAuthFunc = async (e) => {
     e.preventDefault();
-
     try {
-      const user = await signInWithGoogle(navigate);
-      
-      if (user) {
-        localStorage.setItem("user", JSON.stringify(user));
-        handleAuthState();
-      }
+      await setPersistence(auth, browserLocalPersistence);
+      await signInWithGoogle();
+      // Yönlendirme effect tarafından yapılır.
     } catch (error) {
-      toast.error("Google login failed");
       console.log(error);
     }
   };
@@ -73,13 +61,6 @@ const LoginPage = () => {
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user") || sessionStorage.getItem("user");
-    if (storedUser) {
-      navigate("/home");
-    }
-  }, [navigate]);
 
   return (
     <div className="fixed left-0 top-0 background flex items-center justify-center min-h-screen">

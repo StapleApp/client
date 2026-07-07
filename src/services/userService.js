@@ -137,3 +137,14 @@ export const updateUserStatus = async (uid, status) => {
     console.error("Error updating status:", error);
   }
 };
+
+// ** Profil alanlarını güncelle (nickName, photoURL, about, vb.) **
+export const updateUserProfile = async (uid, data) => {
+  try {
+    await updateDoc(doc(db, "Users", uid), data);
+    return true;
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    return false;
+  }
+};
