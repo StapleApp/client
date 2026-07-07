@@ -1,28 +1,33 @@
-// src/contexts/AuthContext.js
-
 import { createContext, useContext, useState, useEffect } from "react";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { ensureUserDoc } from "../../firebase";
+import { getAuth, onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
+import { ensureUserDoc } from "../services/userService";
 
-// 1. Context oluştur
 const AuthContext = createContext();
 
-// 2. Provider bileşeni
 export const AuthProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(null);     // Firebase Auth kullanıcısı
-  const [userData, setUserData] = useState(null);           // Firestore'daki ek kullanıcı verisi
-  const [loading, setLoading] = useState(true);             // Veriler yükleniyor mu?
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const auth = getAuth();
-  const db = getFirestore();
+
+  // Sign out function — clears Firebase auth + localStorage + sessionStorage
+  const signOut = async () => {
+    try {
+      await firebaseSignOut(auth);
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
+      setCurrentUser(null);
+      setUserData(null);
+    } catch (error) {
+      console.error("Sign out error:", error);
+    }
+  };
 
   useEffect(() => {
-    // Safety net: if Firebase never responds (e.g. missing/invalid config),
-    // don't leave the whole app blank forever — stop loading after a timeout.
+    // Safety net: if Firebase never responds, don't leave the app blank forever
     const failSafe = setTimeout(() => setLoading(false), 5000);
 
-    // Firebase Auth dinleyicisi
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       clearTimeout(failSafe);
       setLoading(true);
@@ -30,7 +35,6 @@ export const AuthProvider = ({ children }) => {
       if (user) {
         setCurrentUser(user);
         try {
-          // Doküman varsa getir, yoksa otomatik oluştur (güvenlik ağı)
           const data = await ensureUserDoc(user);
           setUserData(data);
         } catch (error) {
@@ -48,11 +52,11 @@ export const AuthProvider = ({ children }) => {
     return () => {
       clearTimeout(failSafe);
       unsubscribe();
-    }; // Temizlik
-  }, [auth, db]);
+    };
+  }, [auth]);
 
   return (
-    <AuthContext.Provider value={{ currentUser, userData, loading }}>
+    <AuthContext.Provider value={{ currentUser, userData, loading, signOut }}>
       {loading ? (
         <div
           style={{
@@ -87,5 +91,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// 3. Custom hook: Context'e erişimi kolaylaştırır
 export const useAuth = () => useContext(AuthContext);

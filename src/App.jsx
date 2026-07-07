@@ -1,27 +1,24 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
-import Navigator from "./Components/Navigator";
-import Home from "./pages/Home"; 
-import Settings from "./pages/Settings";
-import AddFriends from "./pages/AddFriends"; 
-import SearchServer from "./pages/SearchServer";
-import Profile from "./pages/Profile";
-import DirectMessaging from "./pages/DirectMessaging";
-import Notifications from "./pages/Notifications";
-import CreateServer from "./pages/CreateServer";
-import Server from "./pages/ServerPage";
+import Navigator from "./components/layout/Navigator";
+import SettingsPage from "./features/settings/SettingsPage";
+import AddFriendsPage from "./features/friends/AddFriendsPage";
+import SearchServerPage from "./features/servers/SearchServerPage";
+import ProfilePage from "./features/profile/ProfilePage";
+import DirectMessagingPage from "./features/messaging/DirectMessagingPage";
+import NotificationsPage from "./features/notifications/NotificationsPage";
+import CreateServerPage from "./features/servers/CreateServerPage";
+import ServerPage from "./features/servers/ServerPage";
 
 import { AnimatePresence } from "framer-motion";
-
-
-import SignIn from "./auth/signin";
-import Login from "./auth/login"; 
-import EmailVerification from "./auth/emailVerification";
-import Terms from "./auth/terms";
-import CreateProfile from "./auth/createProfile";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 
-import Logout from "./pages/clear_user";
+import RegisterPage from "./features/auth/RegisterPage";
+import LoginPage from "./features/auth/LoginPage"; 
+import ForgotPasswordPage from "./features/auth/ForgotPasswordPage";
+import TermsPage from "./features/auth/TermsPage";
+import CreateProfilePage from "./features/auth/CreateProfilePage";
+import ProtectedRoute from "./components/layout/ProtectedRoute";
 
 function App() {
   return (
@@ -35,7 +32,7 @@ function App() {
 
 function MainLayout() {
   const location = useLocation();
-  const hideNavigatorRoutes = ["/login", "/signin", "/forgetPassword", "/terms", "/create_profile","/cleare_user"];
+  const hideNavigatorRoutes = ["/login", "/signin", "/forgetPassword", "/terms", "/create_profile", "/clear_user"];
 
   return (
     <div className="flex">
@@ -53,29 +50,23 @@ function AnimatedSwitch() {
       <Toaster />
       <AnimatePresence mode="wait">
         <Routes>
-          <Route path="/" element={<Profile />} />
-          <Route path="/Home" element={<Profile />} />
-          <Route path="/Settings" element={<Settings />} />
-          <Route path="/AddFriends" element={<AddFriends />} />
-          <Route path="/SearchServer" element={<SearchServer />} />
-          <Route path="/Profile" element={<Profile />} />
-          <Route path="/DirectMessaging" element={<DirectMessaging />} />
-          <Route path="/Notifications" element={<Notifications />} />
-          <Route path="/create-server" element={<CreateServer />} />
-          <Route path="/server/:serverId/*" element={<Server />} />
-
+          <Route path="/" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/Home" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/Settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+          <Route path="/AddFriends" element={<ProtectedRoute><AddFriendsPage /></ProtectedRoute>} />
+          <Route path="/SearchServer" element={<ProtectedRoute><SearchServerPage /></ProtectedRoute>} />
+          <Route path="/Profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/DirectMessaging" element={<ProtectedRoute><DirectMessagingPage /></ProtectedRoute>} />
+          <Route path="/Notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+          <Route path="/create-server" element={<ProtectedRoute><CreateServerPage /></ProtectedRoute>} />
+          <Route path="/server/:serverId/*" element={<ProtectedRoute><ServerPage /></ProtectedRoute>} />
 
           {/* Auth Routes */}
-
-          <Route path="/login" element={<Login />} />
-          <Route path="/signin" element={<SignIn />} />      
-          <Route path="/forgetPassword" element={<EmailVerification />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/create_profile" element={<CreateProfile />} />
-
-          <Route path="/clear_user" element={<Logout />} />
-          
-          
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signin" element={<RegisterPage />} />      
+          <Route path="/forgetPassword" element={<ForgotPasswordPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/create_profile" element={<CreateProfilePage />} />
         </Routes>
       </AnimatePresence>
     </>

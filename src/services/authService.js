@@ -1,0 +1,107 @@
+import {
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+} from "firebase/auth";
+import { collection, where, query, getDocs } from "firebase/firestore";
+import { auth, googleProvider, db } from "../config/firebase";
+import { writeUserData } from "./userService";
+import toast from "react-hot-toast";
+
+// **E-posta ile Kayıt Olma**
+export const register = async (name, surname, email, password, birthdate, navigate) => {
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    //await sendEmailVerification(user);
+    toast.success("Verification email sent! Please check your inbox.");
+
+    const checkEmailVerification = setInterval(async () => {
+      await user.reload();
+      if (true) {
+        //user.emailVerified
+        clearInterval(checkEmailVerification);
+        toast.success("Email Confirmed");
+
+        await writeUserData(
+          user.uid,
+          name,
+          surname,
+          birthdate,
+          user.email,
+          user.photoURL
+        );
+
+        navigate("/login");
+      }
+    }, 3000);
+    return user;
+  } catch (error) {
+    toast.error(error.message);
+    console.error("Error:", error.message);
+    return null;
+  }
+};
+
+// **Google ile kayıt fonksiyonu**
+export const signInWithGoogle = async (navigate) => {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    const user = result.user;
+
+    const userName = user.displayName.split(" ")[0];
+    const userSurname = user.displayName.split(" ")[1];
+
+    const usersRef = collection(db, "Users");
+
+    // Kullanıcıyı Firestore'da ara
+    const q = query(usersRef, where("email", "==", user.email));
+    const querySnapshot = await getDocs(q);
+
+    // Eğer kullanıcı zaten varsa, direk "home" sayfasına geç
+    if (!querySnapshot.empty) {
+      console.log("User already exists, redirecting to home.");
+      navigate("/home");
+      return user;
+    }
+
+    // Eğer kullanıcı yoksa, Firestore'a ekle ve "home" sayfasına geç
+    await writeUserData(user.uid, userName, userSurname, "--", user.email);
+
+    return user;
+  } catch (error) {
+    console.error("Google Auth Error:", error);
+    toast.error("An error occurred while signing in with Google.");
+    throw error;
+  }
+};
+
+// ** Login **
+export const loginWithMail = async (email, password, navigate) => {
+  try {
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+    toast.success("Login successful!");
+    return true;
+  } catch (error) {
+    console.error("Login error:", error.message);
+    toast.error("Invalid email or password");
+    return false;
+  }
+};
+
+// ** Şifre sıfırlama **
+export const handleResetPassword = async (email) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    console.log("Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.");
+  } catch (error) {
+    console.log("Hata: " + error.message);
+  }
+};

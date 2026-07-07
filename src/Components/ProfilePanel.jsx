@@ -3,9 +3,11 @@ import { IoPersonAdd } from "react-icons/io5";
 import { IoMdClose } from "react-icons/io";
 import { CgProfile } from "react-icons/cg";
 import { FaTelegramPlane } from "react-icons/fa";
-import { useEffect, useRef } from "react"; // Import useEffect and useRef
+import { useEffect, useRef } from "react";
 import profileBackground2_small from "../assets/profileBackground2_small.png";
-import { getGroupById, getUser, createGroup } from "../../firebase";
+import { getGroupById } from "../services/groupService";
+import { getUser } from "../services/userService";
+import { createGroup } from "../services/groupService";
 import { useAuth } from "../context/AuthContext";
 
 const ProfilePanel = ({
@@ -20,19 +22,14 @@ const ProfilePanel = ({
   UID,
 }) => {
   const formattedUID = `${userID}`.padStart(6, "0");
-  const panelRef = useRef(null); // Create a reference to the panel
+  const panelRef = useRef(null);
   const { userData } = useAuth();
 
   const clampPosition = (x, y, panelWidth, panelHeight) => {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-
-    // Sağ ve sol sınırlar
     let clampedX = Math.min(Math.max(x, 0), screenWidth - panelWidth);
-
-    // Üst ve alt sınırlar
     let clampedY = Math.min(Math.max(y, 0), screenHeight - panelHeight);
-
     return { clampedX, clampedY };
   };
 
@@ -71,12 +68,10 @@ const ProfilePanel = ({
       }
     };
 
-    // Panel açıksa diğer yerleri dinliyor
     if (check) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
-    // Panel kapanınca dinlemeyi durduruyor
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -119,7 +114,6 @@ const ProfilePanel = ({
           </div>
 
           {/* Alt Arkaplan */}
-          {/* Alt Arkaplan */}
           <div className="flex my-auto">
             {userData && userData.friendshipID === userID ? (
               <div className="flex gap-3 pl-1">
@@ -142,7 +136,6 @@ const ProfilePanel = ({
           className="expanded-text text-sm bg-[var(--secondary-bg)]
                   col-span-2 m-1 pl-2 rounded-md h-14 p-0 resize-none"
           type="text"
-          // value={""}
           maxLength="100"
           placeholder="Hakkında..."
         ></textarea>

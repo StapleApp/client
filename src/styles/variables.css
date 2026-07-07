@@ -1,0 +1,20 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+
+  --primary-bg: #222831;
+  --secondary-bg: #393E46;
+  --tertiary-bg: #ffbc1f;
+  --quaternary-bg: #fff3a1;
+
+  --primary-text: #BBBBBB;
+  --secondary-text: #DDDDDD;
+  --tertiary-text: #222831;
+  --quaternary-text: #ffbc1f;
+
+  --primary-border: #393E46;
+  --secondary-border: #222831;
+  --tertiary-border: #ffbc1f;
+}
