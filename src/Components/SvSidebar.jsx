@@ -1,9 +1,35 @@
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Hash,
+  Volume2,
+  Plus,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  ChevronLeft,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import profileBackground2_small from "../assets/profileBackground2_small.png";
+import ServerChat from "./ServerChat";
+import VoiceChannel from "./VoiceChannel";
+import { saveServerRooms } from "../../firebase";
 
-const SvSidebar = ({ serverData, setActiveChannel }) => {
+// Yerel kanal formatını ({id,name,type}) Firestore formatına ({RoomID,...}) çevir
+const toRoomDocs = (channels) =>
+  channels.map((c, index) => ({
+    RoomID: c.id,
+    RoomName: c.name,
+    Type: c.type === "voice" ? "VoiceRoom" : "TextRoom",
+    Position: index + 1,
+  }));
+
+const SvSidebar = ({ serverData }) => {
+  const navigate = useNavigate();
+  const serverId = serverData?.ServerId;
+
   const [channels, setChannels] = useState([]);
-  const [activeChannel, setActiveStateChannel] = useState(null);
+  const [activeChannel, setActiveChannel] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [channelOptions, setChannelOptions] = useState(null);
   const [editingChannel, setEditingChannel] = useState(null);
@@ -11,183 +37,242 @@ const SvSidebar = ({ serverData, setActiveChannel }) => {
 
   useEffect(() => {
     if (serverData?.Rooms) {
-      // Rooms içeriğini id, name, type, position formatına normalize et
-      const loadedChannels = serverData.Rooms.map((room) => ({
+      const loaded = serverData.Rooms.map((room) => ({
         id: room.RoomID,
         name: room.RoomName,
         type: room.Type === "TextRoom" ? "text" : "voice",
         position: room.Position ?? 0,
-      }));
-
-      // Position değerine göre sırala
-      const sorted = loadedChannels.sort((a, b) => a.position - b.position);
-      setChannels(sorted);
+      })).sort((a, b) => a.position - b.position);
+      setChannels(loaded);
     }
   }, [serverData]);
 
+  // Kanal değişikliklerini Firestore'a kaydet
+  const persist = (next) => {
+    setChannels(next);
+    if (serverId) saveServerRooms(serverId, toRoomDocs(next));
+  };
+
   const addChannel = (type) => {
     const newChannel = {
-      id: Date.now().toString(),
+      id: `${Date.now()}`,
       name:
         type === "voice"
-          ? `Voice Channel #${channels.filter((c) => c.type === "voice").length + 1}`
-          : `Text Channel #${channels.filter((c) => c.type === "text").length + 1}`,
+          ? `Sesli Kanal ${channels.filter((c) => c.type === "voice").length + 1}`
+          : `Yazı Kanalı ${channels.filter((c) => c.type === "text").length + 1}`,
       type,
       position: channels.length + 1,
     };
-
-    setChannels([...channels, newChannel]);
+    persist([...channels, newChannel]);
     setShowDropdown(false);
   };
 
-  const handleChannelClick = (channel) => {
-    setActiveChannel && setActiveChannel(channel);
-    setActiveStateChannel(channel);
-  };
-
   const renameChannel = (id) => {
-    setChannels(
-      channels.map((channel) =>
-        channel.id === id ? { ...channel, name: newChannelName || channel.name } : channel
-      )
+    persist(
+      channels.map((c) => (c.id === id ? { ...c, name: newChannelName || c.name } : c))
     );
     setEditingChannel(null);
     setNewChannelName("");
   };
 
   const deleteChannel = (id) => {
-    if (activeChannel?.id === id) {
-      setActiveChannel && setActiveChannel(null);
-      setActiveStateChannel(null);
-    }
-    setChannels(channels.filter((channel) => channel.id !== id));
+    if (activeChannel?.id === id) setActiveChannel(null);
+    persist(channels.filter((c) => c.id !== id));
     setChannelOptions(null);
   };
 
   return (
-    <div className="relative h-screen">
-      {/* Sidebar */}
-      <div className="fixed right-0 top-0 h-screen w-64 bg-[#222831] text-white shadow-lg flex flex-col justify-between">
-        <div>
-          <div
-            className="relative bg-cover bg-center h-32 w-full"
-            style={{ backgroundImage: `url(${profileBackground2_small})` }}
-          >
-            <div className="absolute top-0 left-0 right-0 bottom-0 flex justify-center items-center">
-              <h1 className="text-white font-bold text-xl">
-                {serverData?.ServerName || "Loading..."}
-              </h1>
-            </div>
+    <>
+      {/* ===== Sunucu kanal kenar çubuğu (sağda) ===== */}
+      <motion.div
+        initial={{ x: 80, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.2 }}
+        className="fixed right-0 top-0 h-screen w-64 bg-[var(--primary-bg)] text-[var(--secondary-text)] shadow-2xl border-l-2 border-[var(--primary-border)] flex flex-col z-30"
+      >
+        {/* Banner + sunucu adı + geri butonu */}
+        <div
+          className="relative h-28 w-full bg-cover bg-center"
+          style={{ backgroundImage: `url(${profileBackground2_small})` }}
+        >
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+            <h1 className="text-white font-bold text-lg px-3 text-center truncate">
+              {serverData?.ServerName || "..."}
+            </h1>
           </div>
+          <button
+            onClick={() => navigate("/")}
+            title="Geri dön"
+            className="absolute top-2 left-2 p-1.5 rounded-lg bg-[var(--primary-bg)]/80 text-[var(--secondary-text)] hover:text-[var(--quaternary-text)] hover:scale-105 transition-all duration-200"
+          >
+            <ChevronLeft size={18} />
+          </button>
+        </div>
 
+        {/* Kanal ekle */}
+        <div className="p-2 relative">
           <button
             onClick={() => setShowDropdown(!showDropdown)}
-            className="w-full bg-[#222831] text-white border-2 border-[#393E46] p-2 text-sm"
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border-2 border-[var(--primary-border)] bg-[var(--secondary-bg)] text-[var(--secondary-text)] hover:border-[var(--tertiary-border)] hover:text-[var(--quaternary-text)] transition-all duration-200 text-sm font-semibold"
           >
-            + Add Channel
+            <Plus size={16} /> Kanal Ekle
           </button>
-
-          {showDropdown && (
-            <div className="bg-[#222831] text-white p-2">
-              <button
-                onClick={() => addChannel("voice")}
-                className="w-full text-left p-1 text-sm hover:bg-[#393E46]"
+          <AnimatePresence>
+            {showDropdown && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                className="absolute left-2 right-2 mt-1 z-40 rounded-xl overflow-hidden border-2 border-[var(--primary-border)] bg-[var(--secondary-bg)] shadow-xl"
               >
-                Voice Channel
-              </button>
-              <button
-                onClick={() => addChannel("text")}
-                className="w-full text-left p-1 text-sm hover:bg-[#393E46]"
-              >
-                Text Channel
-              </button>
-            </div>
-          )}
-
-          <h2 className="text-md font-bold p-2">Channels</h2>
-          <div className="border-t border-[#393E46] mb-2" />
-
-          <ul className="flex flex-col">
-            {channels.map((channel) => (
-              <li
-                key={channel.id}
-                className={`relative w-full p-1 text-sm cursor-pointer flex justify-between items-center ${
-                  channel === activeChannel
-                    ? "bg-[#393E46] text-[#FFD369]"
-                    : "bg-transparent text-white"
-                } transition-all duration-200`}
-                onClick={() => handleChannelClick(channel)}
-              >
-                {editingChannel === channel.id ? (
-                  <input
-                    type="text"
-                    value={newChannelName}
-                    onChange={(e) => setNewChannelName(e.target.value)}
-                    onBlur={() => renameChannel(channel.id)}
-                    onKeyDown={(e) => e.key === "Enter" && renameChannel(channel.id)}
-                    className="bg-transparent border-b border-[#FFD369] outline-none text-white"
-                    autoFocus
-                  />
-                ) : (
-                  <span>{channel.name}</span>
-                )}
-
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setChannelOptions(channelOptions === channel.id ? null : channel.id);
-                  }}
-                  className="text-white px-1 py-0.5 text-xs"
+                  onClick={() => addChannel("text")}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-[var(--tertiary-bg)] hover:text-[var(--tertiary-text)] transition-colors"
                 >
-                  ...
+                  <Hash size={15} /> Yazı Kanalı
                 </button>
+                <button
+                  onClick={() => addChannel("voice")}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-[var(--tertiary-bg)] hover:text-[var(--tertiary-text)] transition-colors"
+                >
+                  <Volume2 size={15} /> Sesli Kanal
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
-                {channelOptions === channel.id && (
-                  <div className="absolute right-0 top-full mt-1 bg-[#222831] text-white text-sm border border-[#393E46] p-1 shadow-lg z-10">
+        {/* Kanal listesi */}
+        <div className="flex-1 overflow-y-auto px-2 pb-2">
+          <p className="text-xs font-bold uppercase tracking-wide text-[var(--primary-text)] px-2 mt-1 mb-1">
+            Kanallar
+          </p>
+          <div className="flex flex-col gap-1">
+            {channels.map((channel) => {
+              const active = activeChannel?.id === channel.id;
+              return (
+                <div key={channel.id} className="relative">
+                  <div
+                    onClick={() => setActiveChannel(channel)}
+                    className={`group flex items-center justify-between gap-1 px-2 py-1.5 rounded-lg cursor-pointer transition-all duration-200 ${
+                      active
+                        ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
+                        : "text-[var(--primary-text)] hover:bg-[var(--secondary-bg)] hover:text-[var(--secondary-text)]"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {channel.type === "voice" ? (
+                        <Volume2 size={16} className="shrink-0" />
+                      ) : (
+                        <Hash size={16} className="shrink-0" />
+                      )}
+                      {editingChannel === channel.id ? (
+                        <input
+                          autoFocus
+                          value={newChannelName}
+                          onChange={(e) => setNewChannelName(e.target.value)}
+                          onBlur={() => renameChannel(channel.id)}
+                          onKeyDown={(e) => e.key === "Enter" && renameChannel(channel.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="bg-transparent border-b border-current outline-none text-sm w-full"
+                        />
+                      ) : (
+                        <span className="text-sm truncate">{channel.name}</span>
+                      )}
+                    </div>
                     <button
-                      onClick={() => {
-                        setEditingChannel(channel.id);
-                        setNewChannelName(channel.name);
-                        setChannelOptions(null);
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setChannelOptions(channelOptions === channel.id ? null : channel.id);
                       }}
-                      className="block w-full text-left p-1 hover:bg-[#393E46]"
+                      className={`transition-opacity ${
+                        active ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                      }`}
                     >
-                      Rename Channel
-                    </button>
-                    <button
-                      onClick={() => deleteChannel(channel.id)}
-                      className="block w-full text-left p-1 hover:bg-[#393E46] text-red-400"
-                    >
-                      Delete Channel
+                      <MoreVertical size={15} />
                     </button>
                   </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
 
-        {activeChannel?.type === "voice" && (
-          <div className="flex justify-around items-center p-2 border-t border-[#393E46]">
-            <button className="p-2 border-2 border-[#393E46] rounded">🔊</button>
-            <button className="p-2 border-2 border-[#393E46] rounded">🎤</button>
-            <button className="p-2 border-2 border-[#393E46] rounded">🎥</button>
-            <button className="p-2 border-2 border-[#393E46] rounded">🖥️</button>
+                  <AnimatePresence>
+                    {channelOptions === channel.id && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="absolute right-0 top-full mt-1 z-50 w-40 rounded-xl overflow-hidden border-2 border-[var(--primary-border)] bg-[var(--secondary-bg)] shadow-xl"
+                      >
+                        <button
+                          onClick={() => {
+                            setEditingChannel(channel.id);
+                            setNewChannelName(channel.name);
+                            setChannelOptions(null);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--secondary-text)] hover:bg-[var(--tertiary-bg)] hover:text-[var(--tertiary-text)] transition-colors"
+                        >
+                          <Pencil size={14} /> Yeniden Adlandır
+                        </button>
+                        <button
+                          onClick={() => deleteChannel(channel.id)}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500 hover:text-white transition-colors"
+                        >
+                          <Trash2 size={14} /> Sil
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
           </div>
-        )}
-      </div>
-
-      {activeChannel && (
-        <div
-          className="fixed left-0 top-0 h-screen w-full bg-[#393E46] text-white z-50 p-4"
-          style={{ width: "calc(100vw - 256px)" }}
-        >
-          <h2 className="text-2xl font-bold">{activeChannel.name}</h2>
-          <p>Type: {activeChannel.type}</p>
-          <p>Content of the channel will go here...</p>
         </div>
-      )}
-    </div>
+      </motion.div>
+
+      {/* ===== Ana içerik alanı (Navigator ile sağ bar arasında) ===== */}
+      <div className="fixed top-0 left-16 right-64 h-screen z-20">
+        <AnimatePresence mode="wait">
+          {activeChannel ? (
+            activeChannel.type === "voice" ? (
+              <motion.div
+                key={`voice-${activeChannel.id}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="w-full h-full"
+              >
+                <VoiceChannel serverId={serverId} channel={activeChannel} />
+              </motion.div>
+            ) : (
+              <motion.div
+                key={activeChannel.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.15 }}
+                className="w-full h-full bg-[var(--secondary-bg)]"
+              >
+                <ServerChat serverId={serverId} channel={activeChannel} />
+              </motion.div>
+            )
+          ) : (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="background w-full h-full flex flex-col items-center justify-center gap-4 text-[var(--primary-text)]"
+            >
+              <div className="w-20 h-20 rounded-full bg-[var(--primary-bg)] border-4 border-[var(--tertiary-border)] flex items-center justify-center">
+                <Hash size={36} className="text-[var(--quaternary-text)]" />
+              </div>
+              <h2 className="text-2xl font-bold text-[var(--secondary-text)]">
+                {serverData?.ServerName}
+              </h2>
+              <p>Başlamak için sağdaki menüden bir kanal seç.</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </>
   );
 };
 

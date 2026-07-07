@@ -8,4 +8,12 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  // Tauri expects a fixed dev-server port and needs to see its own env vars.
+  clearScreen: false,
+  envPrefix: ['VITE_', 'TAURI_ENV_*'],
+  server: {
+    port: 5173,
+    strictPort: true,
+    host: '127.0.0.1',
+  },
 })

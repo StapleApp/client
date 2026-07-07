@@ -1,75 +1,49 @@
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { IoIosSearch, IoMdPersonAdd } from "react-icons/io";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { getPublicServers, joinServer } from "../../firebase";
 
 const SearchServer = () => {
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
+
   const [searchInput, setSearchInput] = useState("");
-  const [searchType, setSearchType] = useState("id"); // "id" or "tag"
   const [servers, setServers] = useState([]);
-  const [filteredServers, setFilteredServers] = useState([]);
-  const [selectedTags, setSelectedTags] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [joiningId, setJoiningId] = useState(null);
 
-  // Sample tags for demonstration
-  const popularTags = ["Eğlence", "Oyun", "Tanışma", "Müzik", "Spor", "Sanat", "Teknoloji", "Film"];
-
-  // Sample server data for demonstration
-  const sampleServers = [
-    { id: "12345", name: "Oyun Dünyası", tags: ["Oyun", "Eğlence"], isPublic: true, members: 1250, description: "Oyun severler için eğlenceli bir ortam!" },
-    { id: "67890", name: "Müzik Kulübü", tags: ["Müzik", "Sanat"], isPublic: true, members: 842, description: "Müzik tutkunları için özel sohbet ortamı." },
-    { id: "24680", name: "Teknoloji Meraklıları", tags: ["Teknoloji", "Oyun"], isPublic: true, members: 1560, description: "En son teknoloji haberlerini tartışıyoruz." },
-    { id: "13579", name: "Film & Dizi", tags: ["Film", "Eğlence"], isPublic: true, members: 765, description: "Film ve dizi önerileri, tartışmalar." },
-    { id: "86420", name: "Arkadaş Bulma", tags: ["Tanışma", "Eğlence"], isPublic: true, members: 2130, description: "Yeni insanlarla tanışmak için harika bir yer!" },
-  ];
+  const loadServers = async () => {
+    setIsLoading(true);
+    const list = await getPublicServers();
+    setServers(list);
+    setIsLoading(false);
+  };
 
   useEffect(() => {
-    // Simulating server fetch
-    setServers(sampleServers);
+    loadServers();
   }, []);
 
-  useEffect(() => {
-    if (searchType === "id") {
-      // Filter by ID
-      setFilteredServers(
-        servers.filter((server) => 
-          server.isPublic && server.id.includes(searchInput)
-        )
-      );
-    } else {
-      // Filter by selected tags
-      if (selectedTags.length === 0) {
-        setFilteredServers(servers.filter(server => server.isPublic));
-      } else {
-        setFilteredServers(
-          servers.filter((server) => 
-            server.isPublic && selectedTags.some(tag => server.tags.includes(tag))
-          )
-        );
-      }
+  // Ada veya ID'ye göre filtrele
+  const filteredServers = useMemo(() => {
+    const term = searchInput.trim().toLowerCase();
+    if (!term) return servers;
+    return servers.filter(
+      (s) =>
+        s.name?.toLowerCase().includes(term) ||
+        s.serverID?.toLowerCase().includes(term)
+    );
+  }, [searchInput, servers]);
+
+  const handleJoinServer = async (serverID) => {
+    if (!currentUser) return;
+    setJoiningId(serverID);
+    const ok = await joinServer(serverID, currentUser.uid);
+    setJoiningId(null);
+    if (ok) {
+      navigate(`/server/${serverID}`);
     }
-  }, [searchInput, servers, searchType, selectedTags]);
-
-  const handleSearch = () => {
-    setIsLoading(true);
-    
-    // Simulate loading
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
-  };
-
-  const handleTagClick = (tag) => {
-    if (selectedTags.includes(tag)) {
-      setSelectedTags(selectedTags.filter(t => t !== tag));
-    } else {
-      setSelectedTags([...selectedTags, tag]);
-      setSearchType("tag");
-    }
-  };
-
-  const handleJoinServer = (serverId) => {
-    console.log("Joining server:", serverId);
-    // Would handle server join logic here
   };
 
   return (
@@ -79,136 +53,89 @@ const SearchServer = () => {
       exit={{ opacity: 0, x: 100 }}
       transition={{ duration: 0.1 }}
       className="background fixed top-0 left-0 w-full h-screen bg-[var(--secondary-bg)] text-[var(--secondary-text)] overflow-y-auto"
-      style={{ paddingLeft: "80px" }} // Sol kenar çubuğuna yer açmak için padding ekledik
+      style={{ paddingLeft: "80px" }}
     >
       <div className="container mx-auto px-4 py-8">
-        
-        {/* Search Type Toggle */}
-        <div className="flex justify-center mb-6">
-          <button 
-            onClick={() => setSearchType("id")} 
-            className={`px-4 py-2 rounded-l-lg ${searchType === "id" ? 
-              "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]" : 
-              "bg-[var(--primary-bg)] text-[var(--secondary-text)]"}`}
+        <h1 className="text-2xl font-bold mb-6 text-center">Sunucu Keşfet</h1>
+
+        {/* Arama Çubuğu */}
+        <div className="flex items-center justify-center relative w-full max-w-xl mx-auto mb-8">
+          <input
+            type="text"
+            placeholder="Sunucu adı veya ID ile ara..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="w-full p-3 rounded-lg border-2 border-[var(--secondary-border)] focus:outline-none focus:border-[var(--tertiary-border)] bg-[var(--primary-bg)] text-[var(--secondary-text)]"
+          />
+          <button
+            onClick={loadServers}
+            className="ml-2 p-3 text-[var(--tertiary-text)] rounded-lg border-2 border-[var(--tertiary-border)] hover:bg-[var(--quaternary-bg)] bg-[var(--tertiary-bg)]"
+            title="Yenile"
           >
-            ID ile Ara
-          </button>
-          <button 
-            onClick={() => setSearchType("tag")} 
-            className={`px-4 py-2 rounded-r-lg ${searchType === "tag" ? 
-              "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]" : 
-              "bg-[var(--primary-bg)] text-[var(--secondary-text)]"}`}
-          >
-            Etiket ile Ara
+            <IoIosSearch size={20} />
           </button>
         </div>
-        
-        {/* Search Bar */}
-        {searchType === "id" && (
-          <div className="flex items-center justify-center relative w-full max-w-xl mx-auto mb-6">
-            <input
-              type="text"
-              placeholder="Sunucu ID'si girin..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full p-3 rounded-lg border-2 border-[var(--secondary-border)] focus:outline-none focus:border-[var(--tertiary-border)] bg-[var(--primary-bg)] text-[var(--secondary-text)]"
-            />
-            <button
-              onClick={handleSearch}
-              className="ml-2 p-3 text-[var(--tertiary-text)] rounded-lg border-2 border-[var(--tertiary-border)] hover:bg-[var(--quaternary-bg)] bg-[var(--tertiary-bg)]"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Aranıyor
-                </span>
-              ) : (
-                <span className="flex items-center justify-center">
-                  <IoIosSearch size={20} className="mr-1" /> Ara
-                </span>
-              )}
-            </button>
-          </div>
-        )}
-        
-        {/* Tag Selection */}
-        {searchType === "tag" && (
-          <div className="mb-6">
-            <p className="text-center mb-3">Popüler Etiketler</p>
-            <div className="flex flex-wrap justify-center gap-2 max-w-xl mx-auto">
-              {popularTags.map((tag) => (
-                <button
-                  key={tag}
-                  onClick={() => handleTagClick(tag)}
-                  className={`px-3 py-1 rounded-full border ${
-                    selectedTags.includes(tag)
-                      ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] border-[var(--tertiary-border)]"
-                      : "bg-[var(--primary-bg)] text-[var(--secondary-text)] border-[var(--secondary-border)] hover:border-[var(--tertiary-border)]"
-                  }`}
-                >
-                  #{tag}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Search Results */}
-        <div className="mt-8">
+
+        {/* Sonuçlar */}
+        <div className="mt-4">
           <h2 className="text-xl mb-4 font-semibold">
-            {filteredServers.length > 0 ? 
-              "Bulunan Sunucu" : 
-              searchInput || selectedTags.length > 0 ? 
-                "Sunucu bulunamadı" : 
-                "Herkese açık sunucular"}
+            {isLoading
+              ? "Yükleniyor..."
+              : filteredServers.length > 0
+              ? "Herkese açık sunucular"
+              : searchInput
+              ? "Sunucu bulunamadı"
+              : "Henüz herkese açık sunucu yok"}
           </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredServers.map((server) => (
-              <motion.div
-                key={server.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="bg-[var(--primary-bg)] p-4 rounded-lg border-2 border-[var(--secondary-border)] hover:border-[var(--tertiary-border)]"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-bold text-lg">{server.name}</h3>
-                  <span className="text-sm bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] px-2 py-1 rounded-full">
-                    {server.members} üye
-                  </span>
-                </div>
-                <p className="text-sm mb-3 text-[var(--primary-text)]">{server.description}</p>
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {server.tags.map((tag) => (
-                    <span key={tag} className="text-xs px-2 py-1 bg-[var(--secondary-bg)] rounded-full">
-                      #{tag}
+
+          {isLoading ? (
+            <div className="flex justify-center items-center h-40">
+              <svg className="animate-spin h-8 w-8 text-[var(--tertiary-text)]" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredServers.map((server) => (
+                <motion.div
+                  key={server.serverID}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-[var(--primary-bg)] p-4 rounded-lg border-2 border-[var(--secondary-border)] hover:border-[var(--tertiary-border)] flex flex-col"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-lg break-all">{server.name}</h3>
+                    <span className="text-sm bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] px-2 py-1 rounded-full whitespace-nowrap">
+                      {server.memberCount} üye
                     </span>
-                  ))}
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-[var(--primary-text)]">ID: {server.id}</span>
-                  <button
-                    onClick={() => handleJoinServer(server.id)}
-                    className="flex items-center bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] px-3 py-1 rounded-lg hover:bg-[var(--quaternary-bg)]"
-                  >
-                    <IoMdPersonAdd size={16} className="mr-1" /> Katıl
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-          
-          {/* Pagination or Load More button would go here */}
-          {filteredServers.length > 0 && (
-            <div className="mt-6 text-center">
-              <button className="bg-[var(--primary-bg)] text-[var(--secondary-text)] px-4 py-2 rounded-lg border border-[var(--secondary-border)] hover:border-[var(--tertiary-border)]">
-                Daha Fazla Göster
-              </button>
+                  </div>
+                  <p className="text-sm mb-3 text-[var(--primary-text)] min-h-[1.25rem]">
+                    {server.description || "Açıklama yok."}
+                  </p>
+                  {server.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {server.tags.map((tag) => (
+                        <span key={tag} className="text-xs px-2 py-1 bg-[var(--secondary-bg)] rounded-full">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center mt-auto pt-2">
+                    <span className="text-xs text-[var(--primary-text)] break-all">ID: {server.serverID}</span>
+                    <button
+                      onClick={() => handleJoinServer(server.serverID)}
+                      disabled={joiningId === server.serverID}
+                      className="flex items-center bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] px-3 py-1 rounded-lg hover:bg-[var(--quaternary-bg)] disabled:opacity-50 whitespace-nowrap"
+                    >
+                      <IoMdPersonAdd size={16} className="mr-1" />
+                      {joiningId === server.serverID ? "Katılınıyor..." : "Katıl"}
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
             </div>
           )}
         </div>

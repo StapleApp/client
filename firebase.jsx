@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,signInWithEmailAndPassword} from "firebase/auth";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDocs, getDoc, where, query, collection, serverTimestamp, updateDoc, addDoc, arrayUnion, onSnapshot } from "firebase/firestore"; 
+import { getFirestore, doc, setDoc, getDocs, getDoc, where, query, collection, serverTimestamp, updateDoc, addDoc, arrayUnion, arrayRemove, onSnapshot, orderBy } from "firebase/firestore";
 import toast from 'react-hot-toast';
 
 const firebaseConfig = {
@@ -512,6 +512,181 @@ export const listenGroupMessages = (groupID, callback) => {
             callback([]);
         }
     });
+};
+
+// Users dokümanı yoksa oluştur (kayıt sırasında yazılamamış hesaplar için güvenlik ağı)
+export const ensureUserDoc = async (user) => {
+    if (!user) return null;
+    const userRef = doc(db, "Users", user.uid);
+    const snap = await getDoc(userRef);
+    if (snap.exists()) return snap.data();
+
+    // Doküman yok → mevcut Auth bilgileriyle yenisini oluştur
+    const friendshipID = await createFriendshipID();
+    const nameParts = (user.displayName || "").trim().split(" ");
+    const data = {
+        userID: user.uid,
+        photoURL: user.photoURL || "",
+        nickName: "",
+        name: nameParts[0] || "",
+        surname: nameParts.slice(1).join(" ") || "",
+        bithdate: "",
+        createdDate: serverTimestamp(),
+        email: user.email || "",
+        friendshipID: friendshipID,
+        friends: {},
+        servers: [],
+        groups: [],
+    };
+
+    try {
+        await setDoc(userRef, data);
+        console.log("Missing user document created for", user.uid);
+    } catch (error) {
+        console.error("Failed to auto-create user document:", error);
+        return null;
+    }
+    return data;
+};
+
+// ====================== SERVERS: discovery, join, channels, chat ======================
+
+// Herkese açık sunucuları getir (keşfet / arama sayfası için)
+export const getPublicServers = async () => {
+    try {
+        const q = query(collection(db, "Servers"), where("ServerType", "==", "Public"));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map((d) => {
+            const data = d.data();
+            return {
+                serverID: d.id,
+                name: data.ServerName,
+                description: data.ServerDescription || "",
+                tags: data.ServerTags || [],
+                photo: data.ServerPhotoURL || "",
+                ownerID: data.ServerOwnerID,
+                memberCount: Array.isArray(data.Users) ? data.Users.length : 0,
+            };
+        });
+    } catch (error) {
+        console.error("Error fetching public servers:", error);
+        return [];
+    }
+};
+
+// Kullanıcı bir sunucuda üye mi?
+export const isServerMember = async (serverID, uid) => {
+    const server = await getServerById(serverID);
+    if (!server) return false;
+    return (server.Users || []).some((u) => u.UserID === uid);
+};
+
+// Sunucuya katıl
+export const joinServer = async (serverID, uid) => {
+    try {
+        const serverRef = doc(db, "Servers", serverID);
+        const serverSnap = await getDoc(serverRef);
+        if (!serverSnap.exists()) {
+            toast.error("Sunucu bulunamadı");
+            return false;
+        }
+
+        const serverData = serverSnap.data();
+        const alreadyMember = (serverData.Users || []).some((u) => u.UserID === uid);
+        if (alreadyMember) {
+            toast("Zaten bu sunucudasın");
+            return true;
+        }
+
+        await updateDoc(serverRef, {
+            Users: arrayUnion({
+                UserID: uid,
+                RoleID: "member",
+                JoinDate: Date.now(),
+            }),
+        });
+
+        // Kullanıcının sunucu listesine de ekle
+        await updateDoc(doc(db, "Users", uid), {
+            servers: arrayUnion(serverID),
+        });
+
+        toast.success("Sunucuya katıldın!");
+        return true;
+    } catch (error) {
+        console.error("Error joining server:", error);
+        toast.error("Sunucuya katılırken bir hata oluştu");
+        return false;
+    }
+};
+
+// Sunucudan ayrıl
+export const leaveServer = async (serverID, uid) => {
+    try {
+        const serverRef = doc(db, "Servers", serverID);
+        const serverSnap = await getDoc(serverRef);
+        if (!serverSnap.exists()) return false;
+
+        const serverData = serverSnap.data();
+        const memberEntry = (serverData.Users || []).find((u) => u.UserID === uid);
+        if (memberEntry) {
+            await updateDoc(serverRef, { Users: arrayRemove(memberEntry) });
+        }
+        await updateDoc(doc(db, "Users", uid), { servers: arrayRemove(serverID) });
+        return true;
+    } catch (error) {
+        console.error("Error leaving server:", error);
+        return false;
+    }
+};
+
+// Sunucunun kanal (Rooms) listesini güncelle
+export const saveServerRooms = async (serverID, rooms) => {
+    try {
+        await updateDoc(doc(db, "Servers", serverID), { Rooms: rooms });
+        return true;
+    } catch (error) {
+        console.error("Error saving server rooms:", error);
+        toast.error("Kanallar kaydedilemedi");
+        return false;
+    }
+};
+
+// Bir kanala mesaj gönder ( Servers/{id}/Channels/{roomId}/Messages alt koleksiyonu )
+export const sendServerMessage = async (serverID, roomID, messageObj) => {
+    try {
+        await addDoc(
+            collection(db, "Servers", serverID, "Channels", String(roomID), "Messages"),
+            {
+                ...messageObj,
+                createdAt: serverTimestamp(),
+            }
+        );
+        return true;
+    } catch (error) {
+        console.error("Error sending server message:", error);
+        toast.error("Mesaj gönderilemedi");
+        return false;
+    }
+};
+
+// Bir kanalın mesajlarını anlık dinle
+export const listenServerMessages = (serverID, roomID, callback) => {
+    const q = query(
+        collection(db, "Servers", serverID, "Channels", String(roomID), "Messages"),
+        orderBy("createdAt", "asc")
+    );
+    return onSnapshot(
+        q,
+        (snapshot) => {
+            const msgs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+            callback(msgs);
+        },
+        (error) => {
+            console.error("Error listening to server messages:", error);
+            callback([]);
+        }
+    );
 };
 
 export default app;

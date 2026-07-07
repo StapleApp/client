@@ -8,11 +8,15 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
     "proxy": "https://13.60.96.194"
   },
   "dependencies": {
     "@lottiefiles/dotlottie-react": "^0.13.2",
     "@tailwindcss/vite": "^4.0.13",
+    "@tauri-apps/api": "^2.11.1",
     "emoji-picker-react": "^4.12.2",
     "firebase": "^11.4.0",
     "framer-motion": "^12.5.0",
@@ -29,6 +33,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
+    "@tauri-apps/cli": "^2.11.4",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
