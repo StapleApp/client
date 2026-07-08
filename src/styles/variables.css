@@ -1,9 +1,5 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-
+/* Uygulama renk paleti — :root üzerinde, her yerde miras alınır. */
+:root {
   --primary-bg: #222831;
   --secondary-bg: #393E46;
   --tertiary-bg: #ffbc1f;
@@ -17,4 +13,16 @@
   --primary-border: #393E46;
   --secondary-border: #222831;
   --tertiary-border: #ffbc1f;
+}
+
+/*
+ * UYARI: Vite şablonundan kalan text-align: center.
+ * Birçok sayfa metin ortalamasını buradan miras alıyor; kaldırmak
+ * görünümü değiştirir. Yeni bileşenlerde sola hizalı metin gerekiyorsa
+ * açıkça `text-left` verin (bkz. ChatPanel). Eski max-width/margin/padding
+ * kuralları kaldırıldı — tüm sayfalar fixed konumlandığı için etkisizdiler
+ * ama normal akıştaki öğeleri kısıtlayıp kaydırıyorlardı.
+ */
+#root {
+  text-align: center;
 }

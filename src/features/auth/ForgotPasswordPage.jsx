@@ -18,7 +18,7 @@ const ForgotPasswordPage = () => {
       }, 3000);
     } catch (error) {
       toast.error("Password reset failed");
-      console.log(error);
+      console.error(error);
     }
   };
 

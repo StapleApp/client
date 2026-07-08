@@ -55,6 +55,18 @@ export const listenNotifications = (uid, callback) => {
 };
 
 /**
+ * Update arbitrary fields on a notification (e.g. responded/accepted flags).
+ */
+export const updateNotification = async (uid, notificationId, data) => {
+  try {
+    const notifDoc = doc(db, "Users", uid, "Notifications", notificationId);
+    await updateDoc(notifDoc, data);
+  } catch (error) {
+    console.error("Error updating notification:", error);
+  }
+};
+
+/**
  * Mark a single notification as read.
  */
 export const markAsRead = async (uid, notificationId) => {

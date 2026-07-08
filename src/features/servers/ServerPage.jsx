@@ -10,7 +10,6 @@ const ServerPage = () => {
   useEffect(() => {
     const fetchServer = async () => {
       const data = await getServerById(serverId);
-      console.log("Sunucu verisi:", data);
       setServerData(data);
     };
     fetchServer();

@@ -9,32 +9,15 @@ import {
   serverTimestamp,
   updateDoc,
   arrayUnion,
-  arrayRemove,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
 import toast from "react-hot-toast";
+import { generateUniqueId } from "./idService";
 
 // ** Server ID oluşturan fonksiyon **
-const createServerID = async () => {
-  const serversRef = collection(db, "Servers");
-  let ServerID;
-  let isUnique = false;
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-  while (!isUnique) {
-    ServerID = Array.from(
-      { length: 10 },
-      () => chars[Math.floor(Math.random() * chars.length)]
-    ).join("");
-    const q = query(serversRef, where("ServerID", "==", ServerID));
-    const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) {
-      isUnique = true;
-    }
-  }
-  return ServerID;
-};
+// Not: alan adı "ServerId" — eski kod "ServerID" sorguluyordu, bu yüzden
+// benzersizlik kontrolü hiç çalışmıyordu (gizli çakışma riski). Düzeltildi.
+const createServerID = () => generateUniqueId("Servers", "ServerId");
 
 // ** Server verisi yazma **
 async function writeServerData(serverName, ownerID) {
@@ -85,8 +68,6 @@ async function writeServerData(serverName, ownerID) {
         },
       ],
     });
-
-    console.log("Server data added to Firestore");
   } catch (error) {
     console.error("Database write failed:", error);
   }
@@ -94,7 +75,6 @@ async function writeServerData(serverName, ownerID) {
 
 export const saveServerToFirestore = async (serverName, ownerID, navigate) => {
   try {
-    console.log("Saving server to Firestore:", serverName, ownerID);
     await writeServerData(serverName, ownerID);
     toast.success("Server başarıyla oluşturuldu!");
     navigate("/home");
@@ -128,6 +108,19 @@ export const getServersList = async (uid) => {
           });
         }
       });
+
+      // Kendini onar: bulunan sunucuları kullanıcının servers dizisine yaz,
+      // böylece bir dahaki sefere tam koleksiyon taraması gerekmez.
+      if (userServers.length > 0) {
+        try {
+          await updateDoc(doc(db, "Users", uid), {
+            servers: userServers.map((s) => s.serverID),
+          });
+        } catch (healError) {
+          console.warn("Could not persist server list to user doc:", healError);
+        }
+      }
+
       return userServers;
     }
 
@@ -192,13 +185,6 @@ export const getPublicServers = async () => {
   }
 };
 
-// Kullanıcı bir sunucuda üye mi?
-export const isServerMember = async (serverID, uid) => {
-  const server = await getServerById(serverID);
-  if (!server) return false;
-  return (server.Users || []).some((u) => u.UserID === uid);
-};
-
 // Sunucuya katıl
 export const joinServer = async (serverID, uid) => {
   try {
@@ -236,30 +222,6 @@ export const joinServer = async (serverID, uid) => {
   } catch (error) {
     console.error("Error joining server:", error);
     toast.error("Sunucuya katılırken bir hata oluştu");
-    return false;
-  }
-};
-
-// Sunucudan ayrıl
-export const leaveServer = async (serverID, uid) => {
-  try {
-    const serverRef = doc(db, "Servers", serverID);
-    const serverSnap = await getDoc(serverRef);
-    if (!serverSnap.exists()) return false;
-
-    const serverData = serverSnap.data();
-    const memberEntry = (serverData.Users || []).find(
-      (u) => u.UserID === uid
-    );
-    if (memberEntry) {
-      await updateDoc(serverRef, { Users: arrayRemove(memberEntry) });
-    }
-    await updateDoc(doc(db, "Users", uid), {
-      servers: arrayRemove(serverID),
-    });
-    return true;
-  } catch (error) {
-    console.error("Error leaving server:", error);
     return false;
   }
 };

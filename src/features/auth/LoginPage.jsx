@@ -43,7 +43,7 @@ const LoginPage = () => {
       // Başarılıysa yukarıdaki effect yönlendirir.
     } catch (error) {
       toast.error("Login failed");
-      console.log(error);
+      console.error(error);
     }
   };
 
@@ -54,7 +54,7 @@ const LoginPage = () => {
       await signInWithGoogle();
       // Yönlendirme effect tarafından yapılır.
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
 

@@ -16,4 +16,18 @@ export default defineConfig({
     strictPort: true,
     host: '127.0.0.1',
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Büyük bağımlılıkları ayrı chunk'lara böl — tarayıcı önbelleği
+        // uygulama kodu değişse bile vendor chunk'ları yeniden indirmez.
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+          'emoji-picker': ['emoji-picker-react'],
+          'ui-vendor': ['framer-motion', 'lucide-react', 'react-icons'],
+        },
+      },
+    },
+  },
 })

@@ -2,7 +2,7 @@ import '../../styles/components.css';
 import { FaUserFriends } from 'react-icons/fa';
 import { AiOutlineGlobal } from "react-icons/ai";
 import { useState, useRef ,useEffect} from "react";
-import ProfilePanel from '../ProfilePanel'
+import ProfilePanel from './ProfilePanel'
 import { useAuth } from "../../context/AuthContext";
 import { getFriendsList } from '../../services/friendService';
 import { getServersList } from '../../services/serverService';
@@ -210,7 +210,6 @@ const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
 
     const handleUserClick = (uid, nickName, friendshipID, photoURL) => {
         if (userRefs.current[uid]) {
-            console.log(userRefs)
             const rect = userRefs.current[uid].getBoundingClientRect();
             setPosition({ top: rect.top, left: rect.right });
             setSelectedUser({ userID: uid, id: friendshipID, photoURL: photoURL, nickName: nickName });

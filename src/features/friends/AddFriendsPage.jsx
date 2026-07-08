@@ -5,7 +5,7 @@ import { useState } from "react";
 import { IoIosSearch, IoMdPersonAdd } from "react-icons/io";
 import profileBackground2_small from "../../assets/profileBackground2_small.png";
 import { useAuth } from "../../context/AuthContext";
-import { GetUserByFriendshipID, AddFriend } from "../../services/friendService";
+import { GetUserByFriendshipID, sendFriendRequest } from "../../services/friendService";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 const AddFriendsPage = () => {
@@ -25,10 +25,8 @@ const AddFriendsPage = () => {
       GetUserByFriendshipID(searchId).then((friend) => {
         if (friend && userData.friendshipID !== searchId) {
           setFriendData(friend);
-          console.log("User found:", friend);
         } else {
           setFriendData(null);
-          console.log("No user found with this friendshipID.");
         }
       });
     }
@@ -195,8 +193,9 @@ const AddFriendsPage = () => {
 };
 
 const handleAddFriend = (userData, friendData) => {
-  AddFriend(userData.userID, friendData.userID, "Friend");
-  AddFriend(friendData.userID, userData.userID, "Friend");
+  // Gerçek istek akışı: bildirim gönderilir, ilişki karşı taraf
+  // kabul edince kurulur (NotificationsPage → acceptFriendRequest).
+  sendFriendRequest(userData, friendData.userID);
 
   if (document.querySelector(".friend-request-message")) return;
 

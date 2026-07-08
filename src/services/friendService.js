@@ -30,7 +30,7 @@ export const GetUserByFriendshipID = async (friendshipID) => {
   }
 };
 
-// ** Arkadaş Ekleme **
+// ** Arkadaş Ekleme (alt seviye: tek yönlü ilişki yazar, bildirim atmaz) **
 export const AddFriend = async (uid, friendID, relation) => {
   try {
     const userRef = doc(db, "Users", uid);
@@ -43,28 +43,33 @@ export const AddFriend = async (uid, friendID, relation) => {
     };
 
     await updateDoc(userRef, newFriendData);
-    console.log("Friend added successfully");
-
-    // Create a notification for the target user
-    try {
-      const senderDoc = await getDoc(doc(db, "Users", uid));
-      const senderName = senderDoc.exists()
-        ? senderDoc.data().nickName || senderDoc.data().name
-        : "Birisi";
-
-      await createNotification(friendID, {
-        type: "friend",
-        user: senderName,
-        message: "Size arkadaşlık isteği gönderdi",
-        read: false,
-      });
-    } catch (notifError) {
-      // Don't fail the friend add if notification fails
-      console.warn("Could not create notification:", notifError);
-    }
   } catch (error) {
     console.error("Error adding/updating friend:", error);
   }
+};
+
+// ** Arkadaşlık isteği gönder — sadece bildirim oluşturur. **
+// İlişki, karşı taraf isteği kabul edince kurulur (acceptFriendRequest).
+export const sendFriendRequest = async (fromUser, toUid) => {
+  try {
+    await createNotification(toUid, {
+      type: "friend",
+      user: fromUser.nickName || fromUser.name || "Birisi",
+      fromUid: fromUser.userID,
+      message: "Size arkadaşlık isteği gönderdi",
+      read: false,
+    });
+    return true;
+  } catch (error) {
+    console.error("Error sending friend request:", error);
+    return false;
+  }
+};
+
+// ** Arkadaşlık isteğini kabul et — iki yönlü ilişkiyi kurar. **
+export const acceptFriendRequest = async (myUid, fromUid) => {
+  await AddFriend(myUid, fromUid, "Friend");
+  await AddFriend(fromUid, myUid, "Friend");
 };
 
 // ** Arkadaş Listesine Ulaşma **
@@ -86,7 +91,6 @@ export const getFriendsList = async (uid) => {
 
       return filteredFriendsArray;
     } else {
-      console.log("No such user document!");
       return [];
     }
   } catch (error) {

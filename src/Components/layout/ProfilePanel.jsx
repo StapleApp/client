@@ -4,10 +4,10 @@ import { IoMdClose } from "react-icons/io";
 import { CgProfile } from "react-icons/cg";
 import { FaTelegramPlane } from "react-icons/fa";
 import { useEffect, useRef } from "react";
-import profileBackground2_small from "../assets/profileBackground2_small.png";
-import { findDMGroup, createGroup } from "../services/groupService";
-import { getUser } from "../services/userService";
-import { useAuth } from "../context/AuthContext";
+import profileBackground2_small from "../../assets/profileBackground2_small.png";
+import { findDMGroup, createGroup } from "../../services/groupService";
+import { getUser } from "../../services/userService";
+import { useAuth } from "../../context/AuthContext";
 
 const ProfilePanel = ({
   check,

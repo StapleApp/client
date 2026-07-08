@@ -3,12 +3,42 @@ import { FaStapler } from "react-icons/fa6";
 import { MdHome, MdSearch, MdOutlineMessage } from "react-icons/md";
 import { IoMdNotifications } from "react-icons/io";
 
-import ProfilePanel from '../ProfilePanel'
+import ProfilePanel from './ProfilePanel'
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../../styles/components.css";
 
 import { useAuth } from "../../context/AuthContext";
+
+// Sol menü öğeleri — tek kaynaktan yönetilir.
+const NAV_ITEMS = [
+  { path: "/", label: "Ana Sayfa", icon: <MdHome size="25" /> },
+  { path: "/AddFriends", label: "Arkadaş Ekle", icon: <FaStapler size="20" /> },
+  { path: "/SearchServer", label: "Sunucu Ara", icon: <MdSearch size="25" /> },
+  { path: "/Notifications", label: "Bildirimler", icon: <IoMdNotifications size="25" /> },
+  { path: "/DirectMessaging", label: "Mesajlar", icon: <MdOutlineMessage size="25" /> },
+];
+
+// Öğelerin genişleme animasyonu gecikmeleri (orijinal tasarımla birebir)
+const ITEM_DELAYS = ["delay-75", "delay-150", "delay-225", "delay-300", "delay-300"];
+
+const NavItem = ({ path, label, icon }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  return (
+    <div
+      className={
+        location.pathname === path
+          ? `hovered-icon group`
+          : `icon group hover:scale-105`
+      }
+      onClick={() => navigate(path)}
+    >
+      {icon}
+      <span className="sidebar-tooltip group-hover:scale-100">{label}</span>
+    </div>
+  );
+};
 
 const Navigator = () => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -32,186 +62,54 @@ const Navigator = () => {
               bg-[var(--primary-bg)]`}
       >
         <div className="flex flex-col h-64">
+          {/* Profil avatarı — paneli açar/kapar */}
           <div
             className={`transition-all duration-350 ease-in-out
-                      ${isExpanded 
-                        ? 'opacity-0 -translate-y-16' 
+                      ${isExpanded
+                        ? 'opacity-0 -translate-y-16'
                         : 'opacity-100 translate-y-0'}`}
           >
-            <SideBarImg
-              src={userData?.photoURL || "/1.png"}
-              toggleExpand={() => setIsExpanded(!isExpanded)}
-            />
+            <div
+              className="icon group cursor-pointer hover:scale-105 rounded-full"
+              onClick={() => setIsExpanded(!isExpanded)}
+            >
+              <img
+                src={userData?.photoURL || "/1.png"}
+                className="w-10 h-10 rounded-full"
+                alt={"logo"}
+              />
+              <span className="sidebar-tooltip group-hover:scale-100">Profil</span>
+            </div>
           </div>
-          <div
-            className={`transition-all duration-250 ease-in-out delay-75
+
+          {/* Gezinme öğeleri */}
+          {NAV_ITEMS.map((item, i) => (
+            <div
+              key={item.path}
+              className={`${i >= 3 ? "flex flex-col h-16 " : ""}transition-all duration-250 ease-in-out ${ITEM_DELAYS[i]}
                       ${isExpanded ? '-translate-y-15' : 'translate-y-0'}`}
-          >
-            <SideBarHome />
-          </div>
-          <div
-            className={`transition-all duration-250 ease-in-out delay-150
-                      ${isExpanded ? '-translate-y-15' : 'translate-y-0'}`}
-          >
-            <SideBarFriend />
-          </div>
-          <div
-            className={`transition-all duration-250 ease-in-out delay-225
-                      ${isExpanded ? '-translate-y-15' : 'translate-y-0'}`}
-          >
-            <SideBarSearch />
-          </div>
-          <div
-          className={`flex flex-col h-16 transition-all duration-250 ease-in-out delay-300
-                     ${isExpanded ? '-translate-y-15' : 'translate-y-0'}`}
-          >
-            <SideBarNotification />
-          </div>
-          <div
-          className={`flex flex-col h-16 transition-all duration-250 ease-in-out delay-300
-                     ${isExpanded ? '-translate-y-15' : 'translate-y-0'}`}
-          >
-            <SideBarDM />
-          </div>
+            >
+              <NavItem {...item} />
+              {/* Mesajlar'dan sonra ayraç (orijinal tasarım) */}
+              {item.path === "/DirectMessaging" && (
+                <hr className="border-[var(--primary-border)] border" />
+              )}
+            </div>
+          ))}
         </div>
+
+        {/* Ayarlar (altta, ayraçlı) */}
         <div
           className={`flex flex-col h-16 transition-all duration-250 ease-in-out delay-300
                      ${isExpanded ? '-translate-y-0' : 'translate-y-0'}`}
         >
-          <SideBarIconSettings />
+          <hr className="border-[var(--primary-border)] border" />
+          <NavItem
+            path="/Settings"
+            label="Ayarlar"
+            icon={<BsGearFill size="22" />}
+          />
         </div>
-      </div>
-    </>
-  );
-};
-
-const SideBarImg = ({ src, toggleExpand }) => {
-  return (
-    <>
-      <div
-        className="icon group cursor-pointer hover:scale-105 rounded-full"
-        onClick={toggleExpand}
-      >
-        <img src={src} className="w-10 h-10 rounded-full" alt={"logo"} />
-        <span className="sidebar-tooltip group-hover:scale-100">Profil</span>
-      </div>
-    </>
-  );
-};
-
-const SideBarHome = () => {
-  const navigate = useNavigate();
-  return (
-    <>
-      <div
-        className={
-          window.location.pathname === "/"
-            ? `hovered-icon group`
-            : `icon group hover:scale-105`
-        }
-        onClick={() => navigate("/")}
-      >
-        <MdHome size="25" />
-        <span className="sidebar-tooltip group-hover:scale-100">Ana Sayfa</span>
-      </div>
-    </>
-  );
-};
-
-const SideBarFriend = () => {
-  const navigate = useNavigate();
-  return (
-    <>
-      <div
-        className={
-          window.location.pathname === "/AddFriends"
-            ? `hovered-icon group`
-            : `icon group hover:scale-105`
-        }
-        onClick={() => navigate("/AddFriends")}
-      >
-        <FaStapler size="20" />
-        <span className="sidebar-tooltip group-hover:scale-100">
-          {"Arkadaş Ekle"}
-        </span>
-      </div>
-    </>
-  );
-};
-
-const SideBarSearch = () => {
-  const navigate = useNavigate();
-  return (
-    <>
-      <div
-        className={
-          window.location.pathname === "/SearchServer"
-            ? `hovered-icon group`
-            : `icon group hover:scale-105`
-        }
-        onClick={() => navigate("/SearchServer")}
-      >
-        <MdSearch  size="25" />
-        <span className="sidebar-tooltip group-hover:scale-100">Sunucu Ara</span>
-      </div>
-    </>
-  );
-};
-
-const SideBarNotification = () => {
-  const navigate = useNavigate();
-  return(
-    <>
-      <div
-        className={
-          window.location.pathname === "/Notifications"
-            ? `hovered-icon group`
-            : `icon group hover:scale-105`
-        }
-        onClick={() => navigate("/Notifications")}
-      >
-        <IoMdNotifications size="25" />
-        <span className="sidebar-tooltip group-hover:scale-100">Bildirimler</span>
-      </div>
-    </>
-  );
-};
-
-const SideBarDM = () => {
-  const navigate = useNavigate();
-  return(
-    <>
-      <div
-        className={
-          window.location.pathname === "/DirectMessaging"
-            ? `hovered-icon group`
-            : `icon group hover:scale-105`
-        }
-        onClick={() => navigate("/DirectMessaging")}
-      >
-        <MdOutlineMessage size="25" />
-        <span className="sidebar-tooltip group-hover:scale-100">Mesajlar</span>
-      </div>
-      <hr className="border-[var(--primary-border)] border" />
-    </>
-  );
-};
-
-const SideBarIconSettings = () => {
-  const navigate = useNavigate();
-  return (
-    <>
-      <hr className="border-[var(--primary-border)] border" />
-      <div
-        className={
-          window.location.pathname === "/Settings"
-            ? `hovered-icon group`
-            : `icon group hover:scale-105`
-        }
-        onClick={() => navigate("/Settings")}
-      >
-        <BsGearFill size="22" />
-        <span className="sidebar-tooltip group-hover:scale-100">Ayarlar</span>
       </div>
     </>
   );

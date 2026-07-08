@@ -91,8 +91,7 @@ export const loginWithMail = async (email, password) => {
 export const handleResetPassword = async (email) => {
   try {
     await sendPasswordResetEmail(auth, email);
-    console.log("Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.");
   } catch (error) {
-    console.log("Hata: " + error.message);
+    console.error("Hata: " + error.message);
   }
 };

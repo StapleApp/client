@@ -5,10 +5,12 @@ import { useAuth } from "../../context/AuthContext";
 import {
   listenNotifications,
   markAsRead,
+  updateNotification,
   deleteNotification,
   markAllAsRead,
   deleteAllNotifications,
 } from "../../services/notificationService";
+import { acceptFriendRequest } from "../../services/friendService";
 
 const NotificationsPage = () => {
   const { userData } = useAuth();
@@ -39,8 +41,19 @@ const NotificationsPage = () => {
 
   const handleFriendRequest = async (notificationId, accepted) => {
     if (!userData?.userID) return;
-    await markAsRead(userData.userID, notificationId);
-    console.log(`Friend request ${accepted ? "accepted" : "rejected"}: ${notificationId}`);
+    const notification = notifications.find((n) => n.id === notificationId);
+
+    // Kabul edilirse iki yönlü arkadaşlığı şimdi kur.
+    // (Eski bildirimlerde fromUid olmayabilir — o durumda sadece işaretle.)
+    if (accepted && notification?.fromUid) {
+      await acceptFriendRequest(userData.userID, notification.fromUid);
+    }
+
+    await updateNotification(userData.userID, notificationId, {
+      read: true,
+      responded: true,
+      accepted,
+    });
   };
 
   const handleMarkRead = async (notificationId) => {

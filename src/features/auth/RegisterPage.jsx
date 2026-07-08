@@ -58,11 +58,10 @@ const RegisterPage = () => {
     }
 
     try {
-      const user = await register(name, surname, email, password, birthdate, navigate);
-      console.log(user);
+      await register(name, surname, email, password, birthdate, navigate);
     } catch (error) {
       toast.error("Registration failed: " + error.message);
-      console.log(error);
+      console.error(error);
     }
   };
 

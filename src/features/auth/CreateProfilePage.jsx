@@ -45,7 +45,7 @@ const CreateProfilePage = () => {
         console.error(error);
       }
     } else {
-      console.log("No user is signed in.");
+      console.warn("No user is signed in.");
     }
   };
 
