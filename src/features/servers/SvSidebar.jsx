@@ -270,7 +270,7 @@ const SvSidebar = ({ serverData }) => {
         </div>
       </motion.div>
 
-      <div className="fixed top-0 left-80 right-0 h-screen z-20">
+      <div className="fixed top-0 left-80 right-48 h-screen z-20">
         <AnimatePresence mode="wait">
           {activeChannel ? (
             <motion.div

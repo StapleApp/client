@@ -1,4 +1,5 @@
 import SvSidebar from "./SvSidebar";
+import SocialBar from "../../Components/layout/SocialBar";
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getServerById } from "../../services/serverService";
@@ -20,6 +21,7 @@ const ServerPage = () => {
   return (
     <div className="flex">
       <SvSidebar serverData={serverData} />
+      <SocialBar />
     </div>
   );
 };
