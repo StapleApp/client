@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence, Reorder } from "framer-motion";
 import {
   Hash,
   Volume2,
@@ -8,20 +8,18 @@ import {
   Pencil,
   Trash2,
   ChevronLeft,
+  GripVertical,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import profileBackground2_small from "../../assets/profileBackground2_small.png";
 import ChatPanel from "../../Components/chat/ChatPanel";
 import { useVoice } from "../../context/VoiceContext";
-import { saveServerRooms } from "../../services/serverService";
-
-const toRoomDocs = (channels) =>
-  channels.map((c, index) => ({
-    RoomID: c.id,
-    RoomName: c.name,
-    Type: c.type === "voice" ? "VoiceRoom" : "TextRoom",
-    Position: index + 1,
-  }));
+import {
+  createChannel,
+  renameChannel as apiRenameChannel,
+  deleteChannelById,
+  reorderChannels,
+} from "../../services/serverService";
 
 const SvSidebar = ({ serverData }) => {
   const navigate = useNavigate();
@@ -30,6 +28,12 @@ const SvSidebar = ({ serverData }) => {
 
   const [channels, setChannels] = useState([]);
   const [activeChannel, setActiveChannel] = useState(null);
+
+  // Sürükleme bitince güncel sırayı okumak için ref (closure tazeliği)
+  const channelsRef = useRef(channels);
+  useEffect(() => {
+    channelsRef.current = channels;
+  }, [channels]);
 
   // Kanala tıklama: yazı kanalı → içerik panelinde aç, sesli kanal → küresel sese katıl
   const handleChannelClick = (channel) => {
@@ -49,6 +53,7 @@ const SvSidebar = ({ serverData }) => {
     channel.type === "voice"
       ? voice.active?.serverId === serverId && voice.active?.channelId === channel.id
       : activeChannel?.id === channel.id;
+
   const [showDropdown, setShowDropdown] = useState(false);
   const [channelOptions, setChannelOptions] = useState(null);
   const [editingChannel, setEditingChannel] = useState(null);
@@ -66,46 +71,56 @@ const SvSidebar = ({ serverData }) => {
     }
   }, [serverData]);
 
-  const persist = (next) => {
-    setChannels(next);
-    if (serverId) saveServerRooms(serverId, toRoomDocs(next));
-  };
-
-  const addChannel = (type) => {
-    const newChannel = {
-      id: `${Date.now()}`,
-      name:
-        type === "voice"
-          ? `Sesli Kanal ${channels.filter((c) => c.type === "voice").length + 1}`
-          : `Yazı Kanalı ${channels.filter((c) => c.type === "text").length + 1}`,
-      type,
-      position: channels.length + 1,
-    };
-    persist([...channels, newChannel]);
+  // Yeni kanal: DB'ye yaz, dönen gerçek UUID'li satırı listeye ekle
+  const addChannel = async (type) => {
     setShowDropdown(false);
+    const name =
+      type === "voice"
+        ? `Sesli Kanal ${channels.filter((c) => c.type === "voice").length + 1}`
+        : `Yazı Kanalı ${channels.filter((c) => c.type === "text").length + 1}`;
+    const position = channels.length + 1;
+
+    const row = await createChannel(serverId, { name, type, position });
+    if (!row) return;
+    setChannels((prev) => [
+      ...prev,
+      { id: row.id, name: row.name, type: row.type, position: row.position },
+    ]);
   };
 
-  const renameChannel = (id) => {
-    persist(
-      channels.map((c) => (c.id === id ? { ...c, name: newChannelName || c.name } : c))
-    );
+  // Yeniden adlandır: local güncelle + DB'ye yaz
+  const renameChannel = async (id) => {
+    const name = newChannelName.trim();
     setEditingChannel(null);
     setNewChannelName("");
+    if (!name) return;
+    setChannels((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, name } : c))
+    );
+    await apiRenameChannel(id, name);
   };
 
-  const deleteChannel = (id) => {
-    if (activeChannel?.id === id) setActiveChannel(null);
-    persist(channels.filter((c) => c.id !== id));
+  // Sil: local'den çıkar + DB'den sil
+  const deleteChannel = async (id) => {
     setChannelOptions(null);
+    if (activeChannel?.id === id) setActiveChannel(null);
+    setChannels((prev) => prev.filter((c) => c.id !== id));
+    await deleteChannelById(id);
+  };
+
+  // Drag & drop bitince: güncel sırayı position olarak DB'ye yaz
+  const persistOrder = () => {
+    const list = channelsRef.current;
+    reorderChannels(list.map((c, index) => ({ id: c.id, position: index + 1 })));
   };
 
   return (
     <>
       <motion.div
-        initial={{ x: 80, opacity: 0 }}
+        initial={{ x: -80, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.2 }}
-        className="fixed right-0 top-0 h-screen w-64 bg-[var(--primary-bg)] text-[var(--secondary-text)] shadow-2xl border-l-2 border-[var(--primary-border)] flex flex-col z-30"
+        className="fixed left-16 top-0 h-screen w-64 bg-[var(--primary-bg)] text-[var(--secondary-text)] shadow-2xl border-l border-r border-[var(--primary-border)] flex flex-col z-30"
       >
         <div
           className="relative h-28 w-full bg-cover bg-center"
@@ -161,20 +176,34 @@ const SvSidebar = ({ serverData }) => {
           <p className="text-xs font-bold uppercase tracking-wide text-[var(--primary-text)] px-2 mt-1 mb-1">
             Kanallar
           </p>
-          <div className="flex flex-col gap-1">
+          <Reorder.Group
+            axis="y"
+            values={channels}
+            onReorder={setChannels}
+            className="flex flex-col gap-1 list-none m-0 p-0"
+          >
             {channels.map((channel) => {
               const active = isChannelActive(channel);
               return (
-                <div key={channel.id} className="relative">
+                <Reorder.Item
+                  key={channel.id}
+                  value={channel}
+                  onDragEnd={persistOrder}
+                  className="relative"
+                >
                   <div
                     onClick={() => handleChannelClick(channel)}
-                    className={`group flex items-center justify-between gap-1 px-2 py-1.5 rounded-lg cursor-pointer transition-all duration-200 ${
+                    className={`group flex items-center justify-between gap-1 px-2 py-1.5 rounded-lg cursor-pointer transition-colors duration-200 ${
                       active
                         ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
                         : "text-[var(--primary-text)] hover:bg-[var(--secondary-bg)] hover:text-[var(--secondary-text)]"
                     }`}
                   >
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <GripVertical
+                        size={14}
+                        className="shrink-0 opacity-0 group-hover:opacity-60 cursor-grab active:cursor-grabbing transition-opacity"
+                      />
                       {channel.type === "voice" ? (
                         <Volume2 size={16} className="shrink-0" />
                       ) : (
@@ -234,14 +263,14 @@ const SvSidebar = ({ serverData }) => {
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </div>
+                </Reorder.Item>
               );
             })}
-          </div>
+          </Reorder.Group>
         </div>
       </motion.div>
 
-      <div className="fixed top-0 left-16 right-64 h-screen z-20">
+      <div className="fixed top-0 left-80 right-0 h-screen z-20">
         <AnimatePresence mode="wait">
           {activeChannel ? (
             <motion.div
@@ -271,7 +300,7 @@ const SvSidebar = ({ serverData }) => {
               <h2 className="text-2xl font-bold text-[var(--secondary-text)]">
                 {serverData?.ServerName}
               </h2>
-              <p>Başlamak için sağdaki menüden bir kanal seç.</p>
+              <p>Başlamak için soldaki menüden bir kanal seç.</p>
             </motion.div>
           )}
         </AnimatePresence>

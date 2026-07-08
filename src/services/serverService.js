@@ -227,56 +227,78 @@ export const joinServer = async (serverID, uid) => {
   }
 };
 
-// Sunucunun kanal (Rooms) listesini güncelle
-export const saveServerRooms = async (serverID, rooms) => {
+// ** Kanal işlemleri — granüler (her biri DB'ye tek işlem yazar) **
+
+// Yeni kanal oluştur → DB'nin ürettiği gerçek UUID'li satırı döndürür
+export const createChannel = async (serverID, { name, type, position }) => {
   try {
-    // Mevcut kanalları sil ve yenilerini ekle (basit upsert yaklaşımı)
-    // Her room için upsert yap
-    for (const room of rooms) {
-      const channelData = {
-        id: room.RoomID,
+    const { data, error } = await supabase
+      .from("channels")
+      .insert({
         server_id: serverID,
-        name: room.RoomName,
-        type: room.Type === "VoiceRoom" ? "voice" : "text",
-        position: room.Position || 0,
-      };
+        name,
+        type: type === "voice" ? "voice" : "text",
+        position: position ?? 0,
+      })
+      .select()
+      .single();
 
-      // UUID formatında mı kontrol et — yeni kanallar timestamp ID ile geliyor olabilir
-      const isUUID =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-          room.RoomID
-        );
+    if (error) throw error;
+    return data; // { id, server_id, name, type, position, ... }
+  } catch (error) {
+    console.error("Error creating channel:", error);
+    toast.error("Kanal oluşturulamadı");
+    return null;
+  }
+};
 
-      if (isUUID) {
-        await supabase
-          .from("channels")
-          .upsert(channelData, { onConflict: "id" });
-      } else {
-        // Yeni kanal — ID'yi Supabase üretsin
-        delete channelData.id;
-        await supabase.from("channels").insert(channelData);
-      }
-    }
+// Kanalı yeniden adlandır
+export const renameChannel = async (channelID, name) => {
+  try {
+    const { error } = await supabase
+      .from("channels")
+      .update({ name })
+      .eq("id", channelID);
 
-    // Artık listede olmayan kanalları sil
-    const roomIds = rooms
-      .map((r) => r.RoomID)
-      .filter((id) =>
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
-      );
-
-    if (roomIds.length > 0) {
-      await supabase
-        .from("channels")
-        .delete()
-        .eq("server_id", serverID)
-        .not("id", "in", `(${roomIds.join(",")})`);
-    }
-
+    if (error) throw error;
     return true;
   } catch (error) {
-    console.error("Error saving server rooms:", error);
-    toast.error("Kanallar kaydedilemedi");
+    console.error("Error renaming channel:", error);
+    toast.error("Kanal adı güncellenemedi");
+    return false;
+  }
+};
+
+// Kanalı sil
+export const deleteChannelById = async (channelID) => {
+  try {
+    const { error } = await supabase
+      .from("channels")
+      .delete()
+      .eq("id", channelID);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Error deleting channel:", error);
+    toast.error("Kanal silinemedi");
+    return false;
+  }
+};
+
+// Kanal sırasını (position) toplu güncelle — drag & drop sonrası
+export const reorderChannels = async (updates) => {
+  try {
+    // updates: [{ id, position }]
+    await Promise.all(
+      updates.map(({ id, position }) =>
+        supabase.from("channels").update({ position }).eq("id", id)
+      )
+    );
+    return true;
+  } catch (error) {
+    console.error("Error reordering channels:", error);
+    toast.error("Kanal sırası kaydedilemedi");
     return false;
   }
 };
