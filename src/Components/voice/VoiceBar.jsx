@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence, useDragControls } from "framer-motion";
+import { motion, AnimatePresence, useDragControls, useMotionValue } from "framer-motion";
 import {
   Mic,
   MicOff,
@@ -44,6 +44,45 @@ const VoiceBar = () => {
   const videoRef = useRef(null);
   const dragControls = useDragControls();
 
+  // Konum (sürükleme) — boyutlandırma telafisi için de kullanılıyor
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const [dims, setDims] = useState({ w: 560, h: 315 });
+
+  const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+
+  // Sol üst köşeden boyutlandırma: alt ve sağ kenar SABİT kalır, sadece
+  // çekilen kenar (üst/sol) hareket eder.
+  const onResizeStart = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const startMouseX = e.clientX;
+    const startMouseY = e.clientY;
+    const startW = dims.w;
+    const startH = dims.h;
+    const startTx = x.get();
+    const maxW = Math.round(window.innerWidth * 0.9);
+    const maxH = Math.round(window.innerHeight * 0.8);
+
+    const move = (ev) => {
+      const dw = startMouseX - ev.clientX; // sola çekince genişler
+      const dh = startMouseY - ev.clientY; // yukarı çekince uzar
+      const newW = clamp(startW + dw, 280, maxW);
+      const newH = clamp(startH + dh, 160, maxH);
+      setDims({ w: newW, h: newH });
+      // Kutu yatayda ortalı olduğu için genişlik büyüyünce iki kenar da
+      // açılır; sağ kenarı sabit tutmak için sola kaydırarak telafi et.
+      x.set(startTx - (newW - startW) / 2);
+      // Dikeyde kutu zaten alta yaslı (items-end) → alt kenar sabit, üst uzar.
+    };
+    const end = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", end);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", end);
+  };
+
   const show = active || connecting;
   const total = participants.length + 1;
   const anyoneSharing = isScreenSharing || sharingSocketIds.length > 0;
@@ -68,6 +107,14 @@ const VoiceBar = () => {
       videoRef.current.srcObject = theaterStream;
     }
   }, [theaterStream]);
+
+  // Sinema açılıp/kapanınca konumu ortala ve varsayılan boyuta dön
+  useEffect(() => {
+    x.set(0);
+    y.set(0);
+    if (isTheater) setDims({ w: 560, h: 315 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTheater]);
 
   const startDrag = (e) => dragControls.start(e);
 
@@ -299,28 +346,20 @@ const VoiceBar = () => {
             dragConstraints={boundsRef}
             dragMomentum={false}
             dragElastic={0.05}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
+            style={{ x, y }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="pointer-events-auto flex flex-col rounded-2xl
                        bg-[var(--primary-bg)] border-2 border-[var(--primary-border)]
                        shadow-2xl text-[var(--secondary-text)]"
           >
-            {/* Ekran alanı (izleme veya kendi önizleme) — boyutlandırılabilir */}
+            {/* Ekran alanı (izleme veya kendi önizleme) — sol üstten boyutlandırılabilir */}
             {isTheater && (
               <div
                 className="relative bg-black rounded-t-2xl overflow-hidden border-b-2 border-[var(--primary-border)]"
-                style={{
-                  resize: "both",
-                  overflow: "hidden",
-                  width: 560,
-                  height: 315,
-                  minWidth: 280,
-                  minHeight: 160,
-                  maxWidth: "88vw",
-                  maxHeight: "78vh",
-                }}
+                style={{ width: dims.w, height: dims.h }}
               >
                 <video
                   ref={videoRef}
@@ -329,7 +368,9 @@ const VoiceBar = () => {
                   muted
                   className="w-full h-full object-contain bg-black"
                 />
-                <div className="absolute top-2 left-2 px-2 py-1 rounded-lg bg-black/60 text-white text-xs flex items-center gap-1.5 pointer-events-none">
+
+                {/* Kaynak etiketi (üst orta) */}
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 px-2 py-1 rounded-lg bg-black/60 text-white text-xs flex items-center gap-1.5 pointer-events-none">
                   {showingSelfPreview ? (
                     <ScreenShare size={13} className="text-[var(--quaternary-text)]" />
                   ) : (
@@ -337,8 +378,14 @@ const VoiceBar = () => {
                   )}
                   {theaterLabel}
                 </div>
-                <div className="absolute bottom-1 right-1 text-white/40 text-[9px] pointer-events-none select-none">
-                  ↘ boyutlandır
+
+                {/* Sol üst boyutlandırma tutamacı */}
+                <div
+                  onPointerDown={onResizeStart}
+                  title="Boyutlandır (sol üstten çek)"
+                  className="absolute top-0 left-0 z-10 w-8 h-8 cursor-nwse-resize flex items-start justify-start p-1.5 group/resize"
+                >
+                  <div className="w-3.5 h-3.5 border-t-[3px] border-l-[3px] border-white/70 group-hover/resize:border-[var(--quaternary-text)] rounded-tl-sm transition-colors" />
                 </div>
               </div>
             )}
