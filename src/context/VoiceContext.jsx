@@ -22,8 +22,20 @@ export const VoiceProvider = ({ children }) => {
   const [muted, setMuted] = useState(false);
   const [participants, setParticipants] = useState([]); // uzak katılımcılar
 
+  // Ekran paylaşımı durumu
+  const [isScreenSharing, setIsScreenSharing] = useState(false); // ben mi paylaşıyorum
+  const [sharingSocketIds, setSharingSocketIds] = useState([]); // paylaşan uzak peer'lar
+  const [watchingSocketId, setWatchingSocketId] = useState(null); // izlediğim kişi
+  const [remoteScreenStream, setRemoteScreenStream] = useState(null); // izlenen ekran akışı
+
   const localStreamRef = useRef(null);
-  const peersRef = useRef({}); // socketId -> { pc, nickName }
+  const peersRef = useRef({}); // socketId -> { pc, nickName } (ses mesh'i)
+
+  // Ekran paylaşımı ref'leri (ses mesh'inden ayrı)
+  const screenStreamRef = useRef(null); // benim paylaştığım ekran akışı
+  const sharePeersRef = useRef({}); // izleyiciSocketId -> pc (ben paylaşırken)
+  const watchPeerRef = useRef(null); // paylaşana giden tek pc (ben izlerken)
+  const watchingRef = useRef(null); // watchingSocketId'nin ref kopyası (handler'lar için)
 
   const refreshParticipants = () => {
     setParticipants(
@@ -103,6 +115,21 @@ export const VoiceProvider = ({ children }) => {
     return pc;
   };
 
+  // İzlemeyi kapat (paylaşan durdurunca / peer ayrılınca — sunucuya bildirim yok)
+  const closeWatch = () => {
+    if (watchPeerRef.current) {
+      try {
+        watchPeerRef.current.close();
+      } catch {
+        /* zaten kapalı */
+      }
+      watchPeerRef.current = null;
+    }
+    watchingRef.current = null;
+    setWatchingSocketId(null);
+    setRemoteScreenStream(null);
+  };
+
   const closePeer = (socketId) => {
     const p = peersRef.current[socketId];
     if (p) {
@@ -114,14 +141,34 @@ export const VoiceProvider = ({ children }) => {
       delete peersRef.current[socketId];
     }
     removeRemoteAudio(socketId);
+
+    // Ekran paylaşımı temizliği: ayrılan peer paylaşıyorduysa / izleyiciydiyse
+    setSharingSocketIds((prev) => prev.filter((id) => id !== socketId));
+    if (watchingRef.current === socketId) closeWatch();
+    const spc = sharePeersRef.current[socketId];
+    if (spc) {
+      try {
+        spc.close();
+      } catch {
+        /* zaten kapalı */
+      }
+      delete sharePeersRef.current[socketId];
+    }
+
     refreshParticipants();
   };
 
   const registerSocketHandlers = () => {
     socket.on("voice:peers", (peers) => {
-      peers.forEach((p) =>
-        createPeer(p.socketId, { userId: p.userId, nickName: p.nickName }, true)
-      );
+      peers.forEach((p) => {
+        createPeer(p.socketId, { userId: p.userId, nickName: p.nickName }, true);
+        // Kanalda zaten paylaşım yapanları işaretle
+        if (p.sharing) {
+          setSharingSocketIds((prev) =>
+            prev.includes(p.socketId) ? prev : [...prev, p.socketId]
+          );
+        }
+      });
     });
 
     socket.on("voice:offer", async ({ from, sdp, userId, nickName }) => {
@@ -162,6 +209,106 @@ export const VoiceProvider = ({ children }) => {
     });
 
     socket.on("voice:peer-left", ({ socketId }) => closePeer(socketId));
+
+    // ===== Ekran paylaşımı signaling =====
+    socket.on("screen:started", ({ socketId }) => {
+      setSharingSocketIds((prev) =>
+        prev.includes(socketId) ? prev : [...prev, socketId]
+      );
+    });
+
+    socket.on("screen:stopped", ({ socketId }) => {
+      setSharingSocketIds((prev) => prev.filter((id) => id !== socketId));
+      if (watchingRef.current === socketId) closeWatch();
+    });
+
+    // Ben paylaşıyorum: bir izleyici talep etti → ona ekran pc'si kur, offer gönder
+    socket.on("screen:watch-request", async ({ from }) => {
+      if (!screenStreamRef.current) return;
+      const pc = new RTCPeerConnection(ICE);
+      screenStreamRef.current
+        .getTracks()
+        .forEach((t) => pc.addTrack(t, screenStreamRef.current));
+      pc.onicecandidate = (e) => {
+        if (e.candidate) {
+          socket.emit("screen:ice-candidate", { to: from, candidate: e.candidate });
+        }
+      };
+      sharePeersRef.current[from] = pc;
+      try {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        socket.emit("screen:offer", { to: from, sdp: pc.localDescription });
+      } catch (err) {
+        console.error("screen offer error:", err);
+      }
+    });
+
+    // Ben paylaşıyorum: izleyici ayrıldı → onun pc'sini kapat
+    socket.on("screen:unwatch-request", ({ from }) => {
+      const pc = sharePeersRef.current[from];
+      if (pc) {
+        try {
+          pc.close();
+        } catch {
+          /* zaten kapalı */
+        }
+        delete sharePeersRef.current[from];
+      }
+    });
+
+    // Ben izliyorum: paylaşandan offer geldi → cevap ver, akışı al
+    socket.on("screen:offer", async ({ from, sdp }) => {
+      const pc = new RTCPeerConnection(ICE);
+      pc.onicecandidate = (e) => {
+        if (e.candidate) {
+          socket.emit("screen:ice-candidate", { to: from, candidate: e.candidate });
+        }
+      };
+      pc.ontrack = (e) => setRemoteScreenStream(e.streams[0]);
+      watchPeerRef.current = pc;
+      try {
+        await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        socket.emit("screen:answer", { to: from, sdp: pc.localDescription });
+      } catch (err) {
+        console.error("screen offer handling error:", err);
+      }
+    });
+
+    // Ben paylaşıyorum: izleyicinin cevabı geldi
+    socket.on("screen:answer", async ({ from, sdp }) => {
+      const pc = sharePeersRef.current[from];
+      if (pc) {
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+        } catch (err) {
+          console.error("screen answer error:", err);
+        }
+      }
+    });
+
+    // ICE — hem paylaşan hem izleyen tarafı için doğru pc'ye yönlendir
+    socket.on("screen:ice-candidate", async ({ from, candidate }) => {
+      if (!candidate) return;
+      if (watchPeerRef.current && from === watchingRef.current) {
+        try {
+          await watchPeerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (err) {
+          console.error("screen ice (watch) error:", err);
+        }
+        return;
+      }
+      const pc = sharePeersRef.current[from];
+      if (pc) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (err) {
+          console.error("screen ice (share) error:", err);
+        }
+      }
+    });
   };
 
   const unregisterSocketHandlers = () => {
@@ -172,18 +319,56 @@ export const VoiceProvider = ({ children }) => {
       "voice:answer",
       "voice:ice-candidate",
       "voice:peer-left",
+      "screen:started",
+      "screen:stopped",
+      "screen:watch-request",
+      "screen:unwatch-request",
+      "screen:offer",
+      "screen:answer",
+      "screen:ice-candidate",
     ].forEach((ev) => socket.off(ev));
   };
 
   const cleanup = () => {
+    // Ekran paylaşımı teardown (paylaşıyorsam)
+    if (screenStreamRef.current) {
+      socket.emit("screen:stop");
+      Object.values(sharePeersRef.current).forEach((pc) => {
+        try {
+          pc.close();
+        } catch {
+          /* zaten kapalı */
+        }
+      });
+      sharePeersRef.current = {};
+      screenStreamRef.current.getTracks().forEach((t) => t.stop());
+      screenStreamRef.current = null;
+    }
+    // İzleme teardown (izliyorsam)
+    if (watchPeerRef.current) {
+      try {
+        watchPeerRef.current.close();
+      } catch {
+        /* zaten kapalı */
+      }
+      watchPeerRef.current = null;
+    }
+    watchingRef.current = null;
+
+    // Ses mesh teardown
     socket.emit("voice:leave");
     Object.keys(peersRef.current).forEach(closePeer);
     peersRef.current = {};
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     localStreamRef.current = null;
     unregisterSocketHandlers();
+
     setParticipants([]);
     setMuted(false);
+    setIsScreenSharing(false);
+    setSharingSocketIds([]);
+    setWatchingSocketId(null);
+    setRemoteScreenStream(null);
   };
 
   const joinVoice = async ({ serverId, channelId, channelName, serverName }) => {
@@ -233,9 +418,88 @@ export const VoiceProvider = ({ children }) => {
     }
   };
 
+  // ===== Ekran paylaşımı aksiyonları =====
+  const startScreenShare = async () => {
+    if (!active || screenStreamRef.current) return;
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false,
+      });
+    } catch (e) {
+      // Kullanıcı seçiciyi iptal etti
+      console.error("getDisplayMedia error:", e);
+      return;
+    }
+    screenStreamRef.current = stream;
+    const track = stream.getVideoTracks()[0];
+    // Tarayıcının kendi "Paylaşımı durdur" düğmesi
+    if (track) track.onended = () => stopScreenShare();
+    setIsScreenSharing(true);
+    socket.emit("screen:start");
+  };
+
+  const stopScreenShare = () => {
+    socket.emit("screen:stop");
+    Object.values(sharePeersRef.current).forEach((pc) => {
+      try {
+        pc.close();
+      } catch {
+        /* zaten kapalı */
+      }
+    });
+    sharePeersRef.current = {};
+    screenStreamRef.current?.getTracks().forEach((t) => t.stop());
+    screenStreamRef.current = null;
+    setIsScreenSharing(false);
+  };
+
+  const watchScreen = (sharerSocketId) => {
+    if (watchingRef.current === sharerSocketId) return;
+    if (watchingRef.current) stopWatching(); // başka birini izliyorsak bırak
+    watchingRef.current = sharerSocketId;
+    setWatchingSocketId(sharerSocketId);
+    setRemoteScreenStream(null);
+    socket.emit("screen:watch", { to: sharerSocketId });
+  };
+
+  const stopWatching = () => {
+    const target = watchingRef.current;
+    if (watchPeerRef.current) {
+      try {
+        watchPeerRef.current.close();
+      } catch {
+        /* zaten kapalı */
+      }
+      watchPeerRef.current = null;
+    }
+    if (target) socket.emit("screen:unwatch", { to: target });
+    watchingRef.current = null;
+    setWatchingSocketId(null);
+    setRemoteScreenStream(null);
+  };
+
   return (
     <VoiceContext.Provider
-      value={{ active, connecting, muted, participants, joinVoice, leaveVoice, toggleMute }}
+      value={{
+        active,
+        connecting,
+        muted,
+        participants,
+        joinVoice,
+        leaveVoice,
+        toggleMute,
+        // ekran paylaşımı
+        isScreenSharing,
+        sharingSocketIds,
+        watchingSocketId,
+        remoteScreenStream,
+        startScreenShare,
+        stopScreenShare,
+        watchScreen,
+        stopWatching,
+      }}
     >
       {children}
     </VoiceContext.Provider>
