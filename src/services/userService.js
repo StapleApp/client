@@ -2,9 +2,11 @@ import {
   doc,
   setDoc,
   getDoc,
+  getDocs,
   collection,
   serverTimestamp,
   updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { generateUniqueId } from "./idService";
@@ -120,4 +122,17 @@ export const updateUserProfile = async (uid, data) => {
     console.error("Error updating profile:", error);
     return false;
   }
+};
+
+// ** Kullanıcının Firestore verisini sil (doküman + Notifications alt koleksiyonu) **
+export const deleteUserDoc = async (uid) => {
+  // Notifications alt koleksiyonunu temizle (Firestore alt koleksiyonları
+  // ana doküman silinince otomatik silinmez).
+  try {
+    const notifSnap = await getDocs(collection(db, "Users", uid, "Notifications"));
+    await Promise.all(notifSnap.docs.map((d) => deleteDoc(d.ref)));
+  } catch (error) {
+    console.warn("Could not clear notifications during account delete:", error);
+  }
+  await deleteDoc(doc(db, "Users", uid));
 };

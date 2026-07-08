@@ -1,6 +1,11 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { getAuth, onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
-import { ensureUserDoc, getUser } from "../services/userService";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signOut as firebaseSignOut,
+  deleteUser,
+} from "firebase/auth";
+import { ensureUserDoc, getUser, deleteUserDoc } from "../services/userService";
 
 const AuthContext = createContext();
 
@@ -16,6 +21,27 @@ export const AuthProvider = ({ children }) => {
     if (auth.currentUser) {
       const data = await getUser(auth.currentUser.uid);
       setUserData(data);
+    }
+  };
+
+  // Hesabı tamamen sil: önce (giriş yapılıyken) Firestore verisi, sonra Auth kaydı.
+  // Dönüş: { ok } veya { ok: false, reason }.
+  const deleteAccount = async () => {
+    const user = auth.currentUser;
+    if (!user) return { ok: false, reason: "no-user" };
+    try {
+      // Auth kaydı silinince Firestore kuralları erişimi engeller — bu yüzden
+      // önce dokümanı sileriz.
+      await deleteUserDoc(user.uid);
+      await deleteUser(user);
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
+      setCurrentUser(null);
+      setUserData(null);
+      return { ok: true };
+    } catch (error) {
+      console.error("Delete account error:", error);
+      return { ok: false, reason: error.code || "unknown" };
     }
   };
 
@@ -65,7 +91,7 @@ export const AuthProvider = ({ children }) => {
   }, [auth]);
 
   return (
-    <AuthContext.Provider value={{ currentUser, userData, loading, signOut, refreshUserData }}>
+    <AuthContext.Provider value={{ currentUser, userData, loading, signOut, refreshUserData, deleteAccount }}>
       {loading ? (
         <div
           style={{
