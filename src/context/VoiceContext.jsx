@@ -24,6 +24,8 @@ export const VoiceProvider = ({ children }) => {
 
   // Ekran paylaşımı durumu
   const [isScreenSharing, setIsScreenSharing] = useState(false); // ben mi paylaşıyorum
+  const [localScreenStream, setLocalScreenStream] = useState(null); // kendi paylaştığım akış (önizleme)
+  const [showSelfPreview, setShowSelfPreview] = useState(true); // kendi ekranımı önizle
   const [sharingSocketIds, setSharingSocketIds] = useState([]); // paylaşan uzak peer'lar
   const [watchingSocketId, setWatchingSocketId] = useState(null); // izlediğim kişi
   const [remoteScreenStream, setRemoteScreenStream] = useState(null); // izlenen ekran akışı
@@ -366,6 +368,8 @@ export const VoiceProvider = ({ children }) => {
     setParticipants([]);
     setMuted(false);
     setIsScreenSharing(false);
+    setLocalScreenStream(null);
+    setShowSelfPreview(true);
     setSharingSocketIds([]);
     setWatchingSocketId(null);
     setRemoteScreenStream(null);
@@ -436,6 +440,8 @@ export const VoiceProvider = ({ children }) => {
     const track = stream.getVideoTracks()[0];
     // Tarayıcının kendi "Paylaşımı durdur" düğmesi
     if (track) track.onended = () => stopScreenShare();
+    setLocalScreenStream(stream);
+    setShowSelfPreview(true); // paylaşınca kendi ekranını otomatik önizle
     setIsScreenSharing(true);
     socket.emit("screen:start");
   };
@@ -452,8 +458,11 @@ export const VoiceProvider = ({ children }) => {
     sharePeersRef.current = {};
     screenStreamRef.current?.getTracks().forEach((t) => t.stop());
     screenStreamRef.current = null;
+    setLocalScreenStream(null);
     setIsScreenSharing(false);
   };
+
+  const toggleSelfPreview = () => setShowSelfPreview((v) => !v);
 
   const watchScreen = (sharerSocketId) => {
     if (watchingRef.current === sharerSocketId) return;
@@ -492,11 +501,14 @@ export const VoiceProvider = ({ children }) => {
         toggleMute,
         // ekran paylaşımı
         isScreenSharing,
+        localScreenStream,
+        showSelfPreview,
         sharingSocketIds,
         watchingSocketId,
         remoteScreenStream,
         startScreenShare,
         stopScreenShare,
+        toggleSelfPreview,
         watchScreen,
         stopWatching,
       }}

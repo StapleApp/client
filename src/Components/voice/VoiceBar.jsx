@@ -12,6 +12,8 @@ import {
   ScreenShareOff,
   MonitorPlay,
   MonitorX,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useVoice } from "../../context/VoiceContext";
 import { useAuth } from "../../context/AuthContext";
@@ -25,11 +27,14 @@ const VoiceBar = () => {
     toggleMute,
     leaveVoice,
     isScreenSharing,
+    localScreenStream,
+    showSelfPreview,
     sharingSocketIds,
     watchingSocketId,
     remoteScreenStream,
     startScreenShare,
     stopScreenShare,
+    toggleSelfPreview,
     watchScreen,
     stopWatching,
   } = useVoice();
@@ -46,12 +51,23 @@ const VoiceBar = () => {
   const watchingName =
     participants.find((p) => p.socketId === watchingSocketId)?.nickName || "";
 
-  // İzlenen ekran akışını video öğesine bağla
+  // Sinema alanında ne gösterilecek? Öncelik: izlenen uzak ekran > kendi önizleme
+  const showingSelfPreview =
+    !isWatching && isScreenSharing && showSelfPreview && !!localScreenStream;
+  const theaterStream = isWatching ? remoteScreenStream : (showingSelfPreview ? localScreenStream : null);
+  const isTheater = !!theaterStream;
+  const theaterLabel = isWatching
+    ? watchingName
+      ? `${watchingName} · ekran paylaşımı`
+      : "Ekran paylaşımı"
+    : "Senin ekranın · önizleme";
+
+  // Gösterilecek akışı video öğesine bağla
   useEffect(() => {
-    if (videoRef.current && remoteScreenStream) {
-      videoRef.current.srcObject = remoteScreenStream;
+    if (videoRef.current && theaterStream) {
+      videoRef.current.srcObject = theaterStream;
     }
-  }, [remoteScreenStream]);
+  }, [theaterStream]);
 
   const startDrag = (e) => dragControls.start(e);
 
@@ -216,6 +232,21 @@ const VoiceBar = () => {
           {isScreenSharing ? <ScreenShareOff size={18} /> : <ScreenShare size={18} />}
         </button>
 
+        {/* Kendi ekranını önizle/gizle (yalnızca paylaşırken ve uzak ekran izlemezken) */}
+        {isScreenSharing && !isWatching && (
+          <button
+            onClick={toggleSelfPreview}
+            title={showSelfPreview ? "Önizlemeyi gizle" : "Önizlemeyi göster"}
+            className={`p-2.5 rounded-xl border-2 transition-all ${
+              showSelfPreview
+                ? "bg-[var(--secondary-bg)] border-[var(--tertiary-border)] text-[var(--quaternary-text)]"
+                : "bg-[var(--secondary-bg)] border-[var(--primary-border)] text-[var(--secondary-text)] hover:border-[var(--tertiary-border)]"
+            }`}
+          >
+            {showSelfPreview ? <Eye size={18} /> : <EyeOff size={18} />}
+          </button>
+        )}
+
         {/* İzlemeyi bırak (yalnızca izlerken) */}
         {isWatching && (
           <button
@@ -276,8 +307,8 @@ const VoiceBar = () => {
                        bg-[var(--primary-bg)] border-2 border-[var(--primary-border)]
                        shadow-2xl text-[var(--secondary-text)]"
           >
-            {/* İzleme "sinema" alanı — boyutlandırılabilir */}
-            {isWatching && (
+            {/* Ekran alanı (izleme veya kendi önizleme) — boyutlandırılabilir */}
+            {isTheater && (
               <div
                 className="relative bg-black rounded-t-2xl overflow-hidden border-b-2 border-[var(--primary-border)]"
                 style={{
@@ -299,8 +330,12 @@ const VoiceBar = () => {
                   className="w-full h-full object-contain bg-black"
                 />
                 <div className="absolute top-2 left-2 px-2 py-1 rounded-lg bg-black/60 text-white text-xs flex items-center gap-1.5 pointer-events-none">
-                  <MonitorPlay size={13} className="text-[var(--quaternary-text)]" />
-                  {watchingName ? `${watchingName} · ekran paylaşımı` : "Ekran paylaşımı"}
+                  {showingSelfPreview ? (
+                    <ScreenShare size={13} className="text-[var(--quaternary-text)]" />
+                  ) : (
+                    <MonitorPlay size={13} className="text-[var(--quaternary-text)]" />
+                  )}
+                  {theaterLabel}
                 </div>
                 <div className="absolute bottom-1 right-1 text-white/40 text-[9px] pointer-events-none select-none">
                   ↘ boyutlandır
