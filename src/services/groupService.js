@@ -43,22 +43,23 @@ export async function createGroup(groupName, users) {
   try {
     const type = users.length === 2 ? "dm" : "group_dm";
 
-    // Kanal oluştur
-    const { data: channel, error: channelError } = await supabase
-      .from("channels")
-      .insert({
-        type,
-        name: type === "group_dm" ? groupName : null,
-        server_id: null,
-      })
-      .select()
-      .single();
+    // Kanal ID'sini client'ta üret → INSERT'te RETURNING'e gerek kalmaz.
+    // (DM kanalının SELECT RLS politikası "kanal üyesi olmak" ister; üyeler
+    //  henüz eklenmediği için returning satırı gizlenir ve .single() patlardı.)
+    const channelId = crypto.randomUUID();
+
+    const { error: channelError } = await supabase.from("channels").insert({
+      id: channelId,
+      type,
+      name: type === "group_dm" ? groupName : null,
+      server_id: null,
+    });
 
     if (channelError) throw channelError;
 
     // Üyeleri ekle
     const memberRows = users.map((userId) => ({
-      channel_id: channel.id,
+      channel_id: channelId,
       user_id: userId,
     }));
 
@@ -68,7 +69,7 @@ export async function createGroup(groupName, users) {
 
     if (membersError) throw membersError;
 
-    return channel.id;
+    return channelId;
   } catch (error) {
     console.error("Error creating group:", error);
     throw error;
@@ -128,6 +129,13 @@ export const findDMGroup = async (user1Id, user2Id) => {
     console.error("Error finding DM group:", error);
     return null;
   }
+};
+
+// İki kullanıcı arasındaki DM kanalını bul, yoksa oluştur → kanal ID döndürür
+export const getOrCreateDMChannel = async (user1Id, user2Id) => {
+  const existing = await findDMGroup(user1Id, user2Id);
+  if (existing) return existing.id;
+  return await createGroup(null, [user1Id, user2Id]);
 };
 
 // Kullanıcının tüm DM kanallarını getir
