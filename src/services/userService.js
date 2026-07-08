@@ -59,6 +59,7 @@ export const mapProfileToLegacy = (profile) => {
     friendshipID: profile.friendship_code || "",
     status: profile.status || "offline",
     about: profile.about || "",
+    favoriteGifs: profile.favorite_gifs || [],
     // Bu alanlar artık ayrı tablolarda; geriye uyumluluk için boş döndür
     friends: {},
     servers: [],
@@ -70,7 +71,7 @@ export const mapProfileToLegacy = (profile) => {
 export const ensureUserDoc = async (user) => {
   if (!user) return null;
 
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
@@ -143,9 +144,11 @@ export const updateUserProfile = async (uid, data) => {
     if ("name" in data) mapped.name = data.name;
     if ("surname" in data) mapped.surname = data.surname;
     if ("status" in data) mapped.status = data.status;
+    if ("favoriteGifs" in data) mapped.favorite_gifs = data.favoriteGifs;
     // Supabase alan adları doğrudan geçenleri de kabul et
     if ("nickname" in data) mapped.nickname = data.nickname;
     if ("avatar_url" in data) mapped.avatar_url = data.avatar_url;
+    if ("favorite_gifs" in data) mapped.favorite_gifs = data.favorite_gifs;
 
     const { error } = await supabase
       .from("profiles")

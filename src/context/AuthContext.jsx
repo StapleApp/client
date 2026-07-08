@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "../config/supabase";
-import { ensureUserDoc, getUser, deleteUserDoc } from "../services/userService";
+import { ensureUserDoc, getUser } from "../services/userService";
 
 const AuthContext = createContext();
 
@@ -18,16 +18,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Hesabı tamamen sil
+  // Hesabı tamamen sil — delete_own_account RPC'si auth.users satırını siler,
+  // cascade ile profil ve tüm ilişkili veriler gider. Böylece e-posta boşalır
+  // ve aynı adresle yeniden kayıt olunabilir.
   const deleteAccount = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { ok: false, reason: "no-user" };
     try {
-      // Önce Firestore/Supabase verisini sil
-      await deleteUserDoc(user.id);
-      // NOT: Supabase'de client-side auth user silme mümkün değil.
-      // Bu işlem bir Edge Function veya admin API ile yapılmalı.
-      // Şimdilik sadece profili silip çıkış yapıyoruz.
+      const { error } = await supabase.rpc("delete_own_account");
+      if (error) throw error;
+
       await supabase.auth.signOut();
       localStorage.removeItem("user");
       sessionStorage.removeItem("user");

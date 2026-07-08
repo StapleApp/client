@@ -101,11 +101,18 @@ export const listenNotifications = (uid, callback) => {
   };
 };
 
+// DB tipini UI'nin beklediği tipe eşle (UI: friend | message | app)
+function normalizeType(dbType) {
+  if (dbType === "friend_request") return "friend";
+  if (dbType === "server_invite" || dbType === "mention") return "app";
+  return dbType || "app";
+}
+
 // Supabase formatını Firebase uyumlu formata dönüştür
 function mapNotification(row) {
   return {
     id: row.id,
-    type: row.data?.type || row.type,
+    type: normalizeType(row.data?.type || row.type),
     user: row.data?.user || "",
     fromUid: row.from_user_id || row.data?.fromUid || "",
     message: row.data?.message || "",
@@ -212,7 +219,14 @@ export const deleteAllNotifications = async (uid, filterType = null) => {
     let query = supabase.from("notifications").delete().eq("user_id", uid);
 
     if (filterType && filterType !== "all") {
-      query = query.eq("type", filterType);
+      // UI filtresini DB tiplerine çevir
+      const dbTypes =
+        filterType === "friend"
+          ? ["friend_request"]
+          : filterType === "app"
+          ? ["server_invite", "mention"]
+          : [filterType];
+      query = query.in("type", dbTypes);
     }
 
     const { error } = await query;

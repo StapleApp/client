@@ -4,33 +4,23 @@ import toast from "react-hot-toast";
 // **E-posta ile Kayıt Olma**
 export const register = async (name, surname, email, password, birthdate, navigate) => {
   try {
+    // İsim/soyisim/doğum tarihi metadata olarak gönderilir; profil satırını
+    // handle_new_user trigger'ı bu metadata'dan doldurur (oturuma/RLS'e bağlı
+    // kırılgan bir güncelleme gerekmez).
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: `${name} ${surname}`.trim(),
+          name,
+          surname,
+          birthdate: birthdate || "",
         },
       },
     });
 
     if (error) throw error;
-
-    // Profili güncelle (trigger sadece name ve email yazıyor)
-    if (data.user) {
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          name,
-          surname,
-          birthdate: birthdate || null,
-        })
-        .eq("id", data.user.id);
-
-      if (profileError) {
-        console.warn("Profile update after register failed:", profileError);
-      }
-    }
 
     toast.success("Kayıt başarılı!");
     navigate("/login");

@@ -19,7 +19,6 @@
     "@tailwindcss/vite": "^4.0.13",
     "@tauri-apps/api": "^2.11.1",
     "emoji-picker-react": "^4.12.2",
-    "firebase": "^11.4.0",
     "framer-motion": "^12.5.0",
     "lucide-react": "^0.485.0",
     "react": "^19.0.0",
