@@ -1,76 +1,63 @@
-import {
-  doc,
-  setDoc,
-  getDoc,
-  getDocs,
-  where,
-  query,
-  collection,
-  serverTimestamp,
-  updateDoc,
-  arrayUnion,
-} from "firebase/firestore";
-import { db } from "../config/firebase";
+import { supabase } from "../config/supabase";
 import toast from "react-hot-toast";
-import { generateUniqueId } from "./idService";
 
-// ** Server ID oluşturan fonksiyon **
-// Not: alan adı "ServerId" — eski kod "ServerID" sorguluyordu, bu yüzden
-// benzersizlik kontrolü hiç çalışmıyordu (gizli çakışma riski). Düzeltildi.
-const createServerID = () => generateUniqueId("Servers", "ServerId");
-
-// ** Server verisi yazma **
+// ** Server oluştur (server + default role + default channels + owner membership) **
 async function writeServerData(serverName, ownerID) {
-  const serverID = await createServerID();
-  try {
-    await setDoc(doc(db, "Servers", serverID), {
-      ServerId: serverID,
-      ServerName: serverName,
-      ServerOwnerID: ownerID,
-      ServerPhotoURL: "",
-      ServerBannerURL: "",
-      ServerDescription: "",
-      ServerTags: [],
-      ServerType: "Public",
-      CreatedDate: serverTimestamp(),
-      InviteLinks: [],
-      Roles: [
-        {
-          RoleID: "0",
-          RoleColor: "#FF5733",
-          RoleName: "Admin",
-          Permissions: [
-            "MANAGE_MESSAGES",
-            "BAN_MEMBERS",
-            "MANAGE_ROLES",
-          ],
-        },
-      ],
-      Rooms: [
-        {
-          RoomID: "0",
-          RoomName: "General",
-          Type: "TextRoom",
-          Position: 1,
-        },
-        {
-          RoomID: "1",
-          RoomName: "General",
-          Type: "VoiceRoom",
-          Position: 2,
-        },
-      ],
-      Users: [
-        {
-          UserID: ownerID,
-          RoleID: "0",
-          JoinDate: 1234567890,
-        },
-      ],
-    });
-  } catch (error) {
-    console.error("Database write failed:", error);
-  }
+  // 1. Sunucuyu oluştur
+  const { data: server, error: serverError } = await supabase
+    .from("servers")
+    .insert({
+      name: serverName,
+      owner_id: ownerID,
+    })
+    .select()
+    .single();
+
+  if (serverError) throw serverError;
+
+  // 2. Admin rolünü oluştur
+  const { data: adminRole, error: roleError } = await supabase
+    .from("roles")
+    .insert({
+      server_id: server.id,
+      name: "Admin",
+      color: "#FF5733",
+      permissions: ["MANAGE_MESSAGES", "BAN_MEMBERS", "MANAGE_ROLES"],
+      position: 0,
+    })
+    .select()
+    .single();
+
+  if (roleError) throw roleError;
+
+  // 3. Varsayılan kanalları oluştur
+  const { error: channelError } = await supabase.from("channels").insert([
+    {
+      server_id: server.id,
+      type: "text",
+      name: "General",
+      position: 1,
+    },
+    {
+      server_id: server.id,
+      type: "voice",
+      name: "General",
+      position: 2,
+    },
+  ]);
+
+  if (channelError) throw channelError;
+
+  // 4. Sahibi üye olarak ekle
+  const { error: memberError } = await supabase.from("server_members").insert({
+    server_id: server.id,
+    user_id: ownerID,
+    role_id: adminRole.id,
+  });
+
+  if (memberError) throw memberError;
+
+  return server;
 }
 
 export const saveServerToFirestore = async (serverName, ownerID, navigate) => {
@@ -84,60 +71,33 @@ export const saveServerToFirestore = async (serverName, ownerID, navigate) => {
   }
 };
 
-// Kullanıcının üyesi olduğu sunucuları getir — FIXED: batch query instead of fetching all
+// Kullanıcının üyesi olduğu sunucuları getir
 export const getServersList = async (uid) => {
   try {
-    // First get the user's server IDs from their document
-    const userDoc = await getDoc(doc(db, "Users", uid));
-    if (!userDoc.exists()) return [];
-    const serverIds = userDoc.data().servers || [];
-    if (serverIds.length === 0) {
-      // Fallback: also check the old way for servers where user is in Users array
-      // but the server ID wasn't saved to the user's servers array
-      const serversRef = collection(db, "Servers");
-      const querySnapshot = await getDocs(serversRef);
-      const userServers = [];
-      querySnapshot.forEach((doc) => {
-        const serverData = doc.data();
-        const users = serverData.Users || [];
-        const isMember = users.some((user) => user.UserID === uid);
-        if (isMember) {
-          userServers.push({
-            serverID: doc.id,
-            ...serverData,
-          });
-        }
-      });
+    const { data, error } = await supabase
+      .from("server_members")
+      .select(`
+        server_id,
+        joined_at,
+        servers (
+          id, name, owner_id, icon_url, banner_url, description, type, created_at
+        )
+      `)
+      .eq("user_id", uid);
 
-      // Kendini onar: bulunan sunucuları kullanıcının servers dizisine yaz,
-      // böylece bir dahaki sefere tam koleksiyon taraması gerekmez.
-      if (userServers.length > 0) {
-        try {
-          await updateDoc(doc(db, "Users", uid), {
-            servers: userServers.map((s) => s.serverID),
-          });
-        } catch (healError) {
-          console.warn("Could not persist server list to user doc:", healError);
-        }
-      }
+    if (error) throw error;
 
-      return userServers;
-    }
-
-    // Fetch only those specific servers (batch in groups of 10 for Firestore 'in' limit)
-    const results = [];
-    for (let i = 0; i < serverIds.length; i += 10) {
-      const batch = serverIds.slice(i, i + 10);
-      const q = query(
-        collection(db, "Servers"),
-        where("ServerId", "in", batch)
-      );
-      const snap = await getDocs(q);
-      snap.forEach((d) =>
-        results.push({ serverID: d.id, ...d.data() })
-      );
-    }
-    return results;
+    return (data || []).map((row) => ({
+      serverID: row.servers.id,
+      ServerId: row.servers.id,
+      ServerName: row.servers.name,
+      ServerOwnerID: row.servers.owner_id,
+      ServerPhotoURL: row.servers.icon_url || "",
+      ServerBannerURL: row.servers.banner_url || "",
+      ServerDescription: row.servers.description || "",
+      ServerType: row.servers.type || "public",
+      CreatedDate: row.servers.created_at,
+    }));
   } catch (error) {
     console.error("Error getting servers list:", error);
     return [];
@@ -146,13 +106,64 @@ export const getServersList = async (uid) => {
 
 export const getServerById = async (serverID) => {
   try {
-    const serverRef = doc(db, "Servers", serverID);
-    const serverSnap = await getDoc(serverRef);
-    if (serverSnap.exists()) {
-      return serverSnap.data();
-    } else {
-      return null;
-    }
+    // Sunucu verisini getir
+    const { data: server, error: serverError } = await supabase
+      .from("servers")
+      .select("*")
+      .eq("id", serverID)
+      .single();
+
+    if (serverError) throw serverError;
+    if (!server) return null;
+
+    // Kanalları getir
+    const { data: channels } = await supabase
+      .from("channels")
+      .select("*")
+      .eq("server_id", serverID)
+      .order("position", { ascending: true });
+
+    // Üyeleri getir
+    const { data: members } = await supabase
+      .from("server_members")
+      .select("user_id, role_id, joined_at")
+      .eq("server_id", serverID);
+
+    // Rolleri getir
+    const { data: roles } = await supabase
+      .from("roles")
+      .select("*")
+      .eq("server_id", serverID)
+      .order("position", { ascending: true });
+
+    // Firebase uyumlu format
+    return {
+      ServerId: server.id,
+      ServerName: server.name,
+      ServerOwnerID: server.owner_id,
+      ServerPhotoURL: server.icon_url || "",
+      ServerBannerURL: server.banner_url || "",
+      ServerDescription: server.description || "",
+      ServerType: server.type || "public",
+      CreatedDate: server.created_at,
+      Rooms: (channels || []).map((ch) => ({
+        RoomID: ch.id,
+        RoomName: ch.name,
+        Type: ch.type === "voice" ? "VoiceRoom" : "TextRoom",
+        Position: ch.position,
+      })),
+      Users: (members || []).map((m) => ({
+        UserID: m.user_id,
+        RoleID: m.role_id || "member",
+        JoinDate: m.joined_at,
+      })),
+      Roles: (roles || []).map((r) => ({
+        RoleID: r.id,
+        RoleName: r.name,
+        RoleColor: r.color,
+        Permissions: r.permissions || [],
+      })),
+    };
   } catch (error) {
     console.error("Error fetching server by ID:", error);
     return null;
@@ -162,23 +173,22 @@ export const getServerById = async (serverID) => {
 // Herkese açık sunucuları getir (keşfet / arama sayfası için)
 export const getPublicServers = async () => {
   try {
-    const q = query(
-      collection(db, "Servers"),
-      where("ServerType", "==", "Public")
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map((d) => {
-      const data = d.data();
-      return {
-        serverID: d.id,
-        name: data.ServerName,
-        description: data.ServerDescription || "",
-        tags: data.ServerTags || [],
-        photo: data.ServerPhotoURL || "",
-        ownerID: data.ServerOwnerID,
-        memberCount: Array.isArray(data.Users) ? data.Users.length : 0,
-      };
-    });
+    const { data, error } = await supabase
+      .from("servers")
+      .select("*, server_members(count)")
+      .eq("type", "public");
+
+    if (error) throw error;
+
+    return (data || []).map((server) => ({
+      serverID: server.id,
+      name: server.name,
+      description: server.description || "",
+      tags: [], // Etiketler ayrı tablo, gerekirse join edilir
+      photo: server.icon_url || "",
+      ownerID: server.owner_id,
+      memberCount: server.server_members?.[0]?.count || 0,
+    }));
   } catch (error) {
     console.error("Error fetching public servers:", error);
     return [];
@@ -188,34 +198,25 @@ export const getPublicServers = async () => {
 // Sunucuya katıl
 export const joinServer = async (serverID, uid) => {
   try {
-    const serverRef = doc(db, "Servers", serverID);
-    const serverSnap = await getDoc(serverRef);
-    if (!serverSnap.exists()) {
-      toast.error("Sunucu bulunamadı");
-      return false;
-    }
+    // Zaten üye mi kontrol et
+    const { data: existing } = await supabase
+      .from("server_members")
+      .select("user_id")
+      .eq("server_id", serverID)
+      .eq("user_id", uid)
+      .maybeSingle();
 
-    const serverData = serverSnap.data();
-    const alreadyMember = (serverData.Users || []).some(
-      (u) => u.UserID === uid
-    );
-    if (alreadyMember) {
+    if (existing) {
       toast("Zaten bu sunucudasın");
       return true;
     }
 
-    await updateDoc(serverRef, {
-      Users: arrayUnion({
-        UserID: uid,
-        RoleID: "member",
-        JoinDate: Date.now(),
-      }),
+    const { error } = await supabase.from("server_members").insert({
+      server_id: serverID,
+      user_id: uid,
     });
 
-    // Kullanıcının sunucu listesine de ekle
-    await updateDoc(doc(db, "Users", uid), {
-      servers: arrayUnion(serverID),
-    });
+    if (error) throw error;
 
     toast.success("Sunucuya katıldın!");
     return true;
@@ -229,7 +230,49 @@ export const joinServer = async (serverID, uid) => {
 // Sunucunun kanal (Rooms) listesini güncelle
 export const saveServerRooms = async (serverID, rooms) => {
   try {
-    await updateDoc(doc(db, "Servers", serverID), { Rooms: rooms });
+    // Mevcut kanalları sil ve yenilerini ekle (basit upsert yaklaşımı)
+    // Her room için upsert yap
+    for (const room of rooms) {
+      const channelData = {
+        id: room.RoomID,
+        server_id: serverID,
+        name: room.RoomName,
+        type: room.Type === "VoiceRoom" ? "voice" : "text",
+        position: room.Position || 0,
+      };
+
+      // UUID formatında mı kontrol et — yeni kanallar timestamp ID ile geliyor olabilir
+      const isUUID =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          room.RoomID
+        );
+
+      if (isUUID) {
+        await supabase
+          .from("channels")
+          .upsert(channelData, { onConflict: "id" });
+      } else {
+        // Yeni kanal — ID'yi Supabase üretsin
+        delete channelData.id;
+        await supabase.from("channels").insert(channelData);
+      }
+    }
+
+    // Artık listede olmayan kanalları sil
+    const roomIds = rooms
+      .map((r) => r.RoomID)
+      .filter((id) =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+      );
+
+    if (roomIds.length > 0) {
+      await supabase
+        .from("channels")
+        .delete()
+        .eq("server_id", serverID)
+        .not("id", "in", `(${roomIds.join(",")})`);
+    }
+
     return true;
   } catch (error) {
     console.error("Error saving server rooms:", error);

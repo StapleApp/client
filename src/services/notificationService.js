@@ -1,31 +1,19 @@
-import {
-  collection,
-  addDoc,
-  query,
-  orderBy,
-  onSnapshot,
-  serverTimestamp,
-  doc,
-  updateDoc,
-  deleteDoc,
-  getDocs,
-  where,
-  writeBatch,
-} from "firebase/firestore";
-import { db } from "../config/firebase";
+import { supabase } from "../config/supabase";
 
 /**
  * Create a notification for a user.
- * Stored in Users/{uid}/Notifications subcollection.
  */
 export const createNotification = async (targetUid, notification) => {
   try {
-    const notifRef = collection(db, "Users", targetUid, "Notifications");
-    await addDoc(notifRef, {
-      ...notification,
+    const { error } = await supabase.from("notifications").insert({
+      user_id: targetUid,
+      type: notification.type,
+      data: notification.data || {},
+      from_user_id: notification.from_user_id || null,
       read: notification.read ?? false,
-      createdAt: serverTimestamp(),
     });
+
+    if (error) throw error;
   } catch (error) {
     console.error("Error creating notification:", error);
   }
@@ -36,31 +24,130 @@ export const createNotification = async (targetUid, notification) => {
  * @returns {Function} unsubscribe
  */
 export const listenNotifications = (uid, callback) => {
-  const notifRef = collection(db, "Users", uid, "Notifications");
-  const q = query(notifRef, orderBy("createdAt", "desc"));
-  return onSnapshot(
-    q,
-    (snapshot) => {
-      const notifications = snapshot.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      }));
-      callback(notifications);
-    },
-    (error) => {
-      console.error("Error listening to notifications:", error);
+  let currentNotifications = [];
+
+  // İlk yükleme
+  async function fetchInitial() {
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", uid)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching notifications:", error);
       callback([]);
+      return;
     }
-  );
+
+    currentNotifications = (data || []).map(mapNotification);
+    callback([...currentNotifications]);
+  }
+
+  fetchInitial();
+
+  // Realtime subscription
+  const subscription = supabase
+    .channel(`notifications:${uid}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "notifications",
+        filter: `user_id=eq.${uid}`,
+      },
+      (payload) => {
+        const newNotif = mapNotification(payload.new);
+        currentNotifications = [newNotif, ...currentNotifications];
+        callback([...currentNotifications]);
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "notifications",
+        filter: `user_id=eq.${uid}`,
+      },
+      (payload) => {
+        const updated = mapNotification(payload.new);
+        currentNotifications = currentNotifications.map((n) =>
+          n.id === updated.id ? updated : n
+        );
+        callback([...currentNotifications]);
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "DELETE",
+        schema: "public",
+        table: "notifications",
+        filter: `user_id=eq.${uid}`,
+      },
+      (payload) => {
+        currentNotifications = currentNotifications.filter(
+          (n) => n.id !== payload.old.id
+        );
+        callback([...currentNotifications]);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(subscription);
+  };
 };
 
+// Supabase formatını Firebase uyumlu formata dönüştür
+function mapNotification(row) {
+  return {
+    id: row.id,
+    type: row.data?.type || row.type,
+    user: row.data?.user || "",
+    fromUid: row.from_user_id || row.data?.fromUid || "",
+    message: row.data?.message || "",
+    read: row.read,
+    createdAt: row.created_at
+      ? { seconds: Math.floor(new Date(row.created_at).getTime() / 1000) }
+      : null,
+    // Ek veriler
+    ...row.data,
+  };
+}
+
 /**
- * Update arbitrary fields on a notification (e.g. responded/accepted flags).
+ * Update arbitrary fields on a notification.
  */
 export const updateNotification = async (uid, notificationId, data) => {
   try {
-    const notifDoc = doc(db, "Users", uid, "Notifications", notificationId);
-    await updateDoc(notifDoc, data);
+    // Supabase'de data alanı JSONB olduğundan, ek alanları data içine koy
+    const updatePayload = {};
+    if ("read" in data) updatePayload.read = data.read;
+    if ("responded" in data || "accepted" in data) {
+      // Bu alanları JSONB data'ya merge et
+      const { data: existing } = await supabase
+        .from("notifications")
+        .select("data")
+        .eq("id", notificationId)
+        .single();
+
+      updatePayload.data = {
+        ...(existing?.data || {}),
+        ...data,
+      };
+      delete updatePayload.data.read; // read ayrı sütun
+    }
+
+    const { error } = await supabase
+      .from("notifications")
+      .update(updatePayload)
+      .eq("id", notificationId)
+      .eq("user_id", uid);
+
+    if (error) throw error;
   } catch (error) {
     console.error("Error updating notification:", error);
   }
@@ -71,8 +158,13 @@ export const updateNotification = async (uid, notificationId, data) => {
  */
 export const markAsRead = async (uid, notificationId) => {
   try {
-    const notifDoc = doc(db, "Users", uid, "Notifications", notificationId);
-    await updateDoc(notifDoc, { read: true });
+    const { error } = await supabase
+      .from("notifications")
+      .update({ read: true })
+      .eq("id", notificationId)
+      .eq("user_id", uid);
+
+    if (error) throw error;
   } catch (error) {
     console.error("Error marking notification as read:", error);
   }
@@ -83,14 +175,13 @@ export const markAsRead = async (uid, notificationId) => {
  */
 export const markAllAsRead = async (uid) => {
   try {
-    const notifRef = collection(db, "Users", uid, "Notifications");
-    const q = query(notifRef, where("read", "==", false));
-    const snapshot = await getDocs(q);
-    const batch = writeBatch(db);
-    snapshot.docs.forEach((d) => {
-      batch.update(d.ref, { read: true });
-    });
-    await batch.commit();
+    const { error } = await supabase
+      .from("notifications")
+      .update({ read: true })
+      .eq("user_id", uid)
+      .eq("read", false);
+
+    if (error) throw error;
   } catch (error) {
     console.error("Error marking all as read:", error);
   }
@@ -101,8 +192,13 @@ export const markAllAsRead = async (uid) => {
  */
 export const deleteNotification = async (uid, notificationId) => {
   try {
-    const notifDoc = doc(db, "Users", uid, "Notifications", notificationId);
-    await deleteDoc(notifDoc);
+    const { error } = await supabase
+      .from("notifications")
+      .delete()
+      .eq("id", notificationId)
+      .eq("user_id", uid);
+
+    if (error) throw error;
   } catch (error) {
     console.error("Error deleting notification:", error);
   }
@@ -113,19 +209,14 @@ export const deleteNotification = async (uid, notificationId) => {
  */
 export const deleteAllNotifications = async (uid, filterType = null) => {
   try {
-    const notifRef = collection(db, "Users", uid, "Notifications");
-    let q;
+    let query = supabase.from("notifications").delete().eq("user_id", uid);
+
     if (filterType && filterType !== "all") {
-      q = query(notifRef, where("type", "==", filterType));
-    } else {
-      q = query(notifRef);
+      query = query.eq("type", filterType);
     }
-    const snapshot = await getDocs(q);
-    const batch = writeBatch(db);
-    snapshot.docs.forEach((d) => {
-      batch.delete(d.ref);
-    });
-    await batch.commit();
+
+    const { error } = await query;
+    if (error) throw error;
   } catch (error) {
     console.error("Error deleting all notifications:", error);
   }

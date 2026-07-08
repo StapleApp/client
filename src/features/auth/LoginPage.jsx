@@ -2,13 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useNavigate } from "react-router-dom";
 import toast from 'react-hot-toast';
-import {
-  setPersistence,
-  browserLocalPersistence,
-  browserSessionPersistence,
-} from "firebase/auth";
 import { loginWithMail, signInWithGoogle } from "../../services/authService";
-import { auth } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
 
 const LoginPage = () => {
@@ -20,7 +14,7 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const { currentUser, userData } = useAuth();
 
-  // Zaten giriş yapılmışsa yönlendir. Tek kaynak: Firebase auth durumu.
+  // Zaten giriş yapılmışsa yönlendir
   useEffect(() => {
     if (currentUser && userData) {
       if (userData.nickName === "") {
@@ -34,11 +28,6 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // "Beni hatırla" → kalıcı oturum, aksi halde sadece bu sekme
-      await setPersistence(
-        auth,
-        rememberMe ? browserLocalPersistence : browserSessionPersistence
-      );
       await loginWithMail(email, password);
       // Başarılıysa yukarıdaki effect yönlendirir.
     } catch (error) {
@@ -50,9 +39,8 @@ const LoginPage = () => {
   const googleAuthFunc = async (e) => {
     e.preventDefault();
     try {
-      await setPersistence(auth, browserLocalPersistence);
       await signInWithGoogle();
-      // Yönlendirme effect tarafından yapılır.
+      // Yönlendirme Supabase OAuth callback ile yapılır.
     } catch (error) {
       console.error(error);
     }

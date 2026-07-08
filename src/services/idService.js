@@ -1,27 +1,28 @@
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "../config/firebase";
+/**
+ * ID Service — Supabase Migration
+ *
+ * Supabase, tüm tablolarda UUID kullanıyor ve uuid_generate_v4()
+ * fonksiyonu ile otomatik üretiyor. Bu yüzden eski generateUniqueId
+ * fonksiyonu artık gerekmemekte.
+ *
+ * Sadece friendship_code gibi insan-okunabilir kodlar için
+ * generateFriendlyCode kullanılıyor.
+ */
 
 const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 /**
- * Verilen koleksiyonda `field` alanına göre benzersiz, rastgele bir ID üretir.
- * (createFriendshipID / createServerID'nin ortak hâli.)
+ * İnsan-okunabilir benzersiz kod üretir (friendship_code için).
+ * Benzersizlik, Supabase tarafında UNIQUE constraint ile garanti altındadır.
  */
-export const generateUniqueId = async (collectionName, field, length = 10) => {
-  const ref = collection(db, collectionName);
-  let id;
-  let isUnique = false;
+export const generateFriendlyCode = (length = 10) => {
+  return Array.from(
+    { length },
+    () => CHARS[Math.floor(Math.random() * CHARS.length)]
+  ).join("");
+};
 
-  while (!isUnique) {
-    id = Array.from(
-      { length },
-      () => CHARS[Math.floor(Math.random() * CHARS.length)]
-    ).join("");
-    const snapshot = await getDocs(query(ref, where(field, "==", id)));
-    if (snapshot.empty) {
-      isUnique = true;
-    }
-  }
-
-  return id;
+// Geriye uyumluluk — artık kullanılmıyor ama referansları kırmamak için export
+export const generateUniqueId = async (_collectionName, _field, length = 10) => {
+  return generateFriendlyCode(length);
 };

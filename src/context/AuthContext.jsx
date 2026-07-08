@@ -1,10 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import {
-  getAuth,
-  onAuthStateChanged,
-  signOut as firebaseSignOut,
-  deleteUser,
-} from "firebase/auth";
+import { supabase } from "../config/supabase";
 import { ensureUserDoc, getUser, deleteUserDoc } from "../services/userService";
 
 const AuthContext = createContext();
@@ -14,26 +9,26 @@ export const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const auth = getAuth();
-
-  // Re-fetch the current user's Firestore doc (after profile edits, etc.)
+  // Re-fetch the current user's profile (after profile edits, etc.)
   const refreshUserData = async () => {
-    if (auth.currentUser) {
-      const data = await getUser(auth.currentUser.uid);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const data = await getUser(user.id);
       setUserData(data);
     }
   };
 
-  // Hesabı tamamen sil: önce (giriş yapılıyken) Firestore verisi, sonra Auth kaydı.
-  // Dönüş: { ok } veya { ok: false, reason }.
+  // Hesabı tamamen sil
   const deleteAccount = async () => {
-    const user = auth.currentUser;
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { ok: false, reason: "no-user" };
     try {
-      // Auth kaydı silinince Firestore kuralları erişimi engeller — bu yüzden
-      // önce dokümanı sileriz.
-      await deleteUserDoc(user.uid);
-      await deleteUser(user);
+      // Önce Firestore/Supabase verisini sil
+      await deleteUserDoc(user.id);
+      // NOT: Supabase'de client-side auth user silme mümkün değil.
+      // Bu işlem bir Edge Function veya admin API ile yapılmalı.
+      // Şimdilik sadece profili silip çıkış yapıyoruz.
+      await supabase.auth.signOut();
       localStorage.removeItem("user");
       sessionStorage.removeItem("user");
       setCurrentUser(null);
@@ -41,14 +36,14 @@ export const AuthProvider = ({ children }) => {
       return { ok: true };
     } catch (error) {
       console.error("Delete account error:", error);
-      return { ok: false, reason: error.code || "unknown" };
+      return { ok: false, reason: error.message || "unknown" };
     }
   };
 
-  // Sign out function — clears Firebase auth + localStorage + sessionStorage
+  // Sign out
   const signOut = async () => {
     try {
-      await firebaseSignOut(auth);
+      await supabase.auth.signOut();
       localStorage.removeItem("user");
       sessionStorage.removeItem("user");
       setCurrentUser(null);
@@ -59,36 +54,76 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    // Safety net: if Firebase never responds, don't leave the app blank forever
+    // Safety net: if Supabase never responds, don't leave the app blank forever
     const failSafe = setTimeout(() => setLoading(false), 5000);
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      clearTimeout(failSafe);
-      // NOT: burada setLoading(true) YOK. Aksi halde her token yenilemesinde
-      // tüm uygulama ağacı yeniden mount olur (aktif sesli görüşme kopardı).
+    // İlk oturum kontrolü
+    const initSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
 
-      if (user) {
-        setCurrentUser(user);
+      if (session?.user) {
+        // currentUser'a Supabase user'ı ata, ama Firebase uyumlu alanlar ekle
+        const user = session.user;
+        setCurrentUser({
+          uid: user.id,
+          email: user.email,
+          displayName: user.user_metadata?.full_name || "",
+          photoURL: user.user_metadata?.avatar_url || "",
+          ...user,
+        });
+
         try {
           const data = await ensureUserDoc(user);
           setUserData(data);
         } catch (error) {
-          console.error("Firestore kullanıcı verisi alınamadı:", error);
+          console.error("Supabase kullanıcı verisi alınamadı:", error);
           setUserData(null);
         }
-      } else {
-        setCurrentUser(null);
-        setUserData(null);
       }
 
+      clearTimeout(failSafe);
       setLoading(false);
-    });
+    };
+
+    initSession();
+
+    // Auth state değişikliklerini dinle
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === "SIGNED_IN" && session?.user) {
+          const user = session.user;
+          setCurrentUser({
+            uid: user.id,
+            email: user.email,
+            displayName: user.user_metadata?.full_name || "",
+            photoURL: user.user_metadata?.avatar_url || "",
+            ...user,
+          });
+
+          try {
+            const data = await ensureUserDoc(user);
+            setUserData(data);
+          } catch (error) {
+            console.error("Supabase kullanıcı verisi alınamadı:", error);
+            setUserData(null);
+          }
+
+          setLoading(false);
+        } else if (event === "SIGNED_OUT") {
+          setCurrentUser(null);
+          setUserData(null);
+          setLoading(false);
+        } else if (event === "TOKEN_REFRESHED") {
+          // Token yenilemesinde loading tetikleme — aktif oturumları bozmaz
+        }
+      }
+    );
 
     return () => {
       clearTimeout(failSafe);
-      unsubscribe();
+      subscription?.unsubscribe();
     };
-  }, [auth]);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ currentUser, userData, loading, signOut, refreshUserData, deleteAccount }}>

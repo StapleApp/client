@@ -1,51 +1,17 @@
-import {
-  doc,
-  setDoc,
-  getDoc,
-  getDocs,
-  collection,
-  serverTimestamp,
-  updateDoc,
-  deleteDoc,
-} from "firebase/firestore";
-import { db } from "../config/firebase";
-import { generateUniqueId } from "./idService";
+import { supabase } from "../config/supabase";
 
-// ** Friendship ID oluşturan fonksiyon **
-export const createFriendshipID = () => generateUniqueId("Users", "friendshipID");
-
-// **Kullanıcı bilgilerini Firestore'a yazma fonksiyonu**
-export async function writeUserData(uid, name, surname, birthdate, email) {
-  const friendshipID = await createFriendshipID();
-
-  try {
-    await setDoc(doc(db, "Users", uid), {
-      userID: uid,
-      photoURL: "",
-      nickName: "",
-      name: name,
-      surname: surname,
-      birthdate: birthdate,
-      createdDate: serverTimestamp(),
-      email: email,
-      friendshipID: friendshipID,
-      friends: {},
-      servers: [],
-      groups: [],
-    });
-  } catch (error) {
-    console.error("Database write failed:", error);
-  }
-}
-
-// ** Nickname Güncelleme **
+// ** Nickname ve avatar güncelleme **
 export const UpdateNickname = async (uid, newValue, photo) => {
   try {
-    const userDocRef = doc(db, "Users", uid);
-    await updateDoc(userDocRef, {
-      nickName: newValue,
-      photoURL: photo,
-    });
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        nickname: newValue,
+        avatar_url: photo,
+      })
+      .eq("id", uid);
+
+    if (error) throw error;
   } catch (error) {
     console.error("Database update failed:", error);
   }
@@ -54,69 +20,139 @@ export const UpdateNickname = async (uid, newValue, photo) => {
 // ** ID ile Kullanıcıya Ulaşma **
 export const getUser = async (uid) => {
   try {
-    const userDocRef = doc(collection(db, "Users"), uid);
-    const userSnap = await getDoc(userDocRef);
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", uid)
+      .single();
 
-    if (userSnap.exists()) {
-      return userSnap.data();
-    } else {
-      console.warn("No user found with uid:", uid);
-      return null;
+    if (error) {
+      if (error.code === "PGRST116") {
+        // No rows returned
+        console.warn("No user found with uid:", uid);
+        return null;
+      }
+      throw error;
     }
+
+    // Firebase uyumlu alan adları döndür (geçiş kolaylığı için)
+    return mapProfileToLegacy(data);
   } catch (error) {
     console.error("Error fetching user by uid:", error);
     return null;
   }
 };
 
-// Users dokümanı yoksa oluştur (kayıt sırasında yazılamamış hesaplar için güvenlik ağı)
-export const ensureUserDoc = async (user) => {
-  if (!user) return null;
-  const userRef = doc(db, "Users", user.uid);
-  const snap = await getDoc(userRef);
-  if (snap.exists()) return snap.data();
-
-  // Doküman yok → mevcut Auth bilgileriyle yenisini oluştur
-  const friendshipID = await createFriendshipID();
-  const nameParts = (user.displayName || "").trim().split(" ");
-  const data = {
-    userID: user.uid,
-    photoURL: user.photoURL || "",
-    nickName: "",
-    name: nameParts[0] || "",
-    surname: nameParts.slice(1).join(" ") || "",
-    birthdate: "",
-    createdDate: serverTimestamp(),
-    email: user.email || "",
-    friendshipID: friendshipID,
+// Supabase profil verisini eski Firebase formatına dönüştür
+// Böylece UI bileşenlerinde minimum değişiklik gerekir
+export const mapProfileToLegacy = (profile) => {
+  if (!profile) return null;
+  return {
+    userID: profile.id,
+    photoURL: profile.avatar_url || "",
+    nickName: profile.nickname || "",
+    name: profile.name || "",
+    surname: profile.surname || "",
+    birthdate: profile.birthdate || "",
+    createdDate: profile.created_at,
+    email: profile.email || "",
+    friendshipID: profile.friendship_code || "",
+    status: profile.status || "offline",
+    about: profile.about || "",
+    // Bu alanlar artık ayrı tablolarda; geriye uyumluluk için boş döndür
     friends: {},
     servers: [],
     groups: [],
   };
+};
+
+// Users dokümanı yoksa oluştur (kayıt sırasında trigger çalışmamışsa güvenlik ağı)
+export const ensureUserDoc = async (user) => {
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
+  if (data) return mapProfileToLegacy(data);
+
+  // Profil yok → oluştur
+  const nameParts = (user.user_metadata?.full_name || "").trim().split(" ");
+  const friendshipCode = generateFriendshipCode();
+
+  const profileData = {
+    id: user.id,
+    avatar_url: user.user_metadata?.avatar_url || "",
+    nickname: "",
+    name: nameParts[0] || "",
+    surname: nameParts.slice(1).join(" ") || "",
+    birthdate: null,
+    email: user.email || "",
+    friendship_code: friendshipCode,
+    status: "online",
+  };
 
   try {
-    await setDoc(userRef, data);
-    console.warn("Missing user document created for", user.uid);
-  } catch (error) {
-    console.error("Failed to auto-create user document:", error);
+    const { error: insertError } = await supabase
+      .from("profiles")
+      .insert(profileData);
+
+    if (insertError) throw insertError;
+    console.warn("Missing user document created for", user.id);
+  } catch (err) {
+    console.error("Failed to auto-create user document:", err);
     return null;
   }
-  return data;
+
+  return mapProfileToLegacy(profileData);
 };
+
+// 10 haneli rastgele friendship code üret
+function generateFriendshipCode() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "";
+  for (let i = 0; i < 10; i++) {
+    result += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return result;
+}
 
 export const updateUserStatus = async (uid, status) => {
   try {
-    const userDocRef = doc(db, "Users", uid);
-    await updateDoc(userDocRef, { status });
+    const { error } = await supabase
+      .from("profiles")
+      .update({ status })
+      .eq("id", uid);
+
+    if (error) throw error;
   } catch (error) {
     console.error("Error updating status:", error);
   }
 };
 
-// ** Profil alanlarını güncelle (nickName, photoURL, about, vb.) **
+// ** Profil alanlarını güncelle (nickname, avatar_url, about, vb.) **
 export const updateUserProfile = async (uid, data) => {
   try {
-    await updateDoc(doc(db, "Users", uid), data);
+    // Firebase alan adlarını Supabase'e çevir
+    const mapped = {};
+    if ("nickName" in data) mapped.nickname = data.nickName;
+    if ("photoURL" in data) mapped.avatar_url = data.photoURL;
+    if ("about" in data) mapped.about = data.about;
+    if ("name" in data) mapped.name = data.name;
+    if ("surname" in data) mapped.surname = data.surname;
+    if ("status" in data) mapped.status = data.status;
+    // Supabase alan adları doğrudan geçenleri de kabul et
+    if ("nickname" in data) mapped.nickname = data.nickname;
+    if ("avatar_url" in data) mapped.avatar_url = data.avatar_url;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update(mapped)
+      .eq("id", uid);
+
+    if (error) throw error;
     return true;
   } catch (error) {
     console.error("Error updating profile:", error);
@@ -124,15 +160,30 @@ export const updateUserProfile = async (uid, data) => {
   }
 };
 
-// ** Kullanıcının Firestore verisini sil (doküman + Notifications alt koleksiyonu) **
+// ** Kullanıcının verisini sil **
 export const deleteUserDoc = async (uid) => {
-  // Notifications alt koleksiyonunu temizle (Firestore alt koleksiyonları
-  // ana doküman silinince otomatik silinmez).
+  // Bildirimleri sil
   try {
-    const notifSnap = await getDocs(collection(db, "Users", uid, "Notifications"));
-    await Promise.all(notifSnap.docs.map((d) => deleteDoc(d.ref)));
+    await supabase.from("notifications").delete().eq("user_id", uid);
   } catch (error) {
     console.warn("Could not clear notifications during account delete:", error);
   }
-  await deleteDoc(doc(db, "Users", uid));
+  // Profili sil (cascade ile ilişkili veriler de silinir)
+  await supabase.from("profiles").delete().eq("id", uid);
+};
+
+// Kullanıcının grup (DM kanal) listesini getir
+export const getUserGroups = async (uid) => {
+  try {
+    const { data, error } = await supabase
+      .from("channel_members")
+      .select("channel_id")
+      .eq("user_id", uid);
+
+    if (error) throw error;
+    return (data || []).map((row) => row.channel_id);
+  } catch (error) {
+    console.error("Error getting user groups:", error);
+    return [];
+  }
 };

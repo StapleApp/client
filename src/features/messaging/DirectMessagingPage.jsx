@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { getGroupById } from "../../services/groupService";
+import { getUserDMChannels } from "../../services/groupService";
 import { getUser } from "../../services/userService";
 import ChatPanel from "../../Components/chat/ChatPanel";
 
@@ -29,33 +29,31 @@ const DirectMessagingPage = () => {
   const selectedUserID = location.state?.userID;
 
   const { userData } = useAuth();
-  const [groupList, setGroupList] = useState([]);
   const [groupDataList, setGroupDataList] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [allFriendsData, setAllFriendsData] = useState({});
 
+  // DM kanallarını getir
   useEffect(() => {
-    if (userData && userData.groups) {
-      setGroupList(userData.groups);
-    }
+    const fetchDMChannels = async () => {
+      if (!userData?.userID) return;
+
+      const channels = await getUserDMChannels(userData.userID);
+      setGroupDataList(
+        channels.map((ch) => ({
+          id: ch.id,
+          group: {
+            groupName: ch.groupName,
+            users: ch.users,
+            type: ch.type,
+          },
+        }))
+      );
+    };
+    fetchDMChannels();
   }, [userData]);
 
-  useEffect(() => {
-    const fetchGroups = async () => {
-      if (Array.isArray(groupList) && groupList.length > 0) {
-        const groupsData = [];
-        for (const groupID of groupList) {
-          const group = await getGroupById(groupID);
-          if (group) groupsData.push({ id: groupID, group });
-        }
-        setGroupDataList(groupsData);
-      } else {
-        setGroupDataList([]);
-      }
-    };
-    fetchGroups();
-  }, [groupList]);
-
+  // Yönlendirmeyle gelen userID ile ilgili DM kanalını seç
   useEffect(() => {
     if (selectedUserID && groupDataList.length > 0) {
       const found = groupDataList.find(
@@ -67,6 +65,7 @@ const DirectMessagingPage = () => {
     }
   }, [selectedUserID, groupDataList]);
 
+  // DM'lerdeki karşı tarafların profil bilgilerini çek
   useEffect(() => {
     const fetchAllFriends = async () => {
       if (groupDataList.length > 0) {
@@ -104,6 +103,14 @@ const DirectMessagingPage = () => {
     );
   };
 
+  // DM'lerde kanal adı olarak karşı tarafın nickname'ini göster
+  const getChannelName = (group) => {
+    if (group.groupName) return group.groupName;
+    const otherUserId = (group.users || []).find(id => id !== userData?.userID);
+    const otherUser = allFriendsData[otherUserId];
+    return otherUser?.nickName || "DM";
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -100 }}
@@ -114,7 +121,7 @@ const DirectMessagingPage = () => {
     >
       <div className="background fixed inset-0 flex items-center justify-center min-h-screen bg-[var(--primary-bg)] z-0">
         <div className="w-full my-auto max-w-5xl h-[90vh] flex bg-[var(--primary-bg)] rounded-xl shadow-lg overflow-hidden border border-[var(--primary-border)]">
-          {/* Sol Sidebar - Grup Listesi */}
+          {/* Sol Sidebar - DM Kanal Listesi */}
           <div className="w-80 bg-[var(--primary-bg)] border-r border-[var(--primary-border)] flex flex-col">
             {/* Header */}
             <div className="p-4 border-b border-[var(--primary-border)]">
@@ -124,7 +131,7 @@ const DirectMessagingPage = () => {
               </h2>
             </div>
 
-            {/* Grup Listesi */}
+            {/* DM Kanal Listesi */}
             <div className="flex-1 overflow-y-auto">
               <AnimatePresence>
                 {groupDataList.map((groupEntry, index) => {
@@ -152,7 +159,9 @@ const DirectMessagingPage = () => {
                             />
                           </div>
                           <div className="flex-1">
-                            <h3 className="font-medium text-[var(--primary-text)]">{groupEntry.group.groupName}</h3>
+                            <h3 className="font-medium text-[var(--primary-text)]">
+                              {getChannelName(groupEntry.group)}
+                            </h3>
                           </div>
                         </div>
                       </div>
@@ -168,7 +177,7 @@ const DirectMessagingPage = () => {
             {selectedGroup ? (
               <ChatPanel
                 context={{ groupId: selectedGroup.id }}
-                channelName={selectedGroup.groupName}
+                channelName={getChannelName(selectedGroup)}
                 headerIcon={getChatHeaderIcon()}
               />
             ) : (

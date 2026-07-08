@@ -1,75 +1,62 @@
-import {
-  createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-} from "firebase/auth";
-import { collection, where, query, getDocs } from "firebase/firestore";
-import { auth, googleProvider, db } from "../config/firebase";
-import { writeUserData } from "./userService";
+import { supabase } from "../config/supabase";
 import toast from "react-hot-toast";
 
 // **E-posta ile Kayıt Olma**
 export const register = async (name, surname, email, password, birthdate, navigate) => {
   try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: `${name} ${surname}`.trim(),
+        },
+      },
+    });
 
-    //await sendEmailVerification(user);
-    toast.success("Verification email sent! Please check your inbox.");
+    if (error) throw error;
 
-    const checkEmailVerification = setInterval(async () => {
-      await user.reload();
-      // NOTE: e-posta doğrulama şimdilik kapalı. Açmak için üstteki
-      // sendEmailVerification'ı geri al ve buradaki koşulu user.emailVerified yap.
-      // eslint-disable-next-line no-constant-condition
-      if (true) {
-        clearInterval(checkEmailVerification);
-        toast.success("Email Confirmed");
-
-        await writeUserData(
-          user.uid,
+    // Profili güncelle (trigger sadece name ve email yazıyor)
+    if (data.user) {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
           name,
           surname,
-          birthdate,
-          user.email,
-          user.photoURL
-        );
+          birthdate: birthdate || null,
+        })
+        .eq("id", data.user.id);
 
-        navigate("/login");
+      if (profileError) {
+        console.warn("Profile update after register failed:", profileError);
       }
-    }, 3000);
-    return user;
+    }
+
+    toast.success("Kayıt başarılı!");
+    navigate("/login");
+    return data.user;
   } catch (error) {
     toast.error(error.message);
-    console.error("Error:", error.message);
+    console.error("Register error:", error.message);
     return null;
   }
 };
 
 // **Google ile giriş/kayıt fonksiyonu**
-// Yönlendirmeyi çağıran bileşen (auth state üzerinden) yapar.
 export const signInWithGoogle = async () => {
   try {
-    const result = await signInWithPopup(auth, googleProvider);
-    const user = result.user;
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin + "/home",
+      },
+    });
 
-    const usersRef = collection(db, "Users");
-
-    // Kullanıcı Firestore'da yoksa oluştur
-    const q = query(usersRef, where("email", "==", user.email));
-    const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) {
-      const userName = (user.displayName || "").split(" ")[0] || "";
-      const userSurname = (user.displayName || "").split(" ")[1] || "";
-      await writeUserData(user.uid, userName, userSurname, "--", user.email);
-    }
-
-    return user;
+    if (error) throw error;
+    return data;
   } catch (error) {
     console.error("Google Auth Error:", error);
-    toast.error("An error occurred while signing in with Google.");
+    toast.error("Google ile giriş yapılırken bir hata oluştu.");
     throw error;
   }
 };
@@ -77,12 +64,17 @@ export const signInWithGoogle = async () => {
 // ** Login **
 export const loginWithMail = async (email, password) => {
   try {
-    await signInWithEmailAndPassword(auth, email, password);
-    toast.success("Login successful!");
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) throw error;
+    toast.success("Giriş başarılı!");
     return true;
   } catch (error) {
     console.error("Login error:", error.message);
-    toast.error("Invalid email or password");
+    toast.error("Geçersiz e-posta veya şifre");
     return false;
   }
 };
@@ -90,8 +82,13 @@ export const loginWithMail = async (email, password) => {
 // ** Şifre sıfırlama **
 export const handleResetPassword = async (email) => {
   try {
-    await sendPasswordResetEmail(auth, email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + "/login",
+    });
+    if (error) throw error;
+    toast.success("Şifre sıfırlama bağlantısı gönderildi!");
   } catch (error) {
     console.error("Hata: " + error.message);
+    toast.error("Şifre sıfırlama bağlantısı gönderilemedi");
   }
 };

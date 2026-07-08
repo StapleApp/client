@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@lottiefiles/dotlottie-react": "^0.13.2",
+    "@supabase/supabase-js": "^2.110.1",
     "@tailwindcss/vite": "^4.0.13",
     "@tauri-apps/api": "^2.11.1",
     "emoji-picker-react": "^4.12.2",

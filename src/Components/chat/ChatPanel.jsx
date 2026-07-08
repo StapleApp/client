@@ -58,9 +58,8 @@ const ChatPanel = ({ context, channelName, headerIcon, showHeader = true }) => {
 
     await sendMessage(context, {
       senderId: userData.userID,
-      senderName: userData.nickName || "Bilinmeyen",
-      senderPhoto: userData.photoURL || "/1.png",
       content: gifUrl,
+      type: "gif",
     });
     setShowGifPicker(false);
   };
@@ -72,8 +71,6 @@ const ChatPanel = ({ context, channelName, headerIcon, showHeader = true }) => {
     setNewMessage("");
     await sendMessage(context, {
       senderId: userData.userID,
-      senderName: userData.nickName || "Bilinmeyen",
-      senderPhoto: userData.photoURL || "/1.png",
       content,
     });
   };
