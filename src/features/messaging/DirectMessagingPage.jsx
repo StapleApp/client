@@ -7,7 +7,7 @@ import { getFriendsList } from "../../services/friendService";
 import { getUser } from "../../services/userService";
 import { getOrCreateDMChannel } from "../../services/groupService";
 import ChatPanel from "../../Components/chat/ChatPanel";
-import SocialBar from "../../Components/layout/SocialBar";
+
 
 const statusColor = (status) => {
   switch (status) {
@@ -192,7 +192,7 @@ const DirectMessagingPage = () => {
       </div>
 
       {/* Chat alanı */}
-      <div className="fixed top-0 left-80 right-56 h-screen bg-[var(--secondary-bg)] z-20">
+      <div className="fixed top-0 left-80 right-0 h-screen bg-[var(--secondary-bg)] z-20">
         {activeFriend && activeChannelId ? (
           <ChatPanel
             key={activeChannelId}
@@ -235,8 +235,6 @@ const DirectMessagingPage = () => {
         )}
       </div>
 
-      {/* Sağ — küresel gezinme (SocialBar) */}
-      <SocialBar defaultTab="friends" />
     </motion.div>
   );
 };

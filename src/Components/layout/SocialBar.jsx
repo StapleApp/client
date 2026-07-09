@@ -165,7 +165,8 @@ const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
                             nickName: userInfo.nickName,
                             friendshipID: userInfo.friendshipID,
                             photoURL: userInfo.photoURL,
-                            status: userInfo.status || "offline"
+                            status: userInfo.status || "offline",
+                            about: userInfo.about || ""
                         };
                     })
                 );
@@ -177,11 +178,11 @@ const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
         fetchFriends();
     }, [userData]);
 
-    const handleUserClick = (uid, nickName, friendshipID, photoURL) => {
+    const handleUserClick = (uid, nickName, friendshipID, photoURL, about) => {
         if (userRefs.current[uid]) {
             const rect = userRefs.current[uid].getBoundingClientRect();
             setPosition({ top: rect.top, left: rect.right });
-            setSelectedUser({ userID: uid, id: friendshipID, photoURL: photoURL, nickName: nickName });
+            setSelectedUser({ userID: uid, id: friendshipID, photoURL: photoURL, nickName: nickName, about: about });
             setIsExpanded(true);
         }
     };
@@ -193,7 +194,7 @@ const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
                     <div
                         key={user.uid}
                         ref={(el) => (userRefs.current[user.uid] = el)}
-                        onClick={() => handleUserClick(user.uid, user.nickName, user.friendshipID, user.photoURL)}
+                        onClick={() => handleUserClick(user.uid, user.nickName, user.friendshipID, user.photoURL, user.about)}
                         className="flex items-center w-full h-14 bg-[var(--primary-bg)] rounded-md p-2
                             border-3 border-[var(--primary-border)] shadow-xl
                             hover:border-3 hover:border-[var(--tertiary-border)]
@@ -223,6 +224,7 @@ const FriendList = ({ isExpanded, setIsExpanded, userData }) => {
                         photoURL={selectedUser.photoURL}
                         userID={selectedUser.id}
                         UID={selectedUser.userID}
+                        about={selectedUser.about}
                     />
                 )}
             </div>

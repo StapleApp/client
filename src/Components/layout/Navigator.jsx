@@ -73,6 +73,7 @@ const Navigator = () => {
         photoURL={userData?.photoURL || "/1.png"}
         userID={userData?.friendshipID}
         memberDate={userData?.createdDate}
+        about={userData?.about}
       />
       <div
         className={`fixed flex flex-col top-0 left-0 h-screen gap-0 z-1

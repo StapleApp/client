@@ -19,6 +19,7 @@ const ProfilePanel = ({
   userID,
   memberDate,
   UID,
+  about,
 }) => {
   const formattedUID = `${userID}`.padStart(6, "0");
   const panelRef = useRef(null);
@@ -41,18 +42,25 @@ const ProfilePanel = ({
     panelHeight
   );
 
-  // Database'den gelen Timestamp verisini Date nesnesine dönüştürme
+  // Database'den gelen Timestamp/String verisini Date nesnesine dönüştürme
   let creadetDateText = "Üyelik tarihi mevcut değil";
 
-  if (userData && memberDate) {
-    const createdDateTimestamp = memberDate;
-    const createdDate = new Date(createdDateTimestamp.seconds * 1000);
-    const formattedDate = createdDate.toLocaleDateString("tr-TR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-    creadetDateText = "Şu tarihten beri üye : " + formattedDate;
+  if (memberDate) {
+    let createdDate = null;
+    if (typeof memberDate === "object" && memberDate !== null && "seconds" in memberDate) {
+      createdDate = new Date(memberDate.seconds * 1000);
+    } else {
+      createdDate = new Date(memberDate);
+    }
+
+    if (createdDate && !isNaN(createdDate.getTime())) {
+      const formattedDate = createdDate.toLocaleDateString("tr-TR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+      creadetDateText = "Şu tarihten beri üye : " + formattedDate;
+    }
   }
 
   // Panel açılınca, panel dışı her yeri dinleyen listener ekledim
@@ -79,7 +87,7 @@ const ProfilePanel = ({
   return (
     <div
       ref={panelRef}
-      className={`fixed z-10 h-76 w-80 ml-1 rounded-md
+      className={`fixed z-[9999] h-76 w-80 ml-1 rounded-md
               bg-[var(--primary-bg)] shadow-xl
               transition-all duration-300 ease-in-out
               flex flex-col justify-between
@@ -131,13 +139,12 @@ const ProfilePanel = ({
             )}
           </div>
         </div>
-        <textarea
-          className="expanded-text text-sm bg-[var(--secondary-bg)]
-                  col-span-2 m-1 pl-2 rounded-md h-14 p-0 resize-none"
-          type="text"
-          maxLength="100"
-          placeholder="Hakkında..."
-        ></textarea>
+        <div
+          className="expanded-text text-sm bg-[var(--secondary-bg)] text-[var(--secondary-text)]
+                  col-span-2 m-1 pl-2 pr-2 py-1.5 rounded-md h-14 overflow-y-auto select-text text-left"
+        >
+          {about || "Kullanıcı hakkında bilgi girmemiş."}
+        </div>
       </div>
 
       {/* Alt Menü Öğeleri */}

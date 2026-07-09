@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Send, Hash, Smile, Pencil, Trash2, Check, X, ChevronDown } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { useAuth } from "../../context/AuthContext";
@@ -10,6 +11,8 @@ import {
 } from "../../services/messageService";
 import MessageContent from "./MessageContent";
 import GifPicker from "./GifPicker";
+import ProfilePanel from "../layout/ProfilePanel";
+import { getUser } from "../../services/userService";
 
 const formatTime = (createdAt) => {
   if (!createdAt?.seconds) return "";
@@ -70,8 +73,36 @@ const ChatPanel = ({ context, channelName, headerIcon, showHeader = true }) => {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
 
+  // Profile card popup state
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isProfileCardExpanded, setIsProfileCardExpanded] = useState(false);
+  const [profileCardPosition, setProfileCardPosition] = useState({ top: 0, left: 0 });
+
   const messagesEndRef = useRef(null);
   const scrollRef = useRef(null);
+
+  const handleAvatarClick = async (e, senderId) => {
+    e.stopPropagation();
+    if (!senderId) return;
+
+    // Find the message row container and locate the avatar image to use as the absolute anchor
+    const messageRow = e.currentTarget.closest(".group");
+    const avatarImg = messageRow ? messageRow.querySelector("img") : null;
+    const anchorElement = avatarImg || e.currentTarget;
+    const rect = anchorElement.getBoundingClientRect();
+
+    // Fetch detailed profile
+    const profile = await getUser(senderId);
+    if (!profile) return;
+
+    setProfileCardPosition({
+      top: rect.top,
+      left: rect.right,
+    });
+
+    setSelectedUser(profile);
+    setIsProfileCardExpanded(true);
+  };
 
   // Kaydırma dibe yakın mı? (auto-scroll ve buton görünürlüğü için)
   const isNearBottom = () => {
@@ -216,7 +247,8 @@ const ChatPanel = ({ context, channelName, headerIcon, showHeader = true }) => {
                       <img
                         src={message.senderPhoto || "/1.png"}
                         alt=""
-                        className="w-10 h-10 rounded-full mt-0.5"
+                        className="w-10 h-10 rounded-full mt-0.5 cursor-pointer hover:opacity-85 transition-opacity"
+                        onClick={(e) => handleAvatarClick(e, message.senderId)}
                       />
                     ) : (
                       <span className="absolute right-1 top-0.5 hidden group-hover:block text-[10px] text-[var(--primary-text)] whitespace-nowrap">
@@ -229,7 +261,10 @@ const ChatPanel = ({ context, channelName, headerIcon, showHeader = true }) => {
                   <div className="min-w-0 flex-1 text-left">
                     {!grouped && (
                       <div className="flex items-baseline gap-2">
-                        <span className="text-sm font-semibold text-[var(--secondary-text)]">
+                        <span
+                          className="text-sm font-semibold text-[var(--secondary-text)] cursor-pointer hover:underline"
+                          onClick={(e) => handleAvatarClick(e, message.senderId)}
+                        >
                           {message.senderName}
                         </span>
                         <span className="text-xs text-[var(--primary-text)]">
@@ -399,6 +434,22 @@ const ChatPanel = ({ context, channelName, headerIcon, showHeader = true }) => {
           <Send className="w-4 h-4" />
         </button>
       </form>
+
+      {selectedUser && createPortal(
+        <ProfilePanel
+          check={isProfileCardExpanded}
+          setCheck={setIsProfileCardExpanded}
+          posX={profileCardPosition.left + 188}
+          posY={profileCardPosition.top}
+          userName={selectedUser.nickName}
+          photoURL={selectedUser.photoURL}
+          userID={selectedUser.friendshipID}
+          memberDate={selectedUser.createdDate}
+          UID={selectedUser.userID}
+          about={selectedUser.about}
+        />,
+        document.body
+      )}
     </div>
   );
 };

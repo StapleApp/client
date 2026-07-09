@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import SocialBar from "../../Components/layout/SocialBar";
+
 import { updateUserStatus, updateUserProfile } from "../../services/userService";
 
 const ProfilePage = () => {
@@ -331,7 +331,6 @@ const ProfilePage = () => {
           </motion.div>
         </div>
       </motion.div>
-      <SocialBar className="fixed bottom-0 left-0 w-full z-50" />
     </div>
   );
 };

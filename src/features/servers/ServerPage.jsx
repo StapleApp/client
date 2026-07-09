@@ -1,5 +1,5 @@
 import SvSidebar from "./SvSidebar";
-import SocialBar from "../../Components/layout/SocialBar";
+
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getServerById } from "../../services/serverService";
@@ -21,7 +21,6 @@ const ServerPage = () => {
   return (
     <div className="flex">
       <SvSidebar serverData={serverData} />
-      <SocialBar defaultTab="servers" />
     </div>
   );
 };
@@ -42,7 +41,7 @@ const ServerSkeleton = () => (
       </div>
     </div>
     {/* İçerik iskeleti */}
-    <div className="fixed top-0 left-80 right-56 h-screen bg-[var(--secondary-bg)] flex items-center justify-center">
+    <div className="fixed top-0 left-80 right-0 h-screen bg-[var(--secondary-bg)] flex items-center justify-center">
       <div className="w-16 h-16 rounded-full bg-[var(--primary-bg)]" />
     </div>
   </div>
