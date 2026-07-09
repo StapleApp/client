@@ -4,11 +4,12 @@ import { MdHome, MdSearch, MdOutlineMessage } from "react-icons/md";
 import { IoMdNotifications } from "react-icons/io";
 
 import ProfilePanel from './ProfilePanel'
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../../styles/components.css";
 
 import { useAuth } from "../../context/AuthContext";
+import { listenNotifications } from "../../services/notificationService";
 
 // Sol menü öğeleri — tek kaynaktan yönetilir.
 const NAV_ITEMS = [
@@ -22,19 +23,24 @@ const NAV_ITEMS = [
 // Öğelerin genişleme animasyonu gecikmeleri (orijinal tasarımla birebir)
 const ITEM_DELAYS = ["delay-75", "delay-150", "delay-225", "delay-300", "delay-300"];
 
-const NavItem = ({ path, label, icon }) => {
+const NavItem = ({ path, label, icon, badge = 0 }) => {
   const navigate = useNavigate();
   const location = useLocation();
   return (
     <div
       className={
         location.pathname === path
-          ? `hovered-icon group`
-          : `icon group hover:scale-105`
+          ? `hovered-icon group relative`
+          : `icon group hover:scale-105 relative`
       }
       onClick={() => navigate(path)}
     >
       {icon}
+      {badge > 0 && (
+        <span className="absolute top-1 right-2 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none border-2 border-[var(--primary-bg)]">
+          {badge > 9 ? "9+" : badge}
+        </span>
+      )}
       <span className="sidebar-tooltip group-hover:scale-100">{label}</span>
     </div>
   );
@@ -43,6 +49,18 @@ const NavItem = ({ path, label, icon }) => {
 const Navigator = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { userData } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Okunmamış bildirim sayısını canlı dinle
+  useEffect(() => {
+    if (!userData?.userID) return;
+    const unsubscribe = listenNotifications(userData.userID, (list) => {
+      setUnreadCount(list.filter((n) => !n.read).length);
+    });
+    return () => unsubscribe && unsubscribe();
+  }, [userData?.userID]);
+
+  const badges = { "/Notifications": unreadCount };
 
   return (
     <>
@@ -89,7 +107,7 @@ const Navigator = () => {
               className={`${i >= 3 ? "flex flex-col h-16 " : ""}transition-all duration-250 ease-in-out ${ITEM_DELAYS[i]}
                       ${isExpanded ? '-translate-y-15' : 'translate-y-0'}`}
             >
-              <NavItem {...item} />
+              <NavItem {...item} badge={badges[item.path] || 0} />
               {/* Mesajlar'dan sonra ayraç (orijinal tasarım) */}
               {item.path === "/DirectMessaging" && (
                 <hr className="border-[var(--primary-border)] border" />

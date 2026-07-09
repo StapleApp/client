@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, Search, Users, Loader2 } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { MessageCircle, Search, Users, Loader2, UserPlus } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getFriendsList } from "../../services/friendService";
 import { getUser } from "../../services/userService";
@@ -10,6 +10,7 @@ import ChatPanel from "../../Components/chat/ChatPanel";
 
 const DirectMessagingPage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const requestedUserID = location.state?.userID;
 
   const { userData } = useAuth();
@@ -119,13 +120,21 @@ const DirectMessagingPage = () => {
                   <Loader2 className="w-5 h-5 animate-spin" />
                 </div>
               ) : filteredFriends.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 px-4 text-center text-[var(--primary-text)] gap-2">
+                <div className="flex flex-col items-center justify-center py-10 px-4 text-center text-[var(--primary-text)] gap-3">
                   <Users className="w-8 h-8" />
                   <p className="text-sm">
                     {friends.length === 0
                       ? "Henüz arkadaşın yok. Arkadaş ekleyerek mesajlaşmaya başla."
                       : "Eşleşen arkadaş bulunamadı."}
                   </p>
+                  {friends.length === 0 && (
+                    <button
+                      onClick={() => navigate("/AddFriends")}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] font-semibold text-sm hover:bg-[var(--quaternary-bg)] transition-colors"
+                    >
+                      <UserPlus className="w-4 h-4" /> Arkadaş Ekle
+                    </button>
+                  )}
                 </div>
               ) : (
                 <AnimatePresence>
@@ -195,9 +204,17 @@ const DirectMessagingPage = () => {
                   <h3 className="text-lg font-semibold text-[var(--secondary-text)] mb-2">
                     Mesajlaşmaya Başla
                   </h3>
-                  <p className="text-[var(--primary-text)] text-sm">
+                  <p className="text-[var(--primary-text)] text-sm mb-4">
                     Konuşmaya başlamak için soldan bir arkadaş seç.
                   </p>
+                  {friends.length === 0 && (
+                    <button
+                      onClick={() => navigate("/AddFriends")}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] font-semibold text-sm hover:bg-[var(--quaternary-bg)] transition-colors"
+                    >
+                      <UserPlus className="w-4 h-4" /> Arkadaş Ekle
+                    </button>
+                  )}
                 </div>
               </div>
             )}

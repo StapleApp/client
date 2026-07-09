@@ -10,8 +10,8 @@ import icon from "../../assets/360.png";
 import { getUser } from '../../services/userService';
 import { useNavigate } from "react-router-dom";
 
-const SocialBar = () => {
-    const [isFlagSetted, setIsFlagSetted] = useState(false);
+const SocialBar = ({ defaultTab = "friends" }) => {
+    const [isFlagSetted, setIsFlagSetted] = useState(defaultTab === "servers");
     const [isExpanded, setIsExpanded] = useState(false);
     const { userData } = useAuth();
     return (
@@ -37,26 +37,28 @@ const SocialBar = () => {
 
 const FriendsBarExpand = ({ toggleExpand, isFlagSetted }) => {
     return (
-        <div 
+        <div
+            title="Arkadaşlar"
             className={isFlagSetted ?
-                "icon fixed group cursor-pointer rounded-md w-18 top-0 right-2 mr-2" : 
+                "icon fixed group cursor-pointer rounded-md w-18 top-0 right-2 mr-2" :
                 "hovered-icon fixed group cursor-pointer rounded-md w-18 top-0 right-2 mr-2"}
             onClick={toggleExpand}
         >
-            <FaUserFriends size="25" />         
+            <FaUserFriends size="25" />
         </div>
     )
 }
 
 const ServerBarExpand = ({ toggleExpand, isFlagSetted}) => {
     return (
-        <div 
+        <div
+            title="Sunucular"
             className={!isFlagSetted ?
-                "icon fixed group cursor-pointer rounded-md w-18 top-0 right-26 " : 
+                "icon fixed group cursor-pointer rounded-md w-18 top-0 right-26 " :
                 "hovered-icon fixed group cursor-pointer rounded-md w-18 top-0 right-26"}
             onClick={toggleExpand}
         >
-            <AiOutlineGlobal size="25" />        
+            <AiOutlineGlobal size="25" />
         </div>
     )
 }

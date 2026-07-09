@@ -47,6 +47,46 @@ export async function sendMessage(context, message) {
 }
 
 /**
+ * Edit an existing message (own messages only — enforced by RLS).
+ */
+export async function editMessage(messageId, senderId, content) {
+  try {
+    const { error } = await supabase
+      .from("messages")
+      .update({ content, edited_at: new Date().toISOString() })
+      .eq("id", messageId)
+      .eq("sender_id", senderId);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Error editing message:", error);
+    toast.error("Mesaj düzenlenemedi");
+    return false;
+  }
+}
+
+/**
+ * Delete a message (own messages only — enforced by RLS).
+ */
+export async function deleteMessage(messageId, senderId) {
+  try {
+    const { error } = await supabase
+      .from("messages")
+      .delete()
+      .eq("id", messageId)
+      .eq("sender_id", senderId);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Error deleting message:", error);
+    toast.error("Mesaj silinemedi");
+    return false;
+  }
+}
+
+/**
  * Listen to messages in real time. Works for both DMs and server channels.
  *
  * Supabase Realtime ile yeni mesajları dinler.

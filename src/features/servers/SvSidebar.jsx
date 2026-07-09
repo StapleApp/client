@@ -56,6 +56,7 @@ const SvSidebar = ({ serverData }) => {
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [channelOptions, setChannelOptions] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [editingChannel, setEditingChannel] = useState(null);
   const [newChannelName, setNewChannelName] = useState("");
 
@@ -100,8 +101,9 @@ const SvSidebar = ({ serverData }) => {
     await apiRenameChannel(id, name);
   };
 
-  // Sil: local'den çıkar + DB'den sil
+  // Sil: local'den çıkar + DB'den sil (onaydan sonra)
   const deleteChannel = async (id) => {
+    setConfirmDeleteId(null);
     setChannelOptions(null);
     if (activeChannel?.id === id) setActiveChannel(null);
     setChannels((prev) => prev.filter((c) => c.id !== id));
@@ -226,6 +228,7 @@ const SvSidebar = ({ serverData }) => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        setConfirmDeleteId(null);
                         setChannelOptions(channelOptions === channel.id ? null : channel.id);
                       }}
                       className={`transition-opacity ${
@@ -249,17 +252,40 @@ const SvSidebar = ({ serverData }) => {
                             setEditingChannel(channel.id);
                             setNewChannelName(channel.name);
                             setChannelOptions(null);
+                            setConfirmDeleteId(null);
                           }}
                           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--secondary-text)] hover:bg-[var(--tertiary-bg)] hover:text-[var(--tertiary-text)] transition-colors"
                         >
                           <Pencil size={14} /> Yeniden Adlandır
                         </button>
-                        <button
-                          onClick={() => deleteChannel(channel.id)}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500 hover:text-white transition-colors"
-                        >
-                          <Trash2 size={14} /> Sil
-                        </button>
+                        {confirmDeleteId === channel.id ? (
+                          <div className="flex flex-col gap-1 px-3 py-2 border-t border-[var(--primary-border)]">
+                            <span className="text-xs text-[var(--secondary-text)]">
+                              "{channel.name}" silinsin mi?
+                            </span>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => deleteChannel(channel.id)}
+                                className="flex-1 py-1 rounded-md bg-red-500 text-white text-xs font-semibold hover:bg-red-600 transition-colors"
+                              >
+                                Sil
+                              </button>
+                              <button
+                                onClick={() => setConfirmDeleteId(null)}
+                                className="flex-1 py-1 rounded-md bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] text-xs font-semibold hover:bg-[var(--quaternary-bg)] transition-colors"
+                              >
+                                İptal
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDeleteId(channel.id)}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500 hover:text-white transition-colors"
+                          >
+                            <Trash2 size={14} /> Sil
+                          </button>
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
