@@ -38,7 +38,7 @@ const SocialBar = ({ defaultTab = "friends" }) => {
                 {tab === "friends" ? (
                     <FriendList isExpanded={isExpanded} setIsExpanded={setIsExpanded} userData={userData} />
                 ) : (
-                    <ServerList isExpanded={isExpanded} setIsExpanded={setIsExpanded} />
+                    <ServerList />
                 )}
             </div>
         </div>
@@ -70,13 +70,10 @@ const RightBarImg = ({ src, toggleExpand }) => {
     );
 };
 
-const ServerList = ({ isExpanded, setIsExpanded }) => {
-    const [position, setPosition] = useState({ top: 0, left: 0 });
+const ServerList = () => {
     const navigate = useNavigate();
     const [servers, setServers] = useState([]);
-    const [selectedServer, setSelectedServer] = useState(null);
     const { currentUser } = useAuth();
-    const serverRefs = useRef({});
 
     useEffect(() => {
         const fetchServers = async () => {
@@ -97,15 +94,9 @@ const ServerList = ({ isExpanded, setIsExpanded }) => {
         fetchServers();
     }, [currentUser]);
 
-    const handleServerClick = (serverID, serverName) => {
-        if (serverRefs.current[serverID]) {
-            navigate(`/server/${serverID}`);
-            const rect = serverRefs.current[serverID].getBoundingClientRect();
-            setPosition({ top: rect.top, left: rect.right });
-
-            setSelectedServer({ id: serverID, name: serverName });
-            setIsExpanded(true);
-        }
+    // Sunucular kullanıcı değildir — tıklayınca profil kartı DEĞİL, doğrudan sunucuya git.
+    const handleServerClick = (serverID) => {
+        navigate(`/server/${serverID}`);
     };
 
     return (
@@ -114,15 +105,14 @@ const ServerList = ({ isExpanded, setIsExpanded }) => {
                 {servers.map((server) => (
                     <div
                         key={server.serverID}
-                        ref={(el) => (serverRefs.current[server.serverID] = el)}
-                        onClick={() => handleServerClick(server.serverID, server.serverName)}
+                        onClick={() => handleServerClick(server.serverID)}
                         className="flex items-center w-full h-14 bg-[var(--primary-bg)] rounded-md p-2
                             border-3 border-[var(--primary-border)] shadow-xl
                             hover:border-3 hover:border-[var(--tertiary-border)]
                             transition-all duration-300 ease-linear hover:scale-105 cursor-pointer"
                     >
-                        <span className="group cursor-pointer ml-1 mr-3 rounded-full">
-                            <RightBarImg src={server.serverPhoto} toggleExpand={() => setIsExpanded(true)} />
+                        <span className="ml-1 mr-3 rounded-full">
+                            <img src={server.serverPhoto} className="w-10 h-10 rounded-full" alt="" />
                         </span>
                         <span className="truncate">{server.serverName}</span>
                     </div>
@@ -132,17 +122,6 @@ const ServerList = ({ isExpanded, setIsExpanded }) => {
                     <p className="text-center text-[var(--primary-text)] py-4 font-normal">
                         Henüz sunucun yok.
                     </p>
-                )}
-
-                {selectedServer && (
-                    <ProfilePanel
-                        check={isExpanded}
-                        setCheck={setIsExpanded}
-                        posX={position.left}
-                        posY={position.top}
-                        userName={selectedServer.name}
-                        userID={selectedServer.id}
-                    />
                 )}
             </div>
 

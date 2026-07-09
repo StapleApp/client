@@ -2,13 +2,27 @@ import { supabase } from "../config/supabase";
 import toast from "react-hot-toast";
 
 // ** Server oluştur (server + default role + default channels + owner membership) **
-async function writeServerData(serverName, ownerID) {
+// serverInfo: { name, description?, type?, iconUrl?, bannerUrl?, tags? }
+async function writeServerData(serverInfo, ownerID) {
+  const {
+    name,
+    description = "",
+    type = "public",
+    iconUrl = "",
+    bannerUrl = "",
+    tags = [],
+  } = serverInfo;
+
   // 1. Sunucuyu oluştur
   const { data: server, error: serverError } = await supabase
     .from("servers")
     .insert({
-      name: serverName,
+      name,
       owner_id: ownerID,
+      description: description || null,
+      type: type === "private" ? "private" : "public",
+      icon_url: iconUrl || null,
+      banner_url: bannerUrl || null,
     })
     .select()
     .single();
@@ -57,17 +71,33 @@ async function writeServerData(serverName, ownerID) {
 
   if (memberError) throw memberError;
 
+  // 5. Etiketleri ekle (varsa) — temizle, tekilleştir, sınırla
+  const cleanTags = [
+    ...new Set(
+      (tags || [])
+        .map((t) => String(t).trim().toLowerCase())
+        .filter((t) => t.length > 0 && t.length <= 24)
+    ),
+  ].slice(0, 8);
+
+  if (cleanTags.length > 0) {
+    const { error: tagError } = await supabase.from("server_tags").insert(
+      cleanTags.map((tag) => ({ server_id: server.id, tag }))
+    );
+    if (tagError) console.error("Etiketler eklenemedi:", tagError);
+  }
+
   return server;
 }
 
-export const saveServerToFirestore = async (serverName, ownerID, navigate) => {
+export const saveServerToFirestore = async (serverInfo, ownerID, navigate) => {
   try {
-    await writeServerData(serverName, ownerID);
-    toast.success("Server başarıyla oluşturuldu!");
-    navigate("/home");
+    const server = await writeServerData(serverInfo, ownerID);
+    toast.success("Sunucu başarıyla oluşturuldu!");
+    navigate(`/server/${server.id}`);
   } catch (error) {
     console.error("Error creating server:", error);
-    toast.error("Failed to create server. Please try again.");
+    toast.error("Sunucu oluşturulamadı. Lütfen tekrar deneyin.");
   }
 };
 
