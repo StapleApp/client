@@ -269,19 +269,24 @@ export const renameChannel = async (channelID, name) => {
   }
 };
 
-// Kanalı sil
+// Kanalı sil — SECURITY DEFINER RPC üzerinden (RLS drift'ine karşı güvenli,
+// sahiplik kontrolü ve net hata mesajı fonksiyonun içinde).
 export const deleteChannelById = async (channelID) => {
   try {
-    const { error } = await supabase
-      .from("channels")
-      .delete()
-      .eq("id", channelID);
+    const { error } = await supabase.rpc("delete_server_channel", {
+      _channel_id: channelID,
+    });
 
     if (error) throw error;
     return true;
   } catch (error) {
     console.error("Error deleting channel:", error);
-    toast.error("Kanal silinemedi");
+    // Fonksiyon henüz DB'ye eklenmediyse net uyarı ver
+    if (error?.code === "PGRST202" || /function.*does not exist/i.test(error?.message || "")) {
+      toast.error("Silme fonksiyonu DB'de yok — supabase_fixes.sql'i çalıştırın");
+    } else {
+      toast.error(error?.message || "Kanal silinemedi");
+    }
     return false;
   }
 };

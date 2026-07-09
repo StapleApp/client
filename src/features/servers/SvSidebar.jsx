@@ -101,13 +101,14 @@ const SvSidebar = ({ serverData }) => {
     await apiRenameChannel(id, name);
   };
 
-  // Sil: local'den çıkar + DB'den sil (onaydan sonra)
+  // Sil: önce DB'de sil, YALNIZCA başarılıysa listeden çıkar (yalancı UI yok)
   const deleteChannel = async (id) => {
     setConfirmDeleteId(null);
     setChannelOptions(null);
+    const ok = await deleteChannelById(id);
+    if (!ok) return; // hata toast'ı serviste gösterildi; kanal listede kalır
     if (activeChannel?.id === id) setActiveChannel(null);
     setChannels((prev) => prev.filter((c) => c.id !== id));
-    await deleteChannelById(id);
   };
 
   // Drag & drop bitince: güncel sırayı position olarak DB'ye yaz
