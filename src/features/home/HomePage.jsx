@@ -16,6 +16,7 @@ import { getUser } from "../../services/userService";
 import { listenNotifications } from "../../services/notificationService";
 import SocialBar from "../../Components/layout/SocialBar";
 import icon from "../../assets/360.png";
+import backgroundTile from "../../assets/background_tile.png";
 
 const statusColor = (status) => {
   switch (status) {
@@ -100,7 +101,15 @@ const HomePage = () => {
 
   return (
     <>
-      <div className="fixed top-0 left-16 right-56 h-screen overflow-y-auto bg-[var(--secondary-bg)] text-left">
+      <div
+        className="fixed top-0 left-16 right-56 h-screen overflow-y-auto bg-[var(--primary-bg)] text-left"
+        style={{
+          backgroundImage: `url(${backgroundTile})`,
+          backgroundSize: "7vw 7vw",
+          backgroundRepeat: "repeat",
+          backgroundPosition: "center",
+        }}
+      >
         <div className="max-w-4xl mx-auto px-8 py-10">
           {/* Başlık */}
           <motion.div
