@@ -4,6 +4,7 @@ import SettingsPage from "./features/settings/SettingsPage";
 import AddFriendsPage from "./features/friends/AddFriendsPage";
 import SearchServerPage from "./features/servers/SearchServerPage";
 import ProfilePage from "./features/profile/ProfilePage";
+import HomePage from "./features/home/HomePage";
 import DirectMessagingPage from "./features/messaging/DirectMessagingPage";
 import NotificationsPage from "./features/notifications/NotificationsPage";
 import CreateServerPage from "./features/servers/CreateServerPage";
@@ -22,17 +23,20 @@ import TermsPage from "./features/auth/TermsPage";
 import CreateProfilePage from "./features/auth/CreateProfilePage";
 import ProtectedRoute from "./Components/layout/ProtectedRoute";
 import NotFound from "./Components/layout/NotFound";
+import ErrorBoundary from "./Components/layout/ErrorBoundary";
 
 function App() {
   return (
-    <AuthProvider>
-      <VoiceProvider>
-        <Router>
-          <MainLayout />
-          <VoiceBar />
-        </Router>
-      </VoiceProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <VoiceProvider>
+          <Router>
+            <MainLayout />
+            <VoiceBar />
+          </Router>
+        </VoiceProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
@@ -56,8 +60,8 @@ function AnimatedSwitch() {
       <Toaster />
       <AnimatePresence mode="wait">
         <Routes>
-          <Route path="/" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-          <Route path="/Home" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+          <Route path="/Home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
           <Route path="/Settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="/AddFriends" element={<ProtectedRoute><AddFriendsPage /></ProtectedRoute>} />
           <Route path="/SearchServer" element={<ProtectedRoute><SearchServerPage /></ProtectedRoute>} />

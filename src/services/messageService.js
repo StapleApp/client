@@ -174,8 +174,9 @@ export function listenMessages(context, callback) {
   fetchInitial();
 
   // 2. Realtime subscription — yeni mesajları dinle
+  // Topic çağrı başına benzersiz: aynı topic'e ikinci subscribe() throw eder.
   const subscription = supabase
-    .channel(`messages:${channelId}`)
+    .channel(`messages:${channelId}:${Date.now()}-${Math.random().toString(36).slice(2)}`)
     .on(
       "postgres_changes",
       {

@@ -47,8 +47,12 @@ export const listenNotifications = (uid, callback) => {
   fetchInitial();
 
   // Realtime subscription
+  // NOT: Topic çağrı başına benzersiz olmalı — aynı topic'e ikinci kez
+  // subscribe() olmak supabase-js'de senkron throw eder ve (useEffect
+  // içinde olduğundan) tüm React ağacını söker (bkz. Navigator + HomePage
+  // aynı anda dinliyor). Filtre config'te olduğu için topic adı serbest.
   const subscription = supabase
-    .channel(`notifications:${uid}`)
+    .channel(`notifications:${uid}:${Date.now()}-${Math.random().toString(36).slice(2)}`)
     .on(
       "postgres_changes",
       {
