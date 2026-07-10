@@ -133,12 +133,14 @@ const VoiceBar = () => {
       : "Ekran paylaşımı"
     : "Senin ekranın · önizleme";
 
-  // Gösterilecek akışı video öğesine bağla
+  // Gösterilecek akışı video öğesine bağla + mute'u senkronla
   useEffect(() => {
     if (videoRef.current && theaterStream) {
       videoRef.current.srcObject = theaterStream;
+      // React'in muted prop'u mount sonrası güvenilmez → elle uygula
+      videoRef.current.muted = showingSelfPreview;
     }
-  }, [theaterStream]);
+  }, [theaterStream, showingSelfPreview]);
 
   // Sinema açılıp/kapanınca konumu ortala ve varsayılan boyuta dön
   useEffect(() => {
@@ -533,7 +535,9 @@ const VoiceBar = () => {
                   ref={videoRef}
                   autoPlay
                   playsInline
-                  muted
+                  // Kendi önizlemende sessiz (sistem sesini geri duyma);
+                  // başkasını izlerken paylaşılan sesi duy.
+                  muted={showingSelfPreview}
                   className="w-full h-full object-contain bg-black"
                 />
 

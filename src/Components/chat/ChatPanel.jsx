@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Send, Hash, Smile, Pencil, Trash2, Check, X, ChevronDown } from "lucide-react";
+import { Send, Hash, Smile, Pencil, Trash2, Check, X, ChevronDown, Reply } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -74,6 +74,8 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
   const [editText, setEditText] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null); // { id, senderName, content, type }
+  const [highlightId, setHighlightId] = useState(null); // kısa vurgu için
 
   // Profile card popup state
   const [selectedUser, setSelectedUser] = useState(null);
@@ -153,6 +155,35 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     }, 2500);
   };
 
+  // Yanıt/alıntı için kısa içerik özeti
+  const previewText = (msg) => {
+    if (!msg) return "";
+    if (msg.type === "gif") return "GIF";
+    const t = (msg.content || "").replace(/\n/g, " ");
+    return t.length > 60 ? t.slice(0, 60) + "…" : t;
+  };
+
+  const startReply = (message) => {
+    setEditingId(null);
+    setConfirmDeleteId(null);
+    setReplyingTo({
+      id: message.id,
+      senderName: message.senderName,
+      content: message.content,
+      type: message.type,
+    });
+    inputRef.current?.focus();
+  };
+
+  // Alıntıya tıklayınca yanıtlanan mesaja kaydır + kısa vurgula
+  const scrollToMessage = (id) => {
+    const el = document.getElementById(`msg-${id}`);
+    if (!el) return; // mesaj yüklü değil (çok eski) ya da silinmiş
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightId(id);
+    setTimeout(() => setHighlightId((cur) => (cur === id ? null : cur)), 1500);
+  };
+
   const handleInputChange = (e) => {
     setNewMessage(e.target.value);
     const el = e.target;
@@ -166,6 +197,10 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+    // Escape yanıtı iptal eder (metin boşken)
+    if (e.key === "Escape" && replyingTo && !newMessage) {
+      setReplyingTo(null);
     }
   };
 
@@ -239,7 +274,9 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
       senderId: userData.userID,
       content: gifUrl,
       type: "gif",
+      replyTo: replyingTo?.id || null,
     });
+    setReplyingTo(null);
     setShowGifPicker(false);
   };
 
@@ -262,7 +299,9 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     await sendMessage(context, {
       senderId: userData.userID,
       content,
+      replyTo: replyingTo?.id || null,
     });
+    setReplyingTo(null);
     scrollToBottom();
   };
 
@@ -355,9 +394,12 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
                 )}
 
                 <div
-                  className={`group relative flex items-start gap-3 px-4 hover:bg-[var(--primary-bg)]/40 ${
-                    grouped ? "mt-0.5 py-0.5" : "mt-4 py-0.5"
-                  }`}
+                  id={`msg-${message.id}`}
+                  className={`group relative flex items-start gap-3 px-4 transition-colors ${
+                    highlightId === message.id
+                      ? "bg-[var(--tertiary-bg)]/30"
+                      : "hover:bg-[var(--primary-bg)]/40"
+                  } ${grouped ? "mt-0.5 py-0.5" : "mt-4 py-0.5"}`}
                 >
                   {/* Avatar sütunu (sabit genişlik) */}
                   <div className="w-10 shrink-0 relative">
@@ -377,6 +419,33 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
 
                   {/* İçerik */}
                   <div className="min-w-0 flex-1 text-left">
+                    {/* Yanıtlanan mesaj alıntısı */}
+                    {message.replyPreview !== null &&
+                      message.replyPreview !== undefined && (
+                        <button
+                          onClick={() => scrollToMessage(message.replyPreview.id)}
+                          className="flex items-center gap-1.5 mb-0.5 max-w-full text-left group/reply"
+                          title="Yanıtlanan mesaja git"
+                        >
+                          <Reply
+                            size={12}
+                            className="shrink-0 text-[var(--primary-text)] -scale-x-100"
+                          />
+                          <span className="text-xs font-semibold text-[var(--quaternary-text)] shrink-0">
+                            {message.replyPreview.senderName}
+                          </span>
+                          <span className="text-xs text-[var(--primary-text)] truncate group-hover/reply:text-[var(--secondary-text)] transition-colors">
+                            {previewText(message.replyPreview)}
+                          </span>
+                        </button>
+                      )}
+                    {message.replyTo && !message.replyPreview && (
+                      <div className="flex items-center gap-1.5 mb-0.5 text-xs text-[var(--primary-text)] italic">
+                        <Reply size={12} className="shrink-0 -scale-x-100" />
+                        silinmiş mesaj
+                      </div>
+                    )}
+
                     {!grouped && (
                       <div className="flex items-baseline gap-2">
                         <span
@@ -430,8 +499,8 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
                     )}
                   </div>
 
-                  {/* Kendi mesajın için hover aksiyonları */}
-                  {isOwn && !isEditing && (
+                  {/* Hover aksiyonları: Yanıtla herkese, Düzenle/Sil sahibine */}
+                  {!isEditing && (
                     <div className="absolute right-4 -top-3">
                       {confirmDeleteId === message.id ? (
                         <div className="flex items-center gap-1 rounded-lg border border-[var(--primary-border)] bg-[var(--primary-bg)] px-2 py-1 shadow-lg">
@@ -453,7 +522,14 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
                         </div>
                       ) : (
                         <div className="hidden group-hover:flex items-center gap-0.5 rounded-lg border border-[var(--primary-border)] bg-[var(--primary-bg)] px-1 py-0.5 shadow-lg">
-                          {message.type !== "gif" && (
+                          <button
+                            onClick={() => startReply(message)}
+                            className="p-1 rounded text-[var(--secondary-text)] hover:text-[var(--quaternary-text)] transition-colors"
+                            title="Yanıtla"
+                          >
+                            <Reply size={13} />
+                          </button>
+                          {isOwn && message.type !== "gif" && (
                             <button
                               onClick={() => startEdit(message)}
                               className="p-1 rounded text-[var(--secondary-text)] hover:text-[var(--quaternary-text)] transition-colors"
@@ -462,16 +538,18 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
                               <Pencil size={13} />
                             </button>
                           )}
-                          <button
-                            onClick={() => {
-                              setEditingId(null);
-                              setConfirmDeleteId(message.id);
-                            }}
-                            className="p-1 rounded text-red-400 hover:text-red-300 transition-colors"
-                            title="Sil"
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                          {isOwn && (
+                            <button
+                              onClick={() => {
+                                setEditingId(null);
+                                setConfirmDeleteId(message.id);
+                              }}
+                              className="p-1 rounded text-red-400 hover:text-red-300 transition-colors"
+                              title="Sil"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -503,10 +581,33 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
         </div>
       )}
 
+      {/* Yanıt barı — hangi mesaja cevap verildiğini gösterir */}
+      {replyingTo && (
+        <div className="flex items-center gap-2 px-5 py-2 border-t-2 border-[var(--primary-border)] bg-[var(--primary-bg)]">
+          <Reply size={14} className="shrink-0 text-[var(--quaternary-text)] -scale-x-100" />
+          <span className="text-xs text-[var(--primary-text)] min-w-0 truncate">
+            <span className="font-semibold text-[var(--quaternary-text)]">
+              {replyingTo.senderName}
+            </span>{" "}
+            kişisine yanıt: {previewText(replyingTo)}
+          </span>
+          <button
+            type="button"
+            onClick={() => setReplyingTo(null)}
+            title="Yanıtı iptal et"
+            className="ml-auto shrink-0 p-1 rounded text-[var(--primary-text)] hover:text-[var(--secondary-text)] transition-colors"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {/* Send area */}
       <form
         onSubmit={handleSend}
-        className="p-4 border-t-2 border-[var(--primary-border)] bg-[var(--primary-bg)] flex gap-3 relative items-end"
+        className={`p-4 bg-[var(--primary-bg)] flex gap-3 relative items-end ${
+          replyingTo ? "" : "border-t-2 border-[var(--primary-border)]"
+        }`}
       >
         <div className="flex-1 relative">
           <textarea

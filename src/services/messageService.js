@@ -30,12 +30,18 @@ export async function sendMessage(context, message) {
       msgType = "gif";
     }
 
-    const { error } = await supabase.from("messages").insert({
+    const row = {
       channel_id: channelId,
       sender_id: message.senderId,
       content: message.content,
       type: msgType,
-    });
+    };
+    // reply_to'yu yalnızca gerçek bir yanıtta ekle. Böylece reply_to kolonu
+    // henüz eklenmemişse (supabase_fixes.sql çalıştırılmadıysa) normal
+    // mesajlaşma çalışmaya devam eder — sadece yanıt özelliği devre dışı kalır.
+    if (message.replyTo) row.reply_to = message.replyTo;
+
+    const { error } = await supabase.from("messages").insert(row);
 
     if (error) throw error;
     return true;
@@ -105,6 +111,8 @@ export function listenMessages(context, callback) {
 
   // Kullanıcı cache'i: sender bilgilerini tekrar tekrar çekmemek için
   const userCache = {};
+  // Yanıtlanan mesaj önizleme cache'i (reply_to id -> {senderName, content, type})
+  const replyCache = {};
 
   // Sender bilgisini getir (cache ile)
   async function getSenderInfo(senderId) {
@@ -133,9 +141,36 @@ export function listenMessages(context, callback) {
     return userCache[senderId];
   }
 
+  // Yanıtlanan mesajın önizlemesini getir (cache ile). Yoksa (silinmiş) null.
+  async function getReplyPreview(replyId) {
+    if (!replyId) return null;
+    if (replyCache[replyId] !== undefined) return replyCache[replyId];
+
+    const { data } = await supabase
+      .from("messages")
+      .select("id, content, type, sender_id")
+      .eq("id", replyId)
+      .single();
+
+    if (!data) {
+      replyCache[replyId] = null;
+      return null;
+    }
+
+    const sender = await getSenderInfo(data.sender_id);
+    replyCache[replyId] = {
+      id: data.id,
+      senderName: sender.senderName,
+      content: data.content,
+      type: data.type,
+    };
+    return replyCache[replyId];
+  }
+
   // Mesaj satırını UI formatına dönüştür
   async function mapMessage(msg) {
     const sender = await getSenderInfo(msg.sender_id);
+    const replyPreview = await getReplyPreview(msg.reply_to);
     return {
       id: msg.id,
       senderId: msg.sender_id,
@@ -143,6 +178,8 @@ export function listenMessages(context, callback) {
       senderPhoto: sender.senderPhoto,
       content: msg.content,
       type: msg.type,
+      replyTo: msg.reply_to || null,
+      replyPreview,
       createdAt: msg.created_at
         ? { seconds: Math.floor(new Date(msg.created_at).getTime() / 1000) }
         : null,

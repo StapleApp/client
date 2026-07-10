@@ -855,9 +855,13 @@ export const VoiceProvider = ({ children }) => {
     if (!active || screenStreamRef.current) return;
     let stream;
     try {
+      // audio: sistem/sekme sesini de yakala. Kullanıcı paylaşım seçicisinde
+      // "sesi paylaş"ı işaretlerse ses track'i gelir; işaretlemezse yalnız video.
+      // (Chrome sekme/ekran sesini destekler; Firefox/Safari sınırlı — track
+      // gelmezse sorun olmaz.)
       stream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
-        audio: false,
+        audio: true,
       });
     } catch (e) {
       // Kullanıcı seçiciyi iptal etti
@@ -866,7 +870,7 @@ export const VoiceProvider = ({ children }) => {
     }
     screenStreamRef.current = stream;
     const track = stream.getVideoTracks()[0];
-    // Tarayıcının kendi "Paylaşımı durdur" düğmesi
+    // Tarayıcının kendi "Paylaşımı durdur" düğmesi (video track'i durunca)
     if (track) track.onended = () => stopScreenShare();
     setLocalScreenStream(stream);
     setShowSelfPreview(true); // paylaşınca kendi ekranını otomatik önizle
