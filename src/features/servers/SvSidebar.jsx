@@ -19,6 +19,7 @@ import {
   FolderPlus,
   FolderInput,
   Settings,
+  MonitorUp,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import profileBackground2_small from "../../assets/profileBackground2_small.png";
@@ -55,10 +56,13 @@ const ChannelRow = ({ channel, h }) => {
     deleteChannel,
     categories,
     moveChannelToCategory,
+    voiceState,
+    voiceAvatars,
   } = h;
   const [showMove, setShowMove] = useState(false);
   const active = isChannelActive(channel);
   const menuOpen = channelOptions === channel.id;
+  const occupants = channel.type === "voice" ? voiceState[channel.id] || [] : [];
 
   return (
     <>
@@ -115,6 +119,30 @@ const ChannelRow = ({ channel, h }) => {
           <MoreVertical size={15} />
         </button>
       </div>
+
+      {/* Sesli kanalda kimler var */}
+      {occupants.length > 0 && (
+        <ul className="list-none m-0 mt-0.5 mb-1 p-0 pl-7 flex flex-col gap-0.5 text-left">
+          {occupants.map((u) => (
+            <li key={u.socketId} className="flex items-center gap-1.5 min-w-0">
+              <img
+                src={voiceAvatars[u.userId] || "/1.png"}
+                alt=""
+                className="w-4 h-4 rounded-full object-cover shrink-0"
+              />
+              <span className="text-xs text-[var(--primary-text)] truncate">
+                {u.nickName || "Bilinmeyen"}
+              </span>
+              {u.sharing && (
+                <MonitorUp
+                  size={11}
+                  className="shrink-0 text-[var(--quaternary-text)]"
+                />
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
 
       <AnimatePresence>
         {menuOpen && (
@@ -460,6 +488,14 @@ const SvSidebar = ({ serverData, onRefresh }) => {
     setChannels(loaded);
   }, [serverData]);
 
+  // Sunucudaki sesli kanalların doluluğunu izle
+  const { watchServerVoice } = voice;
+  useEffect(() => {
+    if (!serverId) return;
+    watchServerVoice(serverId);
+    return () => watchServerVoice(null);
+  }, [serverId, watchServerVoice]);
+
   const handleChannelClick = (channel) => {
     if (channel.type === "voice") {
       voice.joinVoice({
@@ -613,6 +649,8 @@ const SvSidebar = ({ serverData, onRefresh }) => {
     deleteChannel,
     categories: sortedCategories,
     moveChannelToCategory,
+    voiceState: voice.voiceState,
+    voiceAvatars: voice.voiceAvatars,
   };
 
   return (

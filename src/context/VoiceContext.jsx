@@ -1,4 +1,11 @@
-import { createContext, useContext, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import toast from "react-hot-toast";
 import { socket } from "../config/socket";
 import { useAuth } from "./AuthContext";
@@ -21,6 +28,13 @@ export const VoiceProvider = ({ children }) => {
   const [connecting, setConnecting] = useState(false);
   const [muted, setMuted] = useState(false);
   const [participants, setParticipants] = useState([]); // uzak katılımcılar
+
+  // Sesli kanal doluluğu: sunucudaki tüm sesli kanallar için { channelId: [users] }
+  // (kanala girmeden kimin içeride olduğunu göstermek için)
+  const [voiceState, setVoiceState] = useState({});
+  const [voiceAvatars, setVoiceAvatars] = useState({}); // userId -> photoURL
+  const watchedServerRef = useRef(null);
+  const avatarReqRef = useRef(new Set()); // aynı kullanıcıyı iki kez istemeyelim
 
   // Ekran paylaşımı durumu
   const [isScreenSharing, setIsScreenSharing] = useState(false); // ben mi paylaşıyorum
@@ -49,6 +63,61 @@ export const VoiceProvider = ({ children }) => {
       }))
     );
   };
+
+  // Presence dinleyicisi — voice mesh handler'larından bağımsız, uygulama boyunca açık.
+  // (cleanup() içindeki unregisterSocketHandlers bu olayı kapatmaz.)
+  useEffect(() => {
+    const onState = ({ serverId, state }) => {
+      if (watchedServerRef.current !== serverId) return;
+      setVoiceState(state);
+
+      // Eksik avatarları çek
+      const missing = new Set();
+      Object.values(state).forEach((users) =>
+        users.forEach((u) => {
+          if (u.userId && !avatarReqRef.current.has(u.userId)) missing.add(u.userId);
+        })
+      );
+      missing.forEach((userId) => {
+        avatarReqRef.current.add(userId);
+        getUser(userId)
+          .then((u) => {
+            if (u?.photoURL) {
+              setVoiceAvatars((prev) => ({ ...prev, [userId]: u.photoURL }));
+            }
+          })
+          .catch(() => avatarReqRef.current.delete(userId));
+      });
+    };
+
+    // Yeniden bağlanınca izlemeyi tazele
+    const onConnect = () => {
+      if (watchedServerRef.current) {
+        socket.emit("voice:watch", { serverId: watchedServerRef.current });
+      }
+    };
+
+    socket.on("voice:state", onState);
+    socket.on("connect", onConnect);
+    return () => {
+      socket.off("voice:state", onState);
+      socket.off("connect", onConnect);
+    };
+  }, []);
+
+  // Bir sunucunun sesli kanal doluluğunu izle (serverId = null → izlemeyi bırak)
+  const watchServerVoice = useCallback((serverId) => {
+    const prev = watchedServerRef.current;
+    if (prev === (serverId || null)) return;
+    if (prev) socket.emit("voice:unwatch", { serverId: prev });
+
+    watchedServerRef.current = serverId || null;
+    setVoiceState({});
+    if (!serverId) return;
+
+    if (!socket.connected) socket.connect();
+    socket.emit("voice:watch", { serverId });
+  }, []);
 
   const attachRemoteAudio = (socketId, stream) => {
     let el = document.getElementById(`voice-audio-${socketId}`);
@@ -499,6 +568,10 @@ export const VoiceProvider = ({ children }) => {
         joinVoice,
         leaveVoice,
         toggleMute,
+        // sesli kanal doluluğu
+        voiceState,
+        voiceAvatars,
+        watchServerVoice,
         // ekran paylaşımı
         isScreenSharing,
         localScreenStream,
