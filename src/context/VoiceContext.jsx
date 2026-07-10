@@ -24,6 +24,12 @@ const VAD_KEY = "staple-vad-settings";
 const SPEAK_HANGOVER_MS = 300; // eşiğin altına inince bu kadar süre "konuşuyor" kalsın
 const LEVEL_INTERVAL_MS = 50;
 
+// Noise gate zaman sabitleri (setTargetAtTime tau). Attack hızlı ki kelime başı
+// kesilmesin; release yavaş ki kelime araları "tık"lamasın.
+const GATE_ATTACK_TAU = 0.02;
+const GATE_RELEASE_TAU = 0.2;
+const HIGHPASS_HZ = 85; // insan sesi temel frekansının altını (uğultu/titreşim) kes
+
 // Agresiflik (0-100) → RMS eşiği. Yüksek agresiflik = yüksek eşik = fısıltıyı,
 // klavye sesini, arka plan uğultusunu "konuşma" saymaz.
 //
@@ -101,13 +107,16 @@ export const VoiceProvider = ({ children }) => {
   // Kişi bazlı ses seviyesi: userId -> 0..2 (1 = normal, >1 = boost)
   const [volumes, setVolumes] = useState(loadVolumes);
 
-  const localStreamRef = useRef(null);
+  const localStreamRef = useRef(null); // ham mikrofon akışı (mute buradan)
+  const outStreamRef = useRef(null); // peer'lara gönderilen işlenmiş akış
   const peersRef = useRef({}); // socketId -> { pc, nickName } (ses mesh'i)
 
   // WebAudio: uzak sesler gain node'undan geçer, seviyeleri analyser ölçer
   const audioCtxRef = useRef(null);
   const remoteNodesRef = useRef({}); // socketId -> { source, gain, analyser, buf }
-  const localNodeRef = useRef(null); // { source, analyser, buf }
+  // Giden zincir: raw -> highpass -> gate -> dest; analyser highpass sonrası ölçer
+  const localNodeRef = useRef(null); // { source, highpass, gate, dest, analyser, buf }
+  const gateOpenRef = useRef(false); // gate'in son hedef durumu (gereksiz set'i önle)
   const levelTimerRef = useRef(null);
   const lastAboveRef = useRef({}); // id -> son eşik üstü zaman damgası
   const speakingRef = useRef({});
@@ -311,6 +320,21 @@ export const VoiceProvider = ({ children }) => {
     if (local) {
       // Mikrofon kapalıyken konuşuyor gösterme
       evaluate("self", rmsOf(local.analyser, local.buf), !mutedRef.current);
+
+      // Noise gate: VAD açıkken konuşmadığın anlarda giden sesi kıs. Eşiği ve
+      // hangover'ı halkayla paylaşır → kaydırıcı ikisini birden sürer.
+      if (local.gate) {
+        const shouldOpen = vadRef.current.enabled ? !!next.self : true;
+        if (shouldOpen !== gateOpenRef.current) {
+          gateOpenRef.current = shouldOpen;
+          const ctx = audioCtxRef.current;
+          local.gate.gain.setTargetAtTime(
+            shouldOpen ? 1 : 0,
+            ctx ? ctx.currentTime : 0,
+            shouldOpen ? GATE_ATTACK_TAU : GATE_RELEASE_TAU
+          );
+        }
+      }
     }
 
     Object.entries(remoteNodesRef.current).forEach(([socketId, n]) => {
@@ -371,11 +395,47 @@ export const VoiceProvider = ({ children }) => {
   const getUserVolume = (userId) =>
     typeof volumes[userId] === "number" ? volumes[userId] : 1;
 
+  // Giden ses işleme zinciri: ham mikrofon → highpass → noise gate → çıkış akışı.
+  // Analyser highpass sonrasını ölçer (düşük frekans uğultusu RMS'i şişirmesin).
+  const buildOutputChain = () => {
+    try {
+      const ctx = getAudioCtx();
+      const source = ctx.createMediaStreamSource(localStreamRef.current);
+
+      const highpass = ctx.createBiquadFilter();
+      highpass.type = "highpass";
+      highpass.frequency.value = HIGHPASS_HZ;
+
+      const { analyser, buf } = makeAnalyser(ctx, highpass);
+
+      const gate = ctx.createGain();
+      gate.gain.value = 1; // gate mantığı VAD açıkken tickLevels'ta sürülür
+      gateOpenRef.current = true;
+
+      const dest = ctx.createMediaStreamDestination();
+
+      source.connect(highpass);
+      highpass.connect(gate);
+      gate.connect(dest);
+
+      localNodeRef.current = { source, highpass, gate, dest, analyser, buf };
+      outStreamRef.current = dest.stream;
+    } catch (err) {
+      // Zincir kurulamazsa sesi kaybetme — peer'lara ham akış gider, gate/VAD yok
+      console.error("Output chain error:", err);
+      localNodeRef.current = null;
+      outStreamRef.current = null;
+    }
+  };
+
+  // Peer'lara gönderilecek ses track'i (işlenmiş varsa o, yoksa ham)
+  const outboundTracks = () =>
+    (outStreamRef.current || localStreamRef.current)?.getAudioTracks() || [];
+
   const createPeer = (socketId, info, isInitiator) => {
     const pc = new RTCPeerConnection(ICE);
-    localStreamRef.current
-      ?.getTracks()
-      .forEach((t) => pc.addTrack(t, localStreamRef.current));
+    const sendStream = outStreamRef.current || localStreamRef.current;
+    outboundTracks().forEach((t) => pc.addTrack(t, sendStream));
 
     pc.onicecandidate = (e) => {
       if (e.candidate) {
@@ -657,17 +717,21 @@ export const VoiceProvider = ({ children }) => {
     }
     watchingRef.current = null;
 
-    // Seviye ölçümü teardown
+    // Seviye ölçümü + giden zincir teardown
     stopLevelLoop();
     if (localNodeRef.current) {
-      try {
-        localNodeRef.current.source.disconnect();
-        localNodeRef.current.analyser.disconnect();
-      } catch {
-        /* zaten kopmuş */
-      }
+      const { source, highpass, gate, dest, analyser } = localNodeRef.current;
+      [source, highpass, gate, dest, analyser].forEach((n) => {
+        try {
+          n.disconnect();
+        } catch {
+          /* zaten kopmuş */
+        }
+      });
       localNodeRef.current = null;
     }
+    outStreamRef.current = null;
+    gateOpenRef.current = false;
 
     // Ses mesh teardown
     socket.emit("voice:leave");
@@ -705,7 +769,13 @@ export const VoiceProvider = ({ children }) => {
     setConnecting(true);
     try {
       localStreamRef.current = await navigator.mediaDevices.getUserMedia({
-        audio: true,
+        // Tarayıcının kendi işleme zinciri. Chrome bunları varsayılan açar ama
+        // garanti değil; açıkça isteyerek Firefox/Safari'de de tutarlı olur.
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
         video: false,
       });
     } catch (e) {
@@ -715,15 +785,9 @@ export const VoiceProvider = ({ children }) => {
       return;
     }
 
-    // Kendi mikrofonunu analiz et — destination'a BAĞLAMA, yoksa kendini duyarsın
-    try {
-      const ctx = getAudioCtx();
-      const source = ctx.createMediaStreamSource(localStreamRef.current);
-      const { analyser, buf } = makeAnalyser(ctx, source);
-      localNodeRef.current = { source, analyser, buf };
-    } catch (err) {
-      console.error("Local analyser error:", err);
-    }
+    // Giden ses işleme zinciri kur (highpass + noise gate). Peer'lara ham mikrofon
+    // yerine bu zincirin çıkışı gönderilir. Kurulamazsa outStream ham akışa düşer.
+    buildOutputChain();
     startLevelLoop();
 
     registerSocketHandlers();
