@@ -15,6 +15,7 @@ import {
   MonitorX,
   Eye,
   EyeOff,
+  Settings2,
 } from "lucide-react";
 import { useVoice } from "../../context/VoiceContext";
 import { useAuth } from "../../context/AuthContext";
@@ -39,11 +40,15 @@ const VoiceBar = () => {
     watchScreen,
     stopWatching,
     speaking,
+    vad,
+    setVadEnabled,
+    setVadAggressiveness,
     getUserVolume,
     setUserVolume,
   } = useVoice();
   const { userData } = useAuth();
   const [showList, setShowList] = useState(false);
+  const [showVadSettings, setShowVadSettings] = useState(false);
   const boundsRef = useRef(null);
   const videoRef = useRef(null);
   const listWrapRef = useRef(null);
@@ -166,9 +171,84 @@ const VoiceBar = () => {
                      rounded-xl border-2 border-[var(--primary-border)]
                      bg-[var(--primary-bg)] shadow-2xl p-2 text-left"
         >
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--primary-text)] px-2 pb-1">
-            Seste ({total})
-          </p>
+          <div className="flex items-center justify-between px-2 pb-1">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--primary-text)]">
+              Seste ({total})
+            </p>
+            <button
+              onClick={() => setShowVadSettings((v) => !v)}
+              title="Konuşma algılama ayarları"
+              aria-label="Konuşma algılama ayarları"
+              className={`p-1 rounded-md transition-colors ${
+                showVadSettings
+                  ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
+                  : "text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
+              }`}
+            >
+              <Settings2 size={14} />
+            </button>
+          </div>
+
+          {/* Konuşma algılama (VAD) ayarları */}
+          <AnimatePresence>
+            {showVadSettings && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.15 }}
+                className="overflow-hidden"
+              >
+                <div className="mx-2 mb-2 p-2 rounded-lg bg-[var(--secondary-bg)] border border-[var(--primary-border)]">
+                  <label className="flex items-center justify-between gap-2 cursor-pointer">
+                    <span className="text-xs text-[var(--secondary-text)]">
+                      Konuşma algılama
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={vad.enabled}
+                      onChange={(e) => setVadEnabled(e.target.checked)}
+                      className="w-4 h-4 cursor-pointer"
+                      style={{ accentColor: "var(--quaternary-text)" }}
+                    />
+                  </label>
+
+                  {!vad.enabled && (
+                    <p className="text-[10px] leading-tight text-[var(--primary-text)] mt-1">
+                      Kapalı: eleme yapılmaz, en küçük seste bile halka yanar.
+                    </p>
+                  )}
+
+                  <div className={vad.enabled ? "mt-2" : "mt-2 opacity-40"}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-[var(--primary-text)]">
+                        Agresiflik
+                      </span>
+                      <span className="text-[10px] tabular-nums text-[var(--primary-text)]">
+                        {vad.aggressiveness}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={vad.aggressiveness}
+                      disabled={!vad.enabled}
+                      onChange={(e) => setVadAggressiveness(Number(e.target.value))}
+                      aria-label="Konuşma algılama agresifliği"
+                      className="w-full h-1 cursor-pointer disabled:cursor-not-allowed"
+                      style={{ accentColor: "var(--quaternary-text)" }}
+                    />
+                    <p className="text-[10px] leading-tight text-[var(--primary-text)] mt-1">
+                      Yüksek değer arka plan gürültüsünü eler, alçak sesle
+                      konuşmayı da kaçırabilir.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Kendin */}
           <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
@@ -180,7 +260,7 @@ const VoiceBar = () => {
                   ? "border-red-500"
                   : speaking.self
                   ? "border-green-500"
-                  : "border-[var(--tertiary-border)]"
+                  : "border-[var(--primary-border)]"
               }`}
             />
             <span className="text-sm truncate flex-1">
@@ -249,7 +329,7 @@ const VoiceBar = () => {
                     type="range"
                     min={0}
                     max={200}
-                    step={5}
+                    step={1}
                     value={pct}
                     onChange={(e) =>
                       setUserVolume(p.userId, Number(e.target.value) / 100)

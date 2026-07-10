@@ -20,15 +20,36 @@ const ICE = {
 
 // ===== Konuşma algılama (VAD) ve kişi bazlı ses seviyesi ayarları =====
 const VOL_KEY = "staple-voice-volumes";
-const SPEAK_THRESHOLD = 0.015; // RMS eşiği
+const VAD_KEY = "staple-vad-settings";
 const SPEAK_HANGOVER_MS = 300; // eşiğin altına inince bu kadar süre "konuşuyor" kalsın
 const LEVEL_INTERVAL_MS = 80;
+
+// Agresiflik (0-100) → RMS eşiği. Yüksek agresiflik = yüksek eşik = fısıltıyı,
+// klavye sesini, arka plan uğultusunu "konuşma" saymaz.
+const VAD_MIN_THRESHOLD = 0.002;
+const VAD_MAX_THRESHOLD = 0.08;
+const DEFAULT_VAD_AGGRESSIVENESS = 17; // ≈ 0.015, eski sabit eşik
+
+const thresholdFromAggressiveness = (a) =>
+  VAD_MIN_THRESHOLD + (Math.min(Math.max(a, 0), 100) / 100) * (VAD_MAX_THRESHOLD - VAD_MIN_THRESHOLD);
 
 const loadVolumes = () => {
   try {
     return JSON.parse(localStorage.getItem(VOL_KEY)) || {};
   } catch {
     return {};
+  }
+};
+
+const loadVadSettings = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(VAD_KEY));
+    return {
+      enabled: saved?.enabled ?? true,
+      aggressiveness: saved?.aggressiveness ?? DEFAULT_VAD_AGGRESSIVENESS,
+    };
+  } catch {
+    return { enabled: true, aggressiveness: DEFAULT_VAD_AGGRESSIVENESS };
   }
 };
 
@@ -71,6 +92,8 @@ export const VoiceProvider = ({ children }) => {
 
   // Konuşma algılama: socketId (veya "self") -> bool
   const [speaking, setSpeaking] = useState({});
+  // VAD ayarları: { enabled, aggressiveness 0-100 }
+  const [vad, setVad] = useState(loadVadSettings);
   // Kişi bazlı ses seviyesi: userId -> 0..2 (1 = normal, >1 = boost)
   const [volumes, setVolumes] = useState(loadVolumes);
 
@@ -86,6 +109,7 @@ export const VoiceProvider = ({ children }) => {
   const speakingRef = useRef({});
   const volumesRef = useRef(volumes);
   const mutedRef = useRef(false);
+  const vadRef = useRef(vad);
 
   // Ekran paylaşımı ref'leri (ses mesh'inden ayrı)
   const screenStreamRef = useRef(null); // benim paylaştığım ekran akışı
@@ -165,6 +189,21 @@ export const VoiceProvider = ({ children }) => {
   useEffect(() => {
     mutedRef.current = muted;
   }, [muted]);
+  useEffect(() => {
+    vadRef.current = vad;
+    try {
+      localStorage.setItem(VAD_KEY, JSON.stringify(vad));
+    } catch {
+      /* kota dolu / gizli mod */
+    }
+  }, [vad]);
+
+  const setVadEnabled = (enabled) => setVad((prev) => ({ ...prev, enabled }));
+  const setVadAggressiveness = (aggressiveness) =>
+    setVad((prev) => ({
+      ...prev,
+      aggressiveness: Math.min(Math.max(aggressiveness, 0), 100),
+    }));
 
   const getAudioCtx = () => {
     if (!audioCtxRef.current) {
@@ -252,8 +291,13 @@ export const VoiceProvider = ({ children }) => {
     const now = Date.now();
     const next = {};
 
+    // Kapalıyken eşik 0 → sessizlik dışındaki her ses halkayı yakar (eleme yok).
+    const threshold = vadRef.current.enabled
+      ? thresholdFromAggressiveness(vadRef.current.aggressiveness)
+      : 0;
+
     const evaluate = (id, rms, allowed) => {
-      if (allowed && rms > SPEAK_THRESHOLD) lastAboveRef.current[id] = now;
+      if (allowed && rms > threshold) lastAboveRef.current[id] = now;
       const last = lastAboveRef.current[id] || 0;
       if (allowed && now - last < SPEAK_HANGOVER_MS) next[id] = true;
     };
@@ -786,6 +830,9 @@ export const VoiceProvider = ({ children }) => {
         watchServerVoice,
         // konuşma algılama + kişi bazlı ses seviyesi
         speaking,
+        vad,
+        setVadEnabled,
+        setVadAggressiveness,
         getUserVolume,
         setUserVolume,
         // ekran paylaşımı
