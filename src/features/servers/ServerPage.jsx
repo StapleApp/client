@@ -1,26 +1,27 @@
 import SvSidebar from "./SvSidebar";
 
 import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getServerById } from "../../services/serverService";
 
 const ServerPage = () => {
   const { serverId } = useParams();
   const [serverData, setServerData] = useState(null);
 
-  useEffect(() => {
-    const fetchServer = async () => {
-      const data = await getServerById(serverId);
-      setServerData(data);
-    };
-    fetchServer();
+  const fetchServer = useCallback(async () => {
+    const data = await getServerById(serverId);
+    setServerData(data);
   }, [serverId]);
+
+  useEffect(() => {
+    fetchServer();
+  }, [fetchServer]);
 
   if (!serverData) return <ServerSkeleton />;
 
   return (
     <div className="flex">
-      <SvSidebar serverData={serverData} />
+      <SvSidebar serverData={serverData} onRefresh={fetchServer} />
     </div>
   );
 };

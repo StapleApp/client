@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 import { getFriendsList } from "../../services/friendService";
 import { getUser } from "../../services/userService";
-import { getOrCreateDMChannel } from "../../services/groupService";
+import { getOrCreateDMChannel, getDMOverview, markDmRead } from "../../services/groupService";
 import ChatPanel from "../../Components/chat/ChatPanel";
 
 
@@ -17,6 +17,29 @@ const statusColor = (status) => {
     case "dnd": return "bg-red-500";
     default: return "bg-gray-500";
   }
+};
+
+// Son mesaj önizleme metni
+const previewText = (ov, myId) => {
+  if (!ov || !ov.lastAt) return "";
+  const mine = ov.lastSenderId === myId ? "Sen: " : "";
+  if (ov.lastType === "gif") return `${mine}GIF`;
+  if (ov.lastType === "image") return `${mine}📷 Görsel`;
+  return mine + (ov.lastContent || "");
+};
+
+// Kısa zaman etiketi (bugün → saat, değilse tarih)
+const shortTime = (iso) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const now = new Date();
+  const sameDay =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+  return sameDay
+    ? d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })
+    : d.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" });
 };
 
 const DirectMessagingPage = () => {
@@ -32,6 +55,7 @@ const DirectMessagingPage = () => {
   const [activeFriend, setActiveFriend] = useState(null); // { userID, nickName, photoURL, status }
   const [activeChannelId, setActiveChannelId] = useState(null);
   const [openingDM, setOpeningDM] = useState(false);
+  const [overview, setOverview] = useState({}); // otherUserId -> { lastAt, unread, ... }
 
   // Arkadaş listesini getir + her birinin profilini çek
   useEffect(() => {
@@ -54,6 +78,17 @@ const DirectMessagingPage = () => {
     fetchFriends();
   }, [userData]);
 
+  // DM önizleme/okunmamış özetini getir (açık sohbet değişince tazele)
+  const refreshOverview = useCallback(async () => {
+    if (!userData?.userID) return;
+    const ov = await getDMOverview(userData.userID);
+    setOverview(ov);
+  }, [userData]);
+
+  useEffect(() => {
+    refreshOverview();
+  }, [refreshOverview, activeChannelId]);
+
   // Bir arkadaşla DM aç: kanalı bul-ya-da-oluştur
   const openDM = useCallback(
     async (friend) => {
@@ -66,6 +101,13 @@ const DirectMessagingPage = () => {
         const channelId = await getOrCreateDMChannel(userData.userID, friend.userID);
         if (!channelId) throw new Error("Kanal oluşturulamadı");
         setActiveChannelId(channelId);
+        // Okundu işaretle + rozeti anında sıfırla
+        markDmRead(channelId, userData.userID);
+        setOverview((prev) =>
+          prev[friend.userID]
+            ? { ...prev, [friend.userID]: { ...prev[friend.userID], unread: 0 } }
+            : prev
+        );
       } catch (error) {
         console.error("DM açılamadı:", error);
         toast.error("Sohbet açılamadı, tekrar dene");
@@ -104,9 +146,17 @@ const DirectMessagingPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.key, requestedUserID, friends, userData]);
 
-  const filteredFriends = friends.filter((f) =>
-    f.nickName.toLowerCase().includes(search.trim().toLowerCase())
-  );
+  const filteredFriends = friends
+    .filter((f) => f.nickName.toLowerCase().includes(search.trim().toLowerCase()))
+    .sort((a, b) => {
+      // Son mesajı olanlar en üstte, en yeni önce; kalanlar alfabetik
+      const ta = overview[a.userID]?.lastAt;
+      const tb = overview[b.userID]?.lastAt;
+      if (ta && tb) return new Date(tb) - new Date(ta);
+      if (ta) return -1;
+      if (tb) return 1;
+      return a.nickName.localeCompare(b.nickName, "tr");
+    });
 
   return (
     <motion.div
@@ -166,6 +216,9 @@ const DirectMessagingPage = () => {
             <AnimatePresence>
               {filteredFriends.map((friend, index) => {
                 const isSelected = activeFriend?.userID === friend.userID;
+                const ov = overview[friend.userID];
+                const unread = !isSelected ? ov?.unread || 0 : 0;
+                const preview = previewText(ov, userData?.userID);
                 return (
                   <motion.div
                     key={friend.userID}
@@ -174,7 +227,7 @@ const DirectMessagingPage = () => {
                     exit={{ opacity: 0, x: -20 }}
                     transition={{ delay: index * 0.02 }}
                     onClick={() => openDM(friend)}
-                    className={`flex items-center gap-3 px-4 py-3 cursor-pointer border-l-2 transition-colors ${
+                    className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer border-l-2 transition-colors ${
                       isSelected
                         ? "bg-[var(--secondary-bg)] border-[var(--tertiary-border)]"
                         : "border-transparent hover:bg-[var(--secondary-bg)]"
@@ -190,15 +243,42 @@ const DirectMessagingPage = () => {
                         className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[var(--primary-bg)] ${statusColor(friend.status)}`}
                       />
                     </div>
-                    <span
-                      className={`font-medium truncate ${
-                        isSelected
-                          ? "text-[var(--tertiary-text)]"
-                          : "text-[var(--secondary-text)]"
-                      }`}
-                    >
-                      {friend.nickName}
-                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span
+                          className={`truncate ${
+                            unread > 0 ? "font-bold" : "font-medium"
+                          } ${
+                            isSelected
+                              ? "text-[var(--tertiary-text)]"
+                              : "text-[var(--secondary-text)]"
+                          }`}
+                        >
+                          {friend.nickName}
+                        </span>
+                        {ov?.lastAt && (
+                          <span className="shrink-0 text-[10px] text-[var(--primary-text)]">
+                            {shortTime(ov.lastAt)}
+                          </span>
+                        )}
+                      </div>
+                      {preview && (
+                        <p
+                          className={`text-xs truncate ${
+                            unread > 0
+                              ? "text-[var(--secondary-text)] font-medium"
+                              : "text-[var(--primary-text)]"
+                          }`}
+                        >
+                          {preview}
+                        </p>
+                      )}
+                    </div>
+                    {unread > 0 && (
+                      <span className="shrink-0 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
+                        {unread > 9 ? "9+" : unread}
+                      </span>
+                    )}
                   </motion.div>
                 );
               })}

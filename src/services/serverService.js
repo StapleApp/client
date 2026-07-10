@@ -173,6 +173,12 @@ export const getServerById = async (serverID) => {
       .eq("server_id", serverID)
       .order("position", { ascending: true });
 
+    // Etiketleri getir
+    const { data: tags } = await supabase
+      .from("server_tags")
+      .select("tag")
+      .eq("server_id", serverID);
+
     // Firebase uyumlu format
     return {
       ServerId: server.id,
@@ -206,10 +212,69 @@ export const getServerById = async (serverID) => {
         RoleColor: r.color,
         Permissions: r.permissions || [],
       })),
+      ServerTags: (tags || []).map((t) => t.tag),
     };
   } catch (error) {
     console.error("Error fetching server by ID:", error);
     return null;
+  }
+};
+
+// ** Sunucu meta verisini güncelle (sahibi) + etiketleri değiştir **
+export const updateServer = async (serverID, info) => {
+  try {
+    const { name, description, type, iconUrl, bannerUrl, tags } = info;
+
+    const { error } = await supabase
+      .from("servers")
+      .update({
+        name,
+        description: description || null,
+        type: type === "private" ? "private" : "public",
+        icon_url: iconUrl || null,
+        banner_url: bannerUrl || null,
+      })
+      .eq("id", serverID);
+
+    if (error) throw error;
+
+    // Etiketleri değiştir: eskileri sil, yenileri ekle
+    if (Array.isArray(tags)) {
+      await supabase.from("server_tags").delete().eq("server_id", serverID);
+      const clean = [
+        ...new Set(
+          tags
+            .map((t) => String(t).trim().toLowerCase())
+            .filter((t) => t.length > 0 && t.length <= 24)
+        ),
+      ].slice(0, 8);
+      if (clean.length > 0) {
+        await supabase
+          .from("server_tags")
+          .insert(clean.map((tag) => ({ server_id: serverID, tag })));
+      }
+    }
+
+    toast.success("Sunucu güncellendi");
+    return true;
+  } catch (error) {
+    console.error("Error updating server:", error);
+    toast.error(error?.message || "Sunucu güncellenemedi");
+    return false;
+  }
+};
+
+// ** Sunucuyu sil (sahibi) — cascade ile kanallar/üyeler/roller gider **
+export const deleteServer = async (serverID) => {
+  try {
+    const { error } = await supabase.from("servers").delete().eq("id", serverID);
+    if (error) throw error;
+    toast.success("Sunucu silindi");
+    return true;
+  } catch (error) {
+    console.error("Error deleting server:", error);
+    toast.error(error?.message || "Sunucu silinemedi");
+    return false;
   }
 };
 

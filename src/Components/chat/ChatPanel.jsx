@@ -13,6 +13,7 @@ import MessageContent from "./MessageContent";
 import GifPicker from "./GifPicker";
 import ProfilePanel from "../layout/ProfilePanel";
 import { getUser } from "../../services/userService";
+import { socket } from "../../config/socket";
 
 const formatTime = (createdAt) => {
   if (!createdAt?.seconds) return "";
@@ -83,11 +84,81 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
 
+  // "Yazıyor..." durumu (socket üzerinden, DB'den bağımsız)
+  const [typingUsers, setTypingUsers] = useState({}); // userId -> nickName
+  const typingExpireRef = useRef({});
+  const myStopRef = useRef(null);
+  const channelId = context?.channelId || context?.groupId;
+
+  useEffect(() => {
+    if (!channelId || !userData?.userID) return;
+    if (!socket.connected) socket.connect();
+    socket.emit("chat:join", { channelId });
+
+    const onTyping = ({ userId, nickName, isTyping }) => {
+      if (!userId || userId === userData.userID) return;
+      setTypingUsers((prev) => {
+        const next = { ...prev };
+        if (isTyping) next[userId] = nickName || "Biri";
+        else delete next[userId];
+        return next;
+      });
+      if (isTyping) {
+        clearTimeout(typingExpireRef.current[userId]);
+        typingExpireRef.current[userId] = setTimeout(() => {
+          setTypingUsers((prev) => {
+            const n = { ...prev };
+            delete n[userId];
+            return n;
+          });
+        }, 5000);
+      }
+    };
+    socket.on("chat:typing", onTyping);
+
+    const expireRef = typingExpireRef.current;
+    return () => {
+      socket.emit("chat:typing", {
+        channelId,
+        userId: userData.userID,
+        nickName: userData.nickName,
+        isTyping: false,
+      });
+      socket.emit("chat:leave", { channelId });
+      socket.off("chat:typing", onTyping);
+      clearTimeout(myStopRef.current);
+      Object.values(expireRef).forEach(clearTimeout);
+      typingExpireRef.current = {};
+      setTypingUsers({});
+    };
+  }, [channelId, userData?.userID, userData?.nickName]);
+
+  const emitTyping = () => {
+    if (!channelId || !userData?.userID) return;
+    if (!socket.connected) socket.connect();
+    socket.emit("chat:typing", {
+      channelId,
+      userId: userData.userID,
+      nickName: userData.nickName,
+      isTyping: true,
+    });
+    clearTimeout(myStopRef.current);
+    myStopRef.current = setTimeout(() => {
+      socket.emit("chat:typing", {
+        channelId,
+        userId: userData.userID,
+        nickName: userData.nickName,
+        isTyping: false,
+      });
+    }, 2500);
+  };
+
   const handleInputChange = (e) => {
     setNewMessage(e.target.value);
     const el = e.target;
     el.style.height = "auto";
     el.style.height = Math.min(el.scrollHeight, 160) + "px";
+    emitTyping();
   };
 
   const handleInputKeyDown = (e) => {
@@ -178,6 +249,16 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     if (!content || !userData) return;
     setNewMessage("");
     if (inputRef.current) inputRef.current.style.height = "auto";
+    // Yazıyor durumunu hemen kapat
+    clearTimeout(myStopRef.current);
+    if (channelId) {
+      socket.emit("chat:typing", {
+        channelId,
+        userId: userData.userID,
+        nickName: userData.nickName,
+        isTyping: false,
+      });
+    }
     await sendMessage(context, {
       senderId: userData.userID,
       content,
@@ -412,6 +493,14 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
         >
           <ChevronDown size={18} />
         </button>
+      )}
+
+      {/* "Yazıyor..." göstergesi */}
+      {Object.keys(typingUsers).length > 0 && (
+        <div className="px-5 py-1 text-xs text-[var(--primary-text)] italic bg-[var(--primary-bg)]">
+          {Object.values(typingUsers).slice(0, 3).join(", ")}
+          {Object.keys(typingUsers).length === 1 ? " yazıyor..." : " yazıyorlar..."}
+        </div>
       )}
 
       {/* Send area */}

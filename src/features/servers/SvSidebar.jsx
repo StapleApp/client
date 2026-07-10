@@ -18,11 +18,15 @@ import {
   GripVertical,
   FolderPlus,
   FolderInput,
+  Settings,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import profileBackground2_small from "../../assets/profileBackground2_small.png";
 import ChatPanel from "../../Components/chat/ChatPanel";
+import ServerMembers from "./ServerMembers";
+import ServerSettings from "./ServerSettings";
 import { useVoice } from "../../context/VoiceContext";
+import { useAuth } from "../../context/AuthContext";
 import {
   createChannel,
   renameChannel as apiRenameChannel,
@@ -412,14 +416,17 @@ const CategorySection = ({
   );
 };
 
-const SvSidebar = ({ serverData }) => {
+const SvSidebar = ({ serverData, onRefresh }) => {
   const navigate = useNavigate();
   const voice = useVoice();
+  const { currentUser } = useAuth();
   const serverId = serverData?.ServerId;
+  const isOwner = currentUser?.uid === serverData?.ServerOwnerID;
 
   const [channels, setChannels] = useState([]);
   const [categories, setCategories] = useState([]);
   const [activeChannel, setActiveChannel] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   const channelsRef = useRef(channels);
   const categoriesRef = useRef(categories);
@@ -632,6 +639,16 @@ const SvSidebar = ({ serverData }) => {
           >
             <ChevronLeft size={18} />
           </button>
+          {isOwner && (
+            <button
+              onClick={() => setShowSettings(true)}
+              title="Sunucu ayarları"
+              aria-label="Sunucu ayarları"
+              className="absolute top-2 right-2 p-1.5 rounded-lg bg-[var(--primary-bg)]/80 text-[var(--secondary-text)] hover:text-[var(--quaternary-text)] hover:scale-105 transition-all duration-200"
+            >
+              <Settings size={18} />
+            </button>
+          )}
         </div>
 
         {/* Ekleme butonları */}
@@ -728,7 +745,21 @@ const SvSidebar = ({ serverData }) => {
         </div>
       </motion.div>
 
-      <div className="fixed top-0 left-80 right-0 h-screen z-20">
+      <ServerMembers serverData={serverData} />
+
+      {showSettings && (
+        <ServerSettings
+          serverData={serverData}
+          onClose={() => setShowSettings(false)}
+          onSaved={() => onRefresh && onRefresh()}
+          onDeleted={() => {
+            setShowSettings(false);
+            navigate("/");
+          }}
+        />
+      )}
+
+      <div className="fixed top-0 left-80 right-56 h-screen z-20">
         <AnimatePresence mode="wait">
           {activeChannel ? (
             <motion.div

@@ -138,6 +138,91 @@ export const getOrCreateDMChannel = async (user1Id, user2Id) => {
   return await createGroup(null, [user1Id, user2Id]);
 };
 
+// DM'lere genel bakış: karşı kullanıcı ID'sine göre son mesaj + okunmamış sayısı.
+// Migration (last_read_at) yoksa graceful boş döner — DM'ler yine çalışır.
+export const getDMOverview = async (userId) => {
+  try {
+    const { data: myRows, error } = await supabase
+      .from("channel_members")
+      .select("channel_id, last_read_at")
+      .eq("user_id", userId);
+    if (error) throw error;
+    if (!myRows || myRows.length === 0) return {};
+
+    const channelIds = myRows.map((r) => r.channel_id);
+    const lastReadMap = {};
+    myRows.forEach((r) => (lastReadMap[r.channel_id] = r.last_read_at));
+
+    const { data: dmChannels } = await supabase
+      .from("channels")
+      .select("id, type")
+      .in("id", channelIds)
+      .eq("type", "dm");
+
+    const result = {}; // otherUserId -> { channelId, lastContent, lastType, lastAt, lastSenderId, unread }
+
+    await Promise.all(
+      (dmChannels || []).map(async (ch) => {
+        const { data: mem } = await supabase
+          .from("channel_members")
+          .select("user_id")
+          .eq("channel_id", ch.id)
+          .neq("user_id", userId);
+        const otherId = mem?.[0]?.user_id;
+        if (!otherId) return;
+
+        const { data: lastMsgs } = await supabase
+          .from("messages")
+          .select("content, type, created_at, sender_id")
+          .eq("channel_id", ch.id)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        const last = lastMsgs?.[0] || null;
+
+        let unread = 0;
+        if (last) {
+          let q = supabase
+            .from("messages")
+            .select("id", { count: "exact", head: true })
+            .eq("channel_id", ch.id)
+            .neq("sender_id", userId);
+          const lastRead = lastReadMap[ch.id];
+          if (lastRead) q = q.gt("created_at", lastRead);
+          const { count } = await q;
+          unread = count || 0;
+        }
+
+        result[otherId] = {
+          channelId: ch.id,
+          lastContent: last?.content || "",
+          lastType: last?.type || "text",
+          lastAt: last?.created_at || null,
+          lastSenderId: last?.sender_id || null,
+          unread,
+        };
+      })
+    );
+
+    return result;
+  } catch (error) {
+    console.error("Error building DM overview:", error);
+    return {};
+  }
+};
+
+// DM kanalını okundu işaretle (last_read_at = now)
+export const markDmRead = async (channelId, userId) => {
+  try {
+    await supabase
+      .from("channel_members")
+      .update({ last_read_at: new Date().toISOString() })
+      .eq("channel_id", channelId)
+      .eq("user_id", userId);
+  } catch (error) {
+    console.error("Error marking DM read:", error);
+  }
+};
+
 // Kullanıcının tüm DM kanallarını getir
 export const getUserDMChannels = async (userId) => {
   try {
