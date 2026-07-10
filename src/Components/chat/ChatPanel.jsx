@@ -81,6 +81,22 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
 
   const messagesEndRef = useRef(null);
   const scrollRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const handleInputChange = (e) => {
+    setNewMessage(e.target.value);
+    const el = e.target;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 160) + "px";
+  };
+
+  const handleInputKeyDown = (e) => {
+    // Enter gönderir, Shift+Enter yeni satır
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
 
   const handleAvatarClick = async (e, senderId) => {
     e.stopPropagation();
@@ -161,6 +177,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     const content = newMessage.trim();
     if (!content || !userData) return;
     setNewMessage("");
+    if (inputRef.current) inputRef.current.style.height = "auto";
     await sendMessage(context, {
       senderId: userData.userID,
       content,
@@ -400,17 +417,20 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
       {/* Send area */}
       <form
         onSubmit={handleSend}
-        className="p-4 border-t-2 border-[var(--primary-border)] bg-[var(--primary-bg)] flex gap-3 relative"
+        className="p-4 border-t-2 border-[var(--primary-border)] bg-[var(--primary-bg)] flex gap-3 relative items-end"
       >
         <div className="flex-1 relative">
-          <input
-            type="text"
+          <textarea
+            ref={inputRef}
+            rows={1}
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder={`Mesajınızı yazın...`}
-            className="w-full px-4 py-2 pr-20 rounded-xl bg-[var(--secondary-bg)] text-[var(--secondary-text)] border-2 border-[var(--primary-border)] focus:outline-none focus:border-[var(--tertiary-border)] placeholder:text-[var(--primary-text)] transition-colors"
+            onChange={handleInputChange}
+            onKeyDown={handleInputKeyDown}
+            placeholder={`Mesajınızı yazın...  (Shift+Enter: yeni satır)`}
+            style={{ maxHeight: "160px" }}
+            className="w-full px-4 py-2 pr-20 rounded-xl bg-[var(--secondary-bg)] text-[var(--secondary-text)] border-2 border-[var(--primary-border)] focus:outline-none focus:border-[var(--tertiary-border)] placeholder:text-[var(--primary-text)] transition-colors resize-none overflow-y-auto leading-6 block"
           />
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+          <div className="absolute right-3 bottom-2 flex items-center gap-2">
             <button
               type="button"
               className="text-[var(--secondary-text)] hover:text-[var(--primary-text)] font-bold text-xs px-1.5 py-0.5 rounded bg-[var(--primary-border)] hover:bg-[var(--tertiary-border)] transition-all select-none"

@@ -153,6 +153,13 @@ export const getServerById = async (serverID) => {
       .eq("server_id", serverID)
       .order("position", { ascending: true });
 
+    // Kategorileri getir (tablo yoksa/hata varsa graceful: kategorisiz devam)
+    const { data: categories } = await supabase
+      .from("channel_categories")
+      .select("*")
+      .eq("server_id", serverID)
+      .order("position", { ascending: true });
+
     // Üyeleri getir
     const { data: members } = await supabase
       .from("server_members")
@@ -181,6 +188,12 @@ export const getServerById = async (serverID) => {
         RoomName: ch.name,
         Type: ch.type === "voice" ? "VoiceRoom" : "TextRoom",
         Position: ch.position,
+        CategoryID: ch.category_id ?? null,
+      })),
+      Categories: (categories || []).map((c) => ({
+        CategoryID: c.id,
+        CategoryName: c.name,
+        Position: c.position,
       })),
       Users: (members || []).map((m) => ({
         UserID: m.user_id,
@@ -260,21 +273,26 @@ export const joinServer = async (serverID, uid) => {
 // ** Kanal işlemleri — granüler (her biri DB'ye tek işlem yazar) **
 
 // Yeni kanal oluştur → DB'nin ürettiği gerçek UUID'li satırı döndürür
-export const createChannel = async (serverID, { name, type, position }) => {
+export const createChannel = async (serverID, { name, type, position, categoryId = null }) => {
   try {
+    const payload = {
+      server_id: serverID,
+      name,
+      type: type === "voice" ? "voice" : "text",
+      position: position ?? 0,
+    };
+    // category_id'yi yalnızca kategoriye eklerken gönder — böylece migration
+    // henüz çalışmadıysa (kolon yoksa) kategorisiz kanal ekleme bozulmaz.
+    if (categoryId) payload.category_id = categoryId;
+
     const { data, error } = await supabase
       .from("channels")
-      .insert({
-        server_id: serverID,
-        name,
-        type: type === "voice" ? "voice" : "text",
-        position: position ?? 0,
-      })
+      .insert(payload)
       .select()
       .single();
 
     if (error) throw error;
-    return data; // { id, server_id, name, type, position, ... }
+    return data; // { id, server_id, name, type, position, category_id, ... }
   } catch (error) {
     console.error("Error creating channel:", error);
     toast.error("Kanal oluşturulamadı");
@@ -334,6 +352,94 @@ export const reorderChannels = async (updates) => {
   } catch (error) {
     console.error("Error reordering channels:", error);
     toast.error("Kanal sırası kaydedilemedi");
+    return false;
+  }
+};
+
+// Kanal yerleşimini (kategori + sıra) toplu güncelle — drag/taşıma sonrası
+export const saveChannelPlacements = async (updates) => {
+  try {
+    // updates: [{ id, categoryId, position }]
+    await Promise.all(
+      updates.map(({ id, categoryId, position }) =>
+        supabase
+          .from("channels")
+          .update({ category_id: categoryId ?? null, position })
+          .eq("id", id)
+      )
+    );
+    return true;
+  } catch (error) {
+    console.error("Error saving channel placements:", error);
+    toast.error("Kanal düzeni kaydedilemedi");
+    return false;
+  }
+};
+
+// ** Kategori işlemleri **
+
+// Yeni kategori — ID client'ta üretilir (RETURNING/RLS tuzağı yok)
+export const createCategory = async (serverID, { name, position }) => {
+  try {
+    const id = crypto.randomUUID();
+    const { error } = await supabase.from("channel_categories").insert({
+      id,
+      server_id: serverID,
+      name: name || "Yeni Kategori",
+      position: position ?? 0,
+    });
+    if (error) throw error;
+    return { id, name: name || "Yeni Kategori", position: position ?? 0 };
+  } catch (error) {
+    console.error("Error creating category:", error);
+    toast.error("Kategori oluşturulamadı");
+    return null;
+  }
+};
+
+export const renameCategory = async (categoryID, name) => {
+  try {
+    const { error } = await supabase
+      .from("channel_categories")
+      .update({ name })
+      .eq("id", categoryID);
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Error renaming category:", error);
+    toast.error("Kategori adı güncellenemedi");
+    return false;
+  }
+};
+
+// Kategori sil — içindeki kanallar FK ON DELETE SET NULL ile kategorisiz kalır
+export const deleteCategory = async (categoryID) => {
+  try {
+    const { error } = await supabase
+      .from("channel_categories")
+      .delete()
+      .eq("id", categoryID);
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Error deleting category:", error);
+    toast.error("Kategori silinemedi");
+    return false;
+  }
+};
+
+export const reorderCategories = async (updates) => {
+  try {
+    // updates: [{ id, position }]
+    await Promise.all(
+      updates.map(({ id, position }) =>
+        supabase.from("channel_categories").update({ position }).eq("id", id)
+      )
+    );
+    return true;
+  } catch (error) {
+    console.error("Error reordering categories:", error);
+    toast.error("Kategori sırası kaydedilemedi");
     return false;
   }
 };

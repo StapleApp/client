@@ -72,8 +72,8 @@ const MessageContent = ({ content }) => {
       </a>
     );
   }
-  // Normal metin
-  return <span>{content}</span>;
+  // Normal metin — satır sonlarını koru (çok satırlı mesajlar için)
+  return <span className="whitespace-pre-wrap">{content}</span>;
 };
 
 export default MessageContent;
