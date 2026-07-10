@@ -123,6 +123,7 @@ export const VoiceProvider = ({ children }) => {
   const volumesRef = useRef(volumes);
   const mutedRef = useRef(false);
   const vadRef = useRef(vad);
+  const activeRef = useRef(null); // beforeunload handler'ı güncel active'i görsün
 
   // Ekran paylaşımı ref'leri (ses mesh'inden ayrı)
   const screenStreamRef = useRef(null); // benim paylaştığım ekran akışı
@@ -137,6 +138,7 @@ export const VoiceProvider = ({ children }) => {
         userId: p.userId,
         nickName: p.nickName || "Bilinmeyen",
         photoURL: p.photoURL || "/1.png",
+        muted: !!p.muted,
       }))
     );
   };
@@ -174,9 +176,20 @@ export const VoiceProvider = ({ children }) => {
       }
     };
 
+    // Sayfa kapanır/yenilenirken ses odasından temiz çık. socket.io'nun
+    // ping-timeout'u (~60s) dolana kadar zombie kalmasın — diğer kullanıcılar
+    // bizi anında listeden düşürsün.
+    const onBeforeUnload = () => {
+      if (activeRef.current) socket.emit("voice:leave");
+    };
+    window.addEventListener("pagehide", onBeforeUnload);
+    window.addEventListener("beforeunload", onBeforeUnload);
+
     socket.on("voice:state", onState);
     socket.on("connect", onConnect);
     return () => {
+      window.removeEventListener("pagehide", onBeforeUnload);
+      window.removeEventListener("beforeunload", onBeforeUnload);
       socket.off("voice:state", onState);
       socket.off("connect", onConnect);
     };
@@ -202,6 +215,9 @@ export const VoiceProvider = ({ children }) => {
   useEffect(() => {
     mutedRef.current = muted;
   }, [muted]);
+  useEffect(() => {
+    activeRef.current = active;
+  }, [active]);
   useEffect(() => {
     vadRef.current = vad;
     try {
@@ -449,6 +465,7 @@ export const VoiceProvider = ({ children }) => {
       userId: info.userId,
       nickName: info.nickName,
       photoURL: "/1.png",
+      muted: !!info.muted,
     };
     refreshParticipants();
 
@@ -523,7 +540,11 @@ export const VoiceProvider = ({ children }) => {
   const registerSocketHandlers = () => {
     socket.on("voice:peers", (peers) => {
       peers.forEach((p) => {
-        createPeer(p.socketId, { userId: p.userId, nickName: p.nickName }, true);
+        createPeer(
+          p.socketId,
+          { userId: p.userId, nickName: p.nickName, muted: p.muted },
+          true
+        );
         // Kanalda zaten paylaşım yapanları işaretle
         if (p.sharing) {
           setSharingSocketIds((prev) =>
@@ -531,6 +552,15 @@ export const VoiceProvider = ({ children }) => {
           );
         }
       });
+    });
+
+    // Bir peer kendini susturdu/açtı → katılımcı listesindeki ikonu güncelle
+    socket.on("voice:peer-mute", ({ socketId, muted }) => {
+      const entry = peersRef.current[socketId];
+      if (entry) {
+        entry.muted = !!muted;
+        refreshParticipants();
+      }
     });
 
     socket.on("voice:offer", async ({ from, sdp, userId, nickName }) => {
@@ -681,6 +711,7 @@ export const VoiceProvider = ({ children }) => {
       "voice:answer",
       "voice:ice-candidate",
       "voice:peer-left",
+      "voice:peer-mute",
       "screen:started",
       "screen:stopped",
       "screen:watch-request",
@@ -812,7 +843,10 @@ export const VoiceProvider = ({ children }) => {
     const track = localStreamRef.current?.getAudioTracks()[0];
     if (track) {
       track.enabled = !track.enabled;
-      setMuted(!track.enabled);
+      const nowMuted = !track.enabled;
+      setMuted(nowMuted);
+      // Diğer katılımcılara + presence izleyicilerine bildir
+      socket.emit("voice:mute", { muted: nowMuted });
     }
   };
 

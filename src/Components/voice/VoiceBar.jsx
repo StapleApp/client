@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence, useDragControls, useMotionValue } from "framer-motion";
 import {
   Mic,
@@ -47,6 +48,7 @@ const VoiceBar = () => {
     setUserVolume,
   } = useVoice();
   const { userData } = useAuth();
+  const navigate = useNavigate();
   const [showList, setShowList] = useState(false);
   const [showVadSettings, setShowVadSettings] = useState(false);
   const boundsRef = useRef(null);
@@ -293,6 +295,7 @@ const VoiceBar = () => {
                     }`}
                   />
                   <span className="text-sm truncate flex-1">{p.nickName}</span>
+                  {p.muted && <MicOff size={13} className="text-red-400 shrink-0" />}
                   {sharing &&
                     (watchingThis ? (
                       <button
@@ -391,9 +394,17 @@ const VoiceBar = () => {
             />
             {connecting ? "Bağlanıyor..." : "Sesli Bağlı"}
           </div>
-          <div className="text-xs text-[var(--primary-text)] max-w-[160px] truncate">
-            {active ? `${active.serverName} · ${active.channelName}` : ""}
-          </div>
+          {active ? (
+            <button
+              onClick={() => navigate(`/server/${active.serverId}`)}
+              title="Sunucuya git"
+              className="text-xs text-[var(--primary-text)] max-w-[160px] truncate hover:text-[var(--quaternary-text)] hover:underline transition-colors text-left"
+            >
+              {active.serverName} · {active.channelName}
+            </button>
+          ) : (
+            <div className="text-xs text-[var(--primary-text)]" />
+          )}
         </div>
       </div>
 

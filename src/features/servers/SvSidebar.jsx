@@ -20,6 +20,7 @@ import {
   FolderInput,
   Settings,
   MonitorUp,
+  MicOff,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import profileBackground2_small from "../../assets/profileBackground2_small.png";
@@ -176,9 +177,12 @@ const ChannelRow = ({ channel, h }) => {
                   isSpeaking(u) ? "ring-green-500" : "ring-transparent"
                 }`}
               />
-              <span className="text-xs text-[var(--primary-text)] truncate">
+              <span className="text-xs text-[var(--primary-text)] truncate flex-1">
                 {u.nickName || "Bilinmeyen"}
               </span>
+              {u.muted && (
+                <MicOff size={11} className="shrink-0 text-red-400" />
+              )}
               {u.sharing && (
                 <MonitorUp
                   size={11}
