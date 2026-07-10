@@ -215,7 +215,8 @@ const VoiceBar = () => {
 
                   {!vad.enabled && (
                     <p className="text-[10px] leading-tight text-[var(--primary-text)] mt-1">
-                      Kapalı: eleme yapılmaz, en küçük seste bile halka yanar.
+                      Kapalı: eleme yapılmaz, sessizlik dışındaki her seste
+                      halka yanar.
                     </p>
                   )}
 

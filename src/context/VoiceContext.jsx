@@ -22,13 +22,17 @@ const ICE = {
 const VOL_KEY = "staple-voice-volumes";
 const VAD_KEY = "staple-vad-settings";
 const SPEAK_HANGOVER_MS = 300; // eşiğin altına inince bu kadar süre "konuşuyor" kalsın
-const LEVEL_INTERVAL_MS = 80;
+const LEVEL_INTERVAL_MS = 50;
 
 // Agresiflik (0-100) → RMS eşiği. Yüksek agresiflik = yüksek eşik = fısıltıyı,
 // klavye sesini, arka plan uğultusunu "konuşma" saymaz.
-const VAD_MIN_THRESHOLD = 0.002;
+//
+// Alt sınır tipik bir mikrofonun gürültü tabanının hemen üstü: bunun altında
+// halka sessizken de yanardı, yani 0-6 aralığı ölü bölgeydi. Artık 0 = "en
+// hassas ama sessizlikte yanmaz".
+const VAD_MIN_THRESHOLD = 0.0067;
 const VAD_MAX_THRESHOLD = 0.08;
-const DEFAULT_VAD_AGGRESSIVENESS = 17; // ≈ 0.015, eski sabit eşik
+const DEFAULT_VAD_AGGRESSIVENESS = 12; // ≈ 0.0155, eski varsayılana denk
 
 const thresholdFromAggressiveness = (a) =>
   VAD_MIN_THRESHOLD + (Math.min(Math.max(a, 0), 100) / 100) * (VAD_MAX_THRESHOLD - VAD_MIN_THRESHOLD);
@@ -220,7 +224,8 @@ export const VoiceProvider = ({ children }) => {
   const makeAnalyser = (ctx, source) => {
     const analyser = ctx.createAnalyser();
     analyser.fftSize = 512;
-    analyser.smoothingTimeConstant = 0.3;
+    // Düşük yumuşatma → kelime başında halka daha çabuk yanar
+    analyser.smoothingTimeConstant = 0.15;
     source.connect(analyser);
     return { analyser, buf: new Uint8Array(analyser.fftSize) };
   };
@@ -291,10 +296,10 @@ export const VoiceProvider = ({ children }) => {
     const now = Date.now();
     const next = {};
 
-    // Kapalıyken eşik 0 → sessizlik dışındaki her ses halkayı yakar (eleme yok).
+    // Kapalıyken alt sınır kullanılır: eleme yok, ama sessizlikte de yanmaz.
     const threshold = vadRef.current.enabled
       ? thresholdFromAggressiveness(vadRef.current.aggressiveness)
-      : 0;
+      : VAD_MIN_THRESHOLD;
 
     const evaluate = (id, rms, allowed) => {
       if (allowed && rms > threshold) lastAboveRef.current[id] = now;
