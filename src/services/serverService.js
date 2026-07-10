@@ -1,5 +1,9 @@
 import { supabase } from "../config/supabase";
 import toast from "react-hot-toast";
+import {
+  DEFAULT_ADMIN_PERMISSIONS,
+  DEFAULT_MEMBER_PERMISSIONS,
+} from "../config/permissions";
 
 // ** Server oluştur (server + default role + default channels + owner membership) **
 // serverInfo: { name, description?, type?, iconUrl?, bannerUrl?, tags? }
@@ -29,20 +33,31 @@ async function writeServerData(serverInfo, ownerID) {
 
   if (serverError) throw serverError;
 
-  // 2. Admin rolünü oluştur
-  const { data: adminRole, error: roleError } = await supabase
+  // 2. Varsayılan rolleri oluştur: Admin (position 1, tam yetki) ve Üye (position 0).
+  //    Yüksek position = listede üstte / öncelikli. Üye taban rol.
+  const { data: createdRoles, error: roleError } = await supabase
     .from("roles")
-    .insert({
-      server_id: server.id,
-      name: "Admin",
-      color: "#FF5733",
-      permissions: ["MANAGE_MESSAGES", "BAN_MEMBERS", "MANAGE_ROLES"],
-      position: 0,
-    })
-    .select()
-    .single();
+    .insert([
+      {
+        server_id: server.id,
+        name: "Admin",
+        color: "#FF5733",
+        permissions: DEFAULT_ADMIN_PERMISSIONS,
+        position: 1,
+      },
+      {
+        server_id: server.id,
+        name: "Üye",
+        color: "#B9BBBE",
+        permissions: DEFAULT_MEMBER_PERMISSIONS,
+        position: 0,
+      },
+    ])
+    .select();
 
   if (roleError) throw roleError;
+
+  const adminRole = createdRoles.find((r) => r.name === "Admin");
 
   // 3. Varsayılan kanalları oluştur
   const { error: channelError } = await supabase.from("channels").insert([
@@ -211,6 +226,7 @@ export const getServerById = async (serverID) => {
         RoleName: r.name,
         RoleColor: r.color,
         Permissions: r.permissions || [],
+        Position: r.position ?? 0,
       })),
       ServerTags: (tags || []).map((t) => t.tag),
     };
@@ -319,9 +335,19 @@ export const joinServer = async (serverID, uid) => {
       return true;
     }
 
+    // Varsayılan "Üye" rolünü bul (en düşük position'lu taban rol). Yoksa null.
+    const { data: memberRole } = await supabase
+      .from("roles")
+      .select("id, position")
+      .eq("server_id", serverID)
+      .order("position", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
     const { error } = await supabase.from("server_members").insert({
       server_id: serverID,
       user_id: uid,
+      role_id: memberRole?.id || null,
     });
 
     if (error) throw error;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Crown, Users } from "lucide-react";
 import { getUser, resolveStatus } from "../../services/userService";
@@ -51,19 +51,16 @@ const ServerMembers = ({ serverData }) => {
             friendshipID: p.friendshipID,
             about: p.about,
             createdDate: p.createdDate,
+            roleId: role?.RoleID || null,
             roleName: role?.RoleName || null,
             roleColor: role?.RoleColor || null,
+            rolePosition: role?.Position ?? -1,
             isOwner: p.userID === serverData.ServerOwnerID,
           };
         })
       );
-
-      const mapped = rows.filter(Boolean).sort((a, b) => {
-        if (a.isOwner !== b.isOwner) return a.isOwner ? -1 : 1;
-        return a.nickName.localeCompare(b.nickName, "tr");
-      });
       if (cancelled) return;
-      setMembers(mapped);
+      setMembers(rows.filter(Boolean));
       setLoading(false);
     };
     load();
@@ -71,6 +68,33 @@ const ServerMembers = ({ serverData }) => {
       cancelled = true;
     };
   }, [serverData, tick]);
+
+  // Üyeleri role göre grupla: yüksek position üstte, rolsüzler en altta.
+  const groups = useMemo(() => {
+    const map = new Map();
+    members.forEach((m) => {
+      const key = m.roleId || "__none__";
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          name: m.roleName || "Üyeler",
+          color: m.roleColor || null,
+          position: m.rolePosition,
+          members: [],
+        });
+      }
+      map.get(key).members.push(m);
+    });
+    const arr = [...map.values()];
+    arr.forEach((g) =>
+      g.members.sort((a, b) => {
+        if (a.isOwner !== b.isOwner) return a.isOwner ? -1 : 1;
+        return a.nickName.localeCompare(b.nickName, "tr");
+      })
+    );
+    arr.sort((a, b) => b.position - a.position);
+    return arr;
+  }, [members]);
 
   const handleClick = (e, member) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -102,30 +126,42 @@ const ServerMembers = ({ serverData }) => {
             Üye bulunamadı.
           </p>
         ) : (
-          <div className="flex flex-col gap-0.5">
-            {members.map((m) => (
-              <div
-                key={m.userID}
-                onClick={(e) => handleClick(e, m)}
-                className="group flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-[var(--secondary-bg)] transition-colors"
-              >
-                <div className="relative shrink-0">
-                  <img
-                    src={m.photoURL}
-                    alt=""
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
-                  <span
-                    className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--primary-bg)] ${statusColor(resolveStatus(m.status, m.lastSeen))}`}
-                  />
-                </div>
-                <span
-                  className="text-sm truncate flex items-center gap-1"
-                  style={{ color: m.roleColor || "var(--secondary-text)" }}
+          <div className="flex flex-col gap-3">
+            {groups.map((g) => (
+              <div key={g.key}>
+                <p
+                  className="px-2 pb-1 text-[11px] font-bold uppercase tracking-wide"
+                  style={{ color: g.color || "var(--primary-text)" }}
                 >
-                  {m.nickName}
-                  {m.isOwner && <Crown size={12} className="text-[var(--tertiary-border)] shrink-0" />}
-                </span>
+                  {g.name} — {g.members.length}
+                </p>
+                <div className="flex flex-col gap-0.5">
+                  {g.members.map((m) => (
+                    <div
+                      key={m.userID}
+                      onClick={(e) => handleClick(e, m)}
+                      className="group flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-[var(--secondary-bg)] transition-colors"
+                    >
+                      <div className="relative shrink-0">
+                        <img
+                          src={m.photoURL}
+                          alt=""
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                        <span
+                          className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--primary-bg)] ${statusColor(resolveStatus(m.status, m.lastSeen))}`}
+                        />
+                      </div>
+                      <span
+                        className="text-sm truncate flex items-center gap-1"
+                        style={{ color: m.roleColor || "var(--secondary-text)" }}
+                      >
+                        {m.nickName}
+                        {m.isOwner && <Crown size={12} className="text-[var(--tertiary-border)] shrink-0" />}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
