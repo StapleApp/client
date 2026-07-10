@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   motion,
   AnimatePresence,
@@ -30,6 +30,7 @@ import ServerSettings from "./ServerSettings";
 import { useVoice } from "../../context/VoiceContext";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../config/supabase";
+import { hasPermission } from "../../config/permissions";
 import {
   createChannel,
   renameChannel as apiRenameChannel,
@@ -98,6 +99,7 @@ const ChannelRow = ({ channel, h }) => {
     voiceAvatars,
     speaking,
     myUserId,
+    canManageChannels,
   } = h;
   const [showMove, setShowMove] = useState(false);
   const active = isChannelActive(channel);
@@ -120,10 +122,12 @@ const ChannelRow = ({ channel, h }) => {
         }`}
       >
         <div className="flex items-center gap-1.5 min-w-0">
-          <GripVertical
-            size={14}
-            className="shrink-0 opacity-0 group-hover:opacity-60 cursor-grab active:cursor-grabbing transition-opacity"
-          />
+          {canManageChannels && (
+            <GripVertical
+              size={14}
+              className="shrink-0 opacity-0 group-hover:opacity-60 cursor-grab active:cursor-grabbing transition-opacity"
+            />
+          )}
           {channel.type === "voice" ? (
             <Volume2 size={16} className="shrink-0" />
           ) : (
@@ -149,20 +153,22 @@ const ChannelRow = ({ channel, h }) => {
             <span className="text-sm truncate">{channel.name}</span>
           )}
         </div>
-        <button
-          aria-label="Kanal seçenekleri"
-          onClick={(e) => {
-            e.stopPropagation();
-            setConfirmDeleteId(null);
-            setShowMove(false);
-            setChannelOptions(menuOpen ? null : channel.id);
-          }}
-          className={`transition-opacity ${
-            active ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-          }`}
-        >
-          <MoreVertical size={15} />
-        </button>
+        {canManageChannels && (
+          <button
+            aria-label="Kanal seçenekleri"
+            onClick={(e) => {
+              e.stopPropagation();
+              setConfirmDeleteId(null);
+              setShowMove(false);
+              setChannelOptions(menuOpen ? null : channel.id);
+            }}
+            className={`transition-opacity ${
+              active ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            }`}
+          >
+            <MoreVertical size={15} />
+          </button>
+        )}
       </div>
 
       {/* Sesli kanalda kimler var */}
@@ -333,11 +339,13 @@ const CategorySection = ({
     >
       {/* Kategori başlığı */}
       <div className="group/cat flex items-center gap-1 px-1 mb-0.5">
-        <GripVertical
-          size={13}
-          onPointerDown={(e) => controls.start(e)}
-          className="shrink-0 opacity-0 group-hover/cat:opacity-60 cursor-grab active:cursor-grabbing transition-opacity"
-        />
+        {h.canManageChannels && (
+          <GripVertical
+            size={13}
+            onPointerDown={(e) => controls.start(e)}
+            className="shrink-0 opacity-0 group-hover/cat:opacity-60 cursor-grab active:cursor-grabbing transition-opacity"
+          />
+        )}
         <button
           onClick={() => setCollapsed((v) => !v)}
           aria-label={collapsed ? "Genişlet" : "Daralt"}
@@ -369,6 +377,7 @@ const CategorySection = ({
           </button>
         )}
         <div className="relative shrink-0">
+          {h.canManageChannels && (
           <button
             aria-label="Kategori seçenekleri"
             onClick={() => {
@@ -380,6 +389,7 @@ const CategorySection = ({
           >
             <MoreVertical size={14} />
           </button>
+          )}
           <AnimatePresence>
             {menuOpen && (
               <motion.div
@@ -499,7 +509,22 @@ const SvSidebar = ({ serverData, onRefresh }) => {
   const voice = useVoice();
   const { currentUser } = useAuth();
   const serverId = serverData?.ServerId;
-  const isOwner = currentUser?.uid === serverData?.ServerOwnerID;
+  const canManageChannels = hasPermission(serverData, currentUser?.uid, "MANAGE_CHANNELS");
+  const canManageServer = hasPermission(serverData, currentUser?.uid, "MANAGE_SERVER");
+
+  // Üye → rol rengi eşlemesi (chat'te isim rengi için ChatPanel'e geçilir)
+  const memberColors = useMemo(() => {
+    const roleColor = {};
+    (serverData?.Roles || []).forEach((r) => {
+      if (r.RoleColor) roleColor[r.RoleID] = r.RoleColor;
+    });
+    const map = {};
+    (serverData?.Users || []).forEach((u) => {
+      const c = roleColor[u.RoleID];
+      if (c) map[u.UserID] = c;
+    });
+    return map;
+  }, [serverData]);
 
   const [channels, setChannels] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -747,6 +772,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
     voiceAvatars: voice.voiceAvatars,
     speaking: voice.speaking,
     myUserId: currentUser?.uid,
+    canManageChannels,
   };
 
   return (
@@ -773,7 +799,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
           >
             <ChevronLeft size={18} />
           </button>
-          {isOwner && (
+          {canManageServer && (
             <button
               onClick={() => setShowSettings(true)}
               title="Sunucu ayarları"
@@ -785,7 +811,8 @@ const SvSidebar = ({ serverData, onRefresh }) => {
           )}
         </div>
 
-        {/* Ekleme butonları */}
+        {/* Ekleme butonları — yalnızca kanal yönetim izni olanlara */}
+        {canManageChannels && (
         <div className="p-2 relative flex gap-2">
           <div className="relative flex-1">
             <button
@@ -827,6 +854,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
             <FolderPlus size={16} />
           </button>
         </div>
+        )}
 
         <div className="flex-1 overflow-y-auto px-2 pb-4">
           {/* Kategorisiz kanallar */}
@@ -879,7 +907,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
         </div>
       </motion.div>
 
-      <ServerMembers serverData={serverData} />
+      <ServerMembers serverData={serverData} onRefresh={onRefresh} />
 
       {showSettings && (
         <ServerSettings
@@ -907,6 +935,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
               <ChatPanel
                 context={{ serverId, channelId: activeChannel.id }}
                 channelName={activeChannel.name}
+                memberColors={memberColors}
               />
             </motion.div>
           ) : (

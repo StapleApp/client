@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Crown, Users } from "lucide-react";
+import { Crown, Users, MoreVertical, UserMinus, Shield } from "lucide-react";
 import { getUser, resolveStatus } from "../../services/userService";
+import { assignMemberRole, kickMember } from "../../services/roleService";
+import { useAuth } from "../../context/AuthContext";
+import { hasPermission } from "../../config/permissions";
 import ProfilePanel from "../../Components/layout/ProfilePanel";
 
 const statusColor = (status) => {
@@ -13,10 +16,23 @@ const statusColor = (status) => {
   }
 };
 
-const ServerMembers = ({ serverData }) => {
+const ServerMembers = ({ serverData, onRefresh }) => {
+  const { currentUser } = useAuth();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0); // periyodik yenileme tetikleyicisi
+  const [menuFor, setMenuFor] = useState(null); // açık üye menüsü (userID)
+
+  const myId = currentUser?.uid;
+  const canManageRoles = hasPermission(serverData, myId, "MANAGE_ROLES");
+  const canKick = hasPermission(serverData, myId, "KICK_MEMBERS");
+  const allRoles = useMemo(
+    () =>
+      [...(serverData?.Roles || [])].sort(
+        (a, b) => (b.Position ?? 0) - (a.Position ?? 0)
+      ),
+    [serverData]
+  );
 
   // Profil kartı popup state
   const [selectedUser, setSelectedUser] = useState(null);
@@ -103,6 +119,37 @@ const ServerMembers = ({ serverData }) => {
     setCardExpanded(true);
   };
 
+  const changeRole = async (member, roleId) => {
+    setMenuFor(null);
+    if (member.roleId === roleId) return;
+    // İyimser güncelle
+    const role = allRoles.find((r) => r.RoleID === roleId);
+    setMembers((prev) =>
+      prev.map((m) =>
+        m.userID === member.userID
+          ? {
+              ...m,
+              roleId,
+              roleName: role?.RoleName || null,
+              roleColor: role?.RoleColor || null,
+              rolePosition: role?.Position ?? -1,
+            }
+          : m
+      )
+    );
+    const ok = await assignMemberRole(serverData.ServerId, member.userID, roleId);
+    if (ok) onRefresh && onRefresh();
+    else setTick((t) => t + 1); // başarısızsa gerçek durumu geri çek
+  };
+
+  const kick = async (member) => {
+    setMenuFor(null);
+    const ok = await kickMember(serverData.ServerId, member.userID);
+    if (!ok) return;
+    setMembers((prev) => prev.filter((m) => m.userID !== member.userID));
+    onRefresh && onRefresh();
+  };
+
   return (
     <div className="fixed top-0 right-0 h-screen w-56 bg-[var(--primary-bg)] border-l border-[var(--primary-border)] flex flex-col z-20">
       <div className="p-4 border-b border-[var(--primary-border)]">
@@ -136,31 +183,92 @@ const ServerMembers = ({ serverData }) => {
                   {g.name} — {g.members.length}
                 </p>
                 <div className="flex flex-col gap-0.5">
-                  {g.members.map((m) => (
-                    <div
-                      key={m.userID}
-                      onClick={(e) => handleClick(e, m)}
-                      className="group flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-[var(--secondary-bg)] transition-colors"
-                    >
-                      <div className="relative shrink-0">
-                        <img
-                          src={m.photoURL}
-                          alt=""
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                        <span
-                          className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--primary-bg)] ${statusColor(resolveStatus(m.status, m.lastSeen))}`}
-                        />
-                      </div>
-                      <span
-                        className="text-sm truncate flex items-center gap-1"
-                        style={{ color: m.roleColor || "var(--secondary-text)" }}
+                  {g.members.map((m) => {
+                    const showMenu =
+                      (canManageRoles || canKick) &&
+                      !m.isOwner &&
+                      m.userID !== myId;
+                    const menuOpen = menuFor === m.userID;
+                    return (
+                      <div
+                        key={m.userID}
+                        className="group relative flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors"
                       >
-                        {m.nickName}
-                        {m.isOwner && <Crown size={12} className="text-[var(--tertiary-border)] shrink-0" />}
-                      </span>
-                    </div>
-                  ))}
+                        <div
+                          onClick={(e) => handleClick(e, m)}
+                          className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
+                        >
+                          <div className="relative shrink-0">
+                            <img
+                              src={m.photoURL}
+                              alt=""
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                            <span
+                              className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--primary-bg)] ${statusColor(resolveStatus(m.status, m.lastSeen))}`}
+                            />
+                          </div>
+                          <span
+                            className="text-sm truncate flex items-center gap-1"
+                            style={{ color: m.roleColor || "var(--secondary-text)" }}
+                          >
+                            {m.nickName}
+                            {m.isOwner && <Crown size={12} className="text-[var(--tertiary-border)] shrink-0" />}
+                          </span>
+                        </div>
+
+                        {showMenu && (
+                          <button
+                            onClick={() => setMenuFor(menuOpen ? null : m.userID)}
+                            aria-label="Üye seçenekleri"
+                            className={`shrink-0 p-1 rounded transition-opacity ${
+                              menuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                            } text-[var(--primary-text)] hover:text-[var(--secondary-text)]`}
+                          >
+                            <MoreVertical size={15} />
+                          </button>
+                        )}
+
+                        {menuOpen && (
+                          <div className="absolute right-1 top-full mt-1 z-50 w-48 rounded-xl overflow-hidden border-2 border-[var(--primary-border)] bg-[var(--secondary-bg)] shadow-xl">
+                            {canManageRoles && (
+                              <div className="max-h-52 overflow-y-auto">
+                                <p className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wide text-[var(--primary-text)] flex items-center gap-1.5">
+                                  <Shield size={11} /> Rol Ata
+                                </p>
+                                {allRoles.map((r) => (
+                                  <button
+                                    key={r.RoleID}
+                                    onClick={() => changeRole(m, r.RoleID)}
+                                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-[var(--tertiary-bg)] hover:text-[var(--tertiary-text)] transition-colors text-left"
+                                  >
+                                    <span
+                                      className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/20"
+                                      style={{ backgroundColor: r.RoleColor || "#B9BBBE" }}
+                                    />
+                                    <span className="truncate flex-1" style={{ color: r.RoleColor || "var(--secondary-text)" }}>
+                                      {r.RoleName}
+                                    </span>
+                                    {m.roleId === r.RoleID && (
+                                      <span className="text-[var(--quaternary-text)] shrink-0">✓</span>
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            {canKick && (
+                              <button
+                                onClick={() => kick(m)}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500 hover:text-white transition-colors border-t border-[var(--primary-border)]"
+                              >
+                                <UserMinus size={14} /> Sunucudan At
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}

@@ -63,7 +63,7 @@ const dayLabel = (createdAt) => {
  *   headerUserId - optional user id; makes the header icon/name open the profile card
  *   showHeader   - whether to show the header bar (default true)
  */
-const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader = true }) => {
+const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader = true, memberColors }) => {
   const { userData } = useAuth();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -449,7 +449,12 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
                     {!grouped && (
                       <div className="flex items-baseline gap-2">
                         <span
-                          className="text-sm font-semibold text-[var(--secondary-text)] cursor-pointer hover:underline"
+                          className="text-sm font-semibold cursor-pointer hover:underline"
+                          style={{
+                            color:
+                              memberColors?.[message.senderId] ||
+                              "var(--secondary-text)",
+                          }}
                           onClick={(e) => handleAvatarClick(e, message.senderId)}
                         >
                           {message.senderName}

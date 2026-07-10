@@ -56,19 +56,35 @@ export const deleteRole = async (roleId) => {
   }
 };
 
-// ** Bir üyenin rolünü değiştir (Faz 3'te üye menüsünden kullanılacak) **
+// ** Bir üyenin rolünü değiştir — SECURITY DEFINER RPC (MANAGE_ROLES kontrolü içeride) **
 export const assignMemberRole = async (serverId, userId, roleId) => {
   try {
-    const { error } = await supabase
-      .from("server_members")
-      .update({ role_id: roleId })
-      .eq("server_id", serverId)
-      .eq("user_id", userId);
+    const { error } = await supabase.rpc("set_member_role", {
+      _server_id: serverId,
+      _user_id: userId,
+      _role_id: roleId,
+    });
     if (error) throw error;
     return true;
   } catch (error) {
     console.error("Error assigning role:", error);
-    toast.error("Rol atanamadı");
+    toast.error(error?.message || "Rol atanamadı");
+    return false;
+  }
+};
+
+// ** Üyeyi sunucudan at — RPC (KICK_MEMBERS kontrolü, sahip/kendini atma engelli) **
+export const kickMember = async (serverId, userId) => {
+  try {
+    const { error } = await supabase.rpc("kick_server_member", {
+      _server_id: serverId,
+      _user_id: userId,
+    });
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Error kicking member:", error);
+    toast.error(error?.message || "Üye atılamadı");
     return false;
   }
 };
