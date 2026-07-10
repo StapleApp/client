@@ -10,8 +10,11 @@ import {
   Tag as TagIcon,
   Loader2,
   Trash2,
+  Shield,
+  SlidersHorizontal,
 } from "lucide-react";
 import { updateServer, deleteServer } from "../../services/serverService";
+import RolesManager from "./RolesManager";
 import icon from "../../assets/360.png";
 
 const inputClass =
@@ -35,6 +38,7 @@ const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [tab, setTab] = useState("general"); // general | roles
 
   const addTag = () => {
     const t = tagInput.trim().toLowerCase();
@@ -113,7 +117,32 @@ const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
             />
           </div>
 
-          <form onSubmit={handleSave} className="px-6 pt-10 pb-6 space-y-4">
+          <div className="px-6 pt-10 pb-6">
+            {/* Sekmeler */}
+            <div className="flex gap-1 mb-4 p-1 rounded-xl bg-[var(--secondary-bg)] border border-[var(--primary-border)]">
+              {[
+                { id: "general", label: "Genel", icon: <SlidersHorizontal size={15} /> },
+                { id: "roles", label: "Roller", icon: <Shield size={15} /> },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setTab(t.id)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                    tab === t.id
+                      ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
+                      : "text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
+                  }`}
+                >
+                  {t.icon} {t.label}
+                </button>
+              ))}
+            </div>
+
+            {tab === "roles" ? (
+              <RolesManager serverData={serverData} onChanged={onSaved} />
+            ) : (
+          <form onSubmit={handleSave} className="space-y-4">
             <h1 className="text-xl font-bold text-[var(--secondary-text)] flex items-center gap-2">
               <Server size={20} className="text-[var(--tertiary-border)]" />
               Sunucu Ayarları
@@ -266,6 +295,8 @@ const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
               )}
             </div>
           </form>
+            )}
+          </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>,
