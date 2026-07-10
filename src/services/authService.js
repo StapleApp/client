@@ -1,84 +1,103 @@
-import { supabase } from "../config/supabase";
-import toast from "react-hot-toast";
+import { supabase, authCallbackUrl } from "../config/supabase";
 
-// **E-posta ile Kayıt Olma**
-export const register = async (name, surname, email, password, birthdate, navigate) => {
-  try {
-    // İsim/soyisim/doğum tarihi metadata olarak gönderilir; profil satırını
-    // handle_new_user trigger'ı bu metadata'dan doldurur (oturuma/RLS'e bağlı
-    // kırılgan bir güncelleme gerekmez).
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: `${name} ${surname}`.trim(),
-          name,
-          surname,
-          birthdate: birthdate || "",
-        },
-      },
-    });
+// Tüm fonksiyonlar aynı şekli döndürür: { ok: boolean, ... , error?: string }
+// Toast/yönlendirme sayfaların işi — servis sadece sonucu bildirir.
 
-    if (error) throw error;
+const messageFor = (error) => {
+  const code = error?.code || "";
+  const msg = (error?.message || "").toLowerCase();
 
-    toast.success("Kayıt başarılı!");
-    navigate("/login");
-    return data.user;
-  } catch (error) {
-    toast.error(error.message);
-    console.error("Register error:", error.message);
-    return null;
-  }
+  if (code === "invalid_credentials" || msg.includes("invalid login credentials"))
+    return "E-posta veya şifre hatalı.";
+  if (code === "email_not_confirmed" || msg.includes("email not confirmed"))
+    return "E-posta adresin henüz doğrulanmamış.";
+  if (code === "user_already_exists" || msg.includes("already registered"))
+    return "Bu e-posta adresi zaten kayıtlı.";
+  if (code === "weak_password" || msg.includes("password should be"))
+    return "Şifre çok zayıf. En az 6 karakter kullan.";
+  if (code === "over_email_send_rate_limit" || msg.includes("rate limit"))
+    return "Çok fazla deneme yaptın. Birkaç dakika sonra tekrar dene.";
+  if (msg.includes("failed to fetch") || msg.includes("network"))
+    return "Sunucuya ulaşılamadı. İnternet bağlantını kontrol et.";
+
+  return error?.message || "Beklenmeyen bir hata oluştu.";
 };
 
-// **Google ile giriş/kayıt fonksiyonu**
+// ** E-posta ile kayıt **
+// İsim/soyisim/doğum tarihi metadata olarak gider; profil satırını
+// handle_new_user trigger'ı bu metadata'dan doldurur.
+export const register = async (name, surname, email, password, birthdate) => {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: authCallbackUrl(),
+      data: {
+        full_name: `${name} ${surname}`.trim(),
+        name,
+        surname,
+        birthdate: birthdate || "",
+      },
+    },
+  });
+
+  if (error) return { ok: false, error: messageFor(error) };
+
+  // Supabase, zaten kayıtlı bir e-postada (enumeration'ı önlemek için) hata
+  // yerine identities'i boş bir user döndürür.
+  if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+    return { ok: false, error: "Bu e-posta adresi zaten kayıtlı." };
+  }
+
+  // Oturum geldiyse e-posta doğrulama kapalı demektir → doğrudan içeri alınır.
+  return { ok: true, needsConfirmation: !data.session, user: data.user };
+};
+
+// ** Google ile giriş/kayıt **
+// signInWithOAuth tarayıcıyı Google'a yönlendirir; oturum /auth/callback'te kurulur.
 export const signInWithGoogle = async () => {
-  try {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin + "/home",
-      },
-    });
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: authCallbackUrl(),
+      queryParams: { prompt: "select_account" },
+    },
+  });
 
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error("Google Auth Error:", error);
-    toast.error("Google ile giriş yapılırken bir hata oluştu.");
-    throw error;
-  }
+  if (error) return { ok: false, error: messageFor(error) };
+  return { ok: true, data };
 };
 
-// ** Login **
+// ** E-posta ile giriş **
 export const loginWithMail = async (email, password) => {
-  try {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) throw error;
-    toast.success("Giriş başarılı!");
-    return true;
-  } catch (error) {
-    console.error("Login error:", error.message);
-    toast.error("Geçersiz e-posta veya şifre");
-    return false;
-  }
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return { ok: false, error: messageFor(error) };
+  return { ok: true, user: data.user };
 };
 
-// ** Şifre sıfırlama **
-export const handleResetPassword = async (email) => {
-  try {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + "/login",
-    });
-    if (error) throw error;
-    toast.success("Şifre sıfırlama bağlantısı gönderildi!");
-  } catch (error) {
-    console.error("Hata: " + error.message);
-    toast.error("Şifre sıfırlama bağlantısı gönderilemedi");
-  }
+// ** Şifre sıfırlama e-postası gönder **
+export const sendPasswordReset = async (email) => {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${authCallbackUrl()}?type=recovery`,
+  });
+  if (error) return { ok: false, error: messageFor(error) };
+  return { ok: true };
+};
+
+// ** Yeni şifreyi kaydet (recovery oturumu açıkken çağrılır) **
+export const updatePassword = async (newPassword) => {
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) return { ok: false, error: messageFor(error) };
+  return { ok: true };
+};
+
+// ** Doğrulama e-postasını yeniden gönder **
+export const resendConfirmation = async (email) => {
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email,
+    options: { emailRedirectTo: authCallbackUrl() },
+  });
+  if (error) return { ok: false, error: messageFor(error) };
+  return { ok: true };
 };

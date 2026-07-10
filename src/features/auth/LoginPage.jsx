@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import toast from 'react-hot-toast';
 import { loginWithMail, signInWithGoogle } from "../../services/authService";
 import { useAuth } from "../../context/AuthContext";
@@ -10,39 +10,45 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [busy, setBusy] = useState(false);
 
   const navigate = useNavigate();
-  const { currentUser, userData } = useAuth();
+  const location = useLocation();
+  const { currentUser } = useAuth();
 
-  // Zaten giriş yapılmışsa yönlendir
+  // Zaten giriş yapılmışsa içeri al. Profili eksikse /create_profile'a
+  // göndermek ProtectedRoute'un işi — burada tekrarlamıyoruz.
   useEffect(() => {
-    if (currentUser && userData) {
-      if (userData.nickName === "") {
-        navigate("/create_profile", { replace: true });
-      } else {
-        navigate("/", { replace: true });
-      }
+    if (currentUser) {
+      navigate(location.state?.from || "/", { replace: true });
     }
-  }, [currentUser, userData, navigate]);
+  }, [currentUser, location.state, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      await loginWithMail(email, password);
-      // Başarılıysa yukarıdaki effect yönlendirir.
-    } catch (error) {
-      toast.error("Login failed");
-      console.error(error);
+    if (busy) return;
+
+    setBusy(true);
+    const res = await loginWithMail(email, password);
+    setBusy(false);
+
+    if (!res.ok) {
+      toast.error(res.error);
+      return;
     }
+    // Başarılıysa yukarıdaki effect yönlendirir.
   };
 
   const googleAuthFunc = async (e) => {
     e.preventDefault();
-    try {
-      await signInWithGoogle();
-      // Yönlendirme Supabase OAuth callback ile yapılır.
-    } catch (error) {
-      console.error(error);
+    if (busy) return;
+
+    setBusy(true);
+    const res = await signInWithGoogle();
+    // Başarılıysa tarayıcı Google'a yönlenir; bu sayfa zaten kapanır.
+    if (!res.ok) {
+      setBusy(false);
+      toast.error(res.error);
     }
   };
 
@@ -118,9 +124,10 @@ const LoginPage = () => {
   
           <button
             type="submit"
-            className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-white font-semibold shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            disabled={busy}
+            className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-white font-semibold shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Log in
+            {busy ? "Logging in…" : "Log in"}
           </button>
         </form>
   
@@ -133,7 +140,8 @@ const LoginPage = () => {
         <div className="mt-6 flex justify-center">
           <button
             onClick={googleAuthFunc}
-            className="flex items-center border-2 border-gray-300 px-6 py-2 rounded-lg text-gray-900 hover:bg-gray-100 hover:border-gray-600 gap-x-2"
+            disabled={busy}
+            className="flex items-center border-2 border-gray-300 px-6 py-2 rounded-lg text-gray-900 hover:bg-gray-100 hover:border-gray-600 gap-x-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <img
               src="https://img.icons8.com/?size=100&id=17949&format=png&color=000000"

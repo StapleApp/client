@@ -6,7 +6,8 @@ import { useAuth } from "../../context/AuthContext";
 
 const CreateProfilePage = () => {
   const [nickname, setNickname] = useState('');
-  const { userData, currentUser } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const { userData, currentUser, refreshUserData } = useAuth();
   const navigate = useNavigate();
 
   const profileImages = [
@@ -24,34 +25,45 @@ const CreateProfilePage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (busy) return;
 
-    if (nickname === "") {
+    const trimmed = nickname.trim();
+
+    if (trimmed === "") {
       toast.error("Nickname cannot be blank");
       return;
     }
 
-    if (nickname.length > 12) {
+    if (trimmed.length > 12) {
       toast.error("Nickname should be less than 12 characters");
       return;
     }
 
-    if (currentUser) {
-      try {
-        await UpdateNickname(currentUser.uid, nickname, selectedImage);
-        toast.success("Profile created successfully!");
-        navigate('/home');
-      } catch (error) {
-        toast.error("Failed to update profile");
-        console.error(error);
-      }
-    } else {
-      console.warn("No user is signed in.");
+    if (!currentUser) {
+      toast.error("Oturum bulunamadı. Lütfen tekrar giriş yap.");
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    setBusy(true);
+    try {
+      await UpdateNickname(currentUser.uid, trimmed, selectedImage);
+      // Yönlendirmeden ÖNCE profili tazele; yoksa ProtectedRoute hâlâ boş
+      // nickName görüp bizi buraya geri gönderir.
+      await refreshUserData();
+      toast.success("Profile created successfully!");
+      navigate("/", { replace: true });
+    } catch (error) {
+      toast.error("Failed to update profile");
+      console.error(error);
+    } finally {
+      setBusy(false);
     }
   };
 
   useEffect(() => {
     if (userData && userData.nickName !== "") {
-      navigate("/home");
+      navigate("/", { replace: true });
     }
   }, [userData, navigate]);
 
@@ -109,9 +121,10 @@ const CreateProfilePage = () => {
 
           <button
             onClick={handleSubmit}
-            className="px-6 py-3 bg-[var(--secondary-bg)] text-white rounded-full font-semibold shadow hover:bg-[var(--primary-bg)] transition"
+            disabled={busy}
+            className="px-6 py-3 bg-[var(--secondary-bg)] text-white rounded-full font-semibold shadow hover:bg-[var(--primary-bg)] transition disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Save
+            {busy ? "Saving…" : "Save"}
           </button>
         </div>
       </div>

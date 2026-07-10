@@ -2,18 +2,18 @@ import { supabase } from "../config/supabase";
 
 // ** Nickname ve avatar güncelleme **
 export const UpdateNickname = async (uid, newValue, photo) => {
-  try {
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        nickname: newValue,
-        avatar_url: photo,
-      })
-      .eq("id", uid);
+  // Hatayı yutmuyoruz — çağıran "başarılı" toast'ı göstermeden önce bilmeli.
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      nickname: newValue,
+      avatar_url: photo,
+    })
+    .eq("id", uid);
 
-    if (error) throw error;
-  } catch (error) {
+  if (error) {
     console.error("Database update failed:", error);
+    throw error;
   }
 };
 

@@ -15,6 +15,7 @@ const RegisterPage = () => {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const navigate = useNavigate();
 
@@ -28,6 +29,7 @@ const RegisterPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (busy) return;
 
     if (name.length > 12 || surname.length > 12) {
       toast.error("Name and Surname should be less than 12 characters");
@@ -39,12 +41,22 @@ const RegisterPage = () => {
       return;
     }
 
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       toast.error("Password does not match.");
       return;
     }
 
     const birthDate = new Date(birthdate);
+    if (Number.isNaN(birthDate.getTime())) {
+      toast.error("Please enter a valid birthdate.");
+      return;
+    }
+
     const today = new Date();
     const age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
@@ -57,12 +69,25 @@ const RegisterPage = () => {
       return;
     }
 
-    try {
-      await register(name, surname, email, password, birthdate, navigate);
-    } catch (error) {
-      toast.error("Registration failed: " + error.message);
-      console.error(error);
+    setBusy(true);
+    const res = await register(name, surname, email, password, birthdate);
+    setBusy(false);
+
+    if (!res.ok) {
+      toast.error(res.error);
+      return;
     }
+
+    if (res.needsConfirmation) {
+      toast.success("Kayıt başarılı! E-postandaki doğrulama bağlantısına tıkla.");
+      navigate("/login");
+      return;
+    }
+
+    // E-posta doğrulama kapalı → oturum zaten açıldı.
+    // ProtectedRoute profili eksik olduğu için /create_profile'a yönlendirir.
+    toast.success("Kayıt başarılı!");
+    navigate("/", { replace: true });
   };
 
   return (
@@ -198,9 +223,10 @@ const RegisterPage = () => {
             <div>
               <button
                 type="submit"
-                className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                disabled={busy}
+                className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Create Account
+                {busy ? "Creating…" : "Create Account"}
               </button>
             </div>
           </form>

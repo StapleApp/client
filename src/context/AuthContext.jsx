@@ -1,21 +1,35 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { supabase } from "../config/supabase";
 import { ensureUserDoc, getUser } from "../services/userService";
 
 const AuthContext = createContext();
 
+// Supabase user'ını eski Firebase alan adlarıyla zenginleştir (UI bunlara bakıyor)
+const toLegacyUser = (user) => ({
+  uid: user.id,
+  email: user.email,
+  displayName: user.user_metadata?.full_name || "",
+  photoURL: user.user_metadata?.avatar_url || "",
+  ...user,
+});
+
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Şifre sıfırlama bağlantısıyla gelindi mi? (/reset-password'a yönlendirmek için)
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
 
-  // Re-fetch the current user's profile (after profile edits, etc.)
+  // Profili aynı kullanıcı için tekrar tekrar çekmeyelim (TOKEN_REFRESHED her
+  // saat başı tetikleniyor; ensureUserDoc'u her seferinde çağırmak gereksiz).
+  const profileLoadedFor = useRef(null);
+
   const refreshUserData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const data = await getUser(user.id);
-      setUserData(data);
-    }
+    if (!user) return null;
+    const data = await getUser(user.id);
+    setUserData(data);
+    return data;
   };
 
   // Hesabı tamamen sil — delete_own_account RPC'si auth.users satırını siler,
@@ -29,10 +43,6 @@ export const AuthProvider = ({ children }) => {
       if (error) throw error;
 
       await supabase.auth.signOut();
-      localStorage.removeItem("user");
-      sessionStorage.removeItem("user");
-      setCurrentUser(null);
-      setUserData(null);
       return { ok: true };
     } catch (error) {
       console.error("Delete account error:", error);
@@ -40,93 +50,89 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Sign out
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
-      localStorage.removeItem("user");
-      sessionStorage.removeItem("user");
-      setCurrentUser(null);
-      setUserData(null);
     } catch (error) {
       console.error("Sign out error:", error);
     }
+    // onAuthStateChange SIGNED_OUT state'i temizler, ama sunucu hata verse bile
+    // kullanıcıyı dışarıda bırakmak için burada da temizliyoruz.
+    profileLoadedFor.current = null;
+    setCurrentUser(null);
+    setUserData(null);
   };
 
   useEffect(() => {
-    // Safety net: if Supabase never responds, don't leave the app blank forever
-    const failSafe = setTimeout(() => setLoading(false), 5000);
+    let cancelled = false;
 
-    // İlk oturum kontrolü
-    const initSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    // Supabase hiç cevap vermezse uygulama sonsuza kadar spinner'da kalmasın.
+    // getSession lokal storage'dan okur, normalde anında döner.
+    const failSafe = setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 8000);
 
-      if (session?.user) {
-        // currentUser'a Supabase user'ı ata, ama Firebase uyumlu alanlar ekle
-        const user = session.user;
-        setCurrentUser({
-          uid: user.id,
-          email: user.email,
-          displayName: user.user_metadata?.full_name || "",
-          photoURL: user.user_metadata?.avatar_url || "",
-          ...user,
-        });
+    const applySession = async (session) => {
+      if (cancelled) return;
+      const user = session?.user ?? null;
 
+      if (!user) {
+        profileLoadedFor.current = null;
+        setCurrentUser(null);
+        setUserData(null);
+        setLoading(false);
+        return;
+      }
+
+      setCurrentUser(toLegacyUser(user));
+
+      if (profileLoadedFor.current !== user.id) {
+        profileLoadedFor.current = user.id;
         try {
           const data = await ensureUserDoc(user);
-          setUserData(data);
+          if (!cancelled) setUserData(data);
         } catch (error) {
           console.error("Supabase kullanıcı verisi alınamadı:", error);
-          setUserData(null);
+          // Tekrar denenebilsin diye işareti geri al
+          profileLoadedFor.current = null;
+          if (!cancelled) setUserData(null);
         }
       }
 
-      clearTimeout(failSafe);
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     };
 
-    initSession();
-
-    // Auth state değişikliklerini dinle
+    // onAuthStateChange abone olur olmaz INITIAL_SESSION ile mevcut oturumu
+    // verir; detectSessionInUrl'in URL'deki token'ı işlemesini de bekler.
+    // Bu yüzden ayrıca getSession() çağırmıyoruz — çift ensureUserDoc yarışı olurdu.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === "SIGNED_IN" && session?.user) {
-          const user = session.user;
-          setCurrentUser({
-            uid: user.id,
-            email: user.email,
-            displayName: user.user_metadata?.full_name || "",
-            photoURL: user.user_metadata?.avatar_url || "",
-            ...user,
-          });
-
-          try {
-            const data = await ensureUserDoc(user);
-            setUserData(data);
-          } catch (error) {
-            console.error("Supabase kullanıcı verisi alınamadı:", error);
-            setUserData(null);
-          }
-
-          setLoading(false);
-        } else if (event === "SIGNED_OUT") {
-          setCurrentUser(null);
-          setUserData(null);
-          setLoading(false);
-        } else if (event === "TOKEN_REFRESHED") {
-          // Token yenilemesinde loading tetikleme — aktif oturumları bozmaz
-        }
+      (event, session) => {
+        if (event === "PASSWORD_RECOVERY") setPasswordRecovery(true);
+        if (event === "SIGNED_OUT") setPasswordRecovery(false);
+        applySession(session);
       }
     );
 
     return () => {
+      cancelled = true;
       clearTimeout(failSafe);
       subscription?.unsubscribe();
     };
   }, []);
 
   return (
-    <AuthContext.Provider value={{ currentUser, userData, loading, signOut, refreshUserData, deleteAccount }}>
+    <AuthContext.Provider
+      value={{
+        currentUser,
+        userData,
+        loading,
+        passwordRecovery,
+        clearPasswordRecovery: () => setPasswordRecovery(false),
+        signOut,
+        refreshUserData,
+        deleteAccount,
+      }}
+    >
       {loading ? (
         <div
           style={{

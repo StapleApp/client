@@ -21,6 +21,8 @@ import LoginPage from "./features/auth/LoginPage";
 import ForgotPasswordPage from "./features/auth/ForgotPasswordPage";
 import TermsPage from "./features/auth/TermsPage";
 import CreateProfilePage from "./features/auth/CreateProfilePage";
+import AuthCallbackPage from "./features/auth/AuthCallbackPage";
+import ResetPasswordPage from "./features/auth/ResetPasswordPage";
 import ProtectedRoute from "./Components/layout/ProtectedRoute";
 import NotFound from "./Components/layout/NotFound";
 import ErrorBoundary from "./Components/layout/ErrorBoundary";
@@ -42,7 +44,15 @@ function App() {
 
 function MainLayout() {
   const location = useLocation();
-  const hideNavigatorRoutes = ["/login", "/signin", "/forgetPassword", "/terms", "/create_profile"];
+  const hideNavigatorRoutes = [
+    "/login",
+    "/signin",
+    "/forgetPassword",
+    "/terms",
+    "/create_profile",
+    "/auth/callback",
+    "/reset-password",
+  ];
 
   return (
     <div className="flex">
@@ -76,7 +86,16 @@ function AnimatedSwitch() {
           <Route path="/signin" element={<RegisterPage />} />      
           <Route path="/forgetPassword" element={<ForgotPasswordPage />} />
           <Route path="/terms" element={<TermsPage />} />
-          <Route path="/create_profile" element={<CreateProfilePage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route
+            path="/create_profile"
+            element={
+              <ProtectedRoute requireProfile={false}>
+                <CreateProfilePage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />
