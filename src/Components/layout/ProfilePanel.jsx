@@ -3,10 +3,11 @@ import { IoPersonAdd } from "react-icons/io5";
 import { IoMdClose } from "react-icons/io";
 import { CgProfile } from "react-icons/cg";
 import { FaTelegramPlane } from "react-icons/fa";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import profileBackground2_small from "../../assets/profileBackground2_small.png";
 import { findDMGroup, createGroup } from "../../services/groupService";
 import { getUser } from "../../services/userService";
+import { getFriendsList } from "../../services/friendService";
 import { useAuth } from "../../context/AuthContext";
 
 const ProfilePanel = ({
@@ -24,6 +25,19 @@ const ProfilePanel = ({
   const formattedUID = `${userID}`.padStart(6, "0");
   const panelRef = useRef(null);
   const { userData } = useAuth();
+
+  // Gösterilen kişi zaten arkadaş mı? (Ekle butonunu gizlemek için)
+  const [isFriend, setIsFriend] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    if (!check || !UID || !userData?.userID) return;
+    getFriendsList(userData.userID).then((list) => {
+      if (!cancelled) setIsFriend(list.some((f) => f.uid === UID));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [check, UID, userData?.userID]);
 
   const clampPosition = (x, y, panelWidth, panelHeight) => {
     const screenWidth = window.innerWidth;
@@ -131,7 +145,7 @@ const ProfilePanel = ({
               userData && (
                 <>
                   <ProfileButton />
-                  <AddFriendButton />
+                  {!isFriend && <AddFriendButton friendshipCode={userID} />}
                   <DMButton userID={UID} userData={userData} />
                   <SideBarIconClose toggleExpand={() => setCheck(false)} />
                 </>
@@ -177,13 +191,17 @@ const ProfileButton = () => {
   );
 };
 
-const AddFriendButton = () => {
+const AddFriendButton = ({ friendshipCode }) => {
   const navigate = useNavigate();
   return (
     <>
       <div
         className="flex icon group cursor-pointer hover:scale-105 h-7 w-20 mt-1 mb-0 mx-auto"
-        onClick={() => navigate("/AddFriends")}
+        onClick={() =>
+          navigate("/AddFriends", {
+            state: friendshipCode ? { friendshipID: friendshipCode } : undefined,
+          })
+        }
       >
         <span
           className="bg-[var(--primary-bg)]

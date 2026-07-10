@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, Search, Users, Loader2, UserPlus } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 import { getFriendsList } from "../../services/friendService";
 import { getUser } from "../../services/userService";
@@ -61,17 +62,32 @@ const DirectMessagingPage = () => {
       setActiveFriend(friend);
       setActiveChannelId(null);
       setOpeningDM(true);
-      const channelId = await getOrCreateDMChannel(userData.userID, friend.userID);
-      setActiveChannelId(channelId);
-      setOpeningDM(false);
+      try {
+        const channelId = await getOrCreateDMChannel(userData.userID, friend.userID);
+        if (!channelId) throw new Error("Kanal oluşturulamadı");
+        setActiveChannelId(channelId);
+      } catch (error) {
+        console.error("DM açılamadı:", error);
+        toast.error("Sohbet açılamadı, tekrar dene");
+        setActiveFriend(null); // spinner'da takılı kalma
+      } finally {
+        setOpeningDM(false);
+      }
     },
     [userData, activeFriend]
   );
 
-  // Bir profilden "mesaj gönder" ile gelindiyse o kişiyle DM'i otomatik aç
+  // Bir profilden "mesaj gönder" ile gelindiyse o kişiyle DM'i otomatik aç.
+  // Zaten başka bir sohbet açıkken de yeni istenen kişiye GEÇMELİ.
+  // Her navigasyon (location.key) yalnızca BİR kez işlenir — böylece
+  // kullanıcı elle başka sohbete geçince eski istek geri zıplamaz,
+  // ama aynı kişi yeniden istenirse (yeni navigasyon) tekrar açılır.
+  const handledNavRef = useRef(null);
   useEffect(() => {
     if (!requestedUserID || !userData?.userID) return;
-    if (activeFriend) return;
+    if (handledNavRef.current === location.key) return;
+    handledNavRef.current = location.key;
+    if (activeFriend?.userID === requestedUserID) return;
     const openFromNav = async () => {
       const known = friends.find((f) => f.userID === requestedUserID);
       const friend = known || (await getUser(requestedUserID));
@@ -86,7 +102,7 @@ const DirectMessagingPage = () => {
     };
     openFromNav();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requestedUserID, friends, userData]);
+  }, [location.key, requestedUserID, friends, userData]);
 
   const filteredFriends = friends.filter((f) =>
     f.nickName.toLowerCase().includes(search.trim().toLowerCase())
@@ -198,6 +214,7 @@ const DirectMessagingPage = () => {
             key={activeChannelId}
             context={{ groupId: activeChannelId }}
             channelName={activeFriend.nickName}
+            headerUserId={activeFriend.userID}
             headerIcon={
               <img
                 src={activeFriend.photoURL}

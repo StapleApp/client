@@ -1,7 +1,8 @@
 import { IoIosAddCircle } from "react-icons/io";
 import pfp from "../../assets/360.png";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { IoIosSearch, IoMdPersonAdd } from "react-icons/io";
 import profileBackground2_small from "../../assets/profileBackground2_small.png";
 import { useAuth } from "../../context/AuthContext";
@@ -10,27 +11,39 @@ import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 const AddFriendsPage = () => {
   const { userData } = useAuth();
+  const location = useLocation();
   const [searchId, setSearchId] = useState("");
   const [showProfile, setShowProfile] = useState(false);
   const [friendData, setFriendData] = useState(null);
 
-  const handleSearch = () => {
-    if (searchId) {
-      setShowProfile(false);
+  const runSearch = (id) => {
+    if (!id) return;
+    setShowProfile(false);
 
-      setTimeout(() => {
-        setShowProfile(true);
-      }, 100);
+    setTimeout(() => {
+      setShowProfile(true);
+    }, 100);
 
-      GetUserByFriendshipID(searchId).then((friend) => {
-        if (friend && userData.friendshipID !== searchId) {
-          setFriendData(friend);
-        } else {
-          setFriendData(null);
-        }
-      });
-    }
+    GetUserByFriendshipID(id).then((friend) => {
+      if (friend && userData.friendshipID !== id) {
+        setFriendData(friend);
+      } else {
+        setFriendData(null);
+      }
+    });
   };
+
+  const handleSearch = () => runSearch(searchId);
+
+  // Profil kartındaki "Ekle" butonuyla gelindiyse kodu doldur + otomatik ara
+  const requestedCode = location.state?.friendshipID;
+  useEffect(() => {
+    if (requestedCode && userData) {
+      setSearchId(requestedCode);
+      runSearch(requestedCode);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedCode, userData?.userID]);
 
   return (
     <>

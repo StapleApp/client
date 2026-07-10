@@ -59,9 +59,10 @@ const dayLabel = (createdAt) => {
  *   context      - { serverId, channelId } OR { groupId }
  *   channelName  - display name for the header
  *   headerIcon   - optional React node for the header (e.g. avatar img)
+ *   headerUserId - optional user id; makes the header icon/name open the profile card
  *   showHeader   - whether to show the header bar (default true)
  */
-const ChatPanel = ({ context, channelName, headerIcon, showHeader = true }) => {
+const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader = true }) => {
   const { userData } = useAuth();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -137,6 +138,9 @@ const ChatPanel = ({ context, channelName, headerIcon, showHeader = true }) => {
 
   const handleScroll = () => {
     setShowScrollBtn(!isNearBottom());
+    // Scroll'da açık profil kartını kapat — kart fixed konumlu olduğundan
+    // liste kayınca avatarından kopup havada kalıyordu.
+    if (isProfileCardExpanded) setIsProfileCardExpanded(false);
   };
 
   const handleGifSelect = async (gif) => {
@@ -200,12 +204,28 @@ const ChatPanel = ({ context, channelName, headerIcon, showHeader = true }) => {
       {/* Header */}
       {showHeader && (
         <div className="flex items-center gap-2 px-5 py-4 border-b-2 border-[var(--primary-border)] bg-[var(--primary-bg)]">
-          {headerIcon || (
-            <Hash className="w-5 h-5 text-[var(--quaternary-text)]" />
+          {headerUserId ? (
+            <span
+              className="flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity"
+              onClick={(e) => handleAvatarClick(e, headerUserId)}
+            >
+              {headerIcon || (
+                <Hash className="w-5 h-5 text-[var(--quaternary-text)]" />
+              )}
+              <h2 className="text-lg font-bold text-[var(--secondary-text)] hover:underline">
+                {channelName}
+              </h2>
+            </span>
+          ) : (
+            <>
+              {headerIcon || (
+                <Hash className="w-5 h-5 text-[var(--quaternary-text)]" />
+              )}
+              <h2 className="text-lg font-bold text-[var(--secondary-text)]">
+                {channelName}
+              </h2>
+            </>
           )}
-          <h2 className="text-lg font-bold text-[var(--secondary-text)]">
-            {channelName}
-          </h2>
         </div>
       )}
 
