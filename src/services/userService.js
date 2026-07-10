@@ -58,6 +58,7 @@ export const mapProfileToLegacy = (profile) => {
     email: profile.email || "",
     friendshipID: profile.friendship_code || "",
     status: profile.status || "offline",
+    lastSeen: profile.last_seen || null,
     about: profile.about || "",
     favoriteGifs: profile.favorite_gifs || [],
     // Bu alanlar artık ayrı tablolarda; geriye uyumluluk için boş döndür
@@ -119,6 +120,34 @@ function generateFriendshipCode() {
   }
   return result;
 }
+
+// Çevrimiçi sayılma penceresi: son bu kadar süre içinde heartbeat atıldıysa çevrimiçi
+export const ONLINE_WINDOW_MS = 90 * 1000;
+
+// Presence heartbeat — uygulama açıkken periyodik çağrılır
+export const updateLastSeen = async (uid) => {
+  if (!uid) return;
+  try {
+    await supabase
+      .from("profiles")
+      .update({ last_seen: new Date().toISOString() })
+      .eq("id", uid);
+  } catch (error) {
+    // Sessiz geç — heartbeat'in başarısızlığı akışı bozmamalı
+    console.debug("last_seen update failed:", error?.message);
+  }
+};
+
+// Gösterilecek gerçek durum: kullanıcının tercihi + son görülme zamanı.
+// last_seen eskiyse (ya da yoksa) çevrimdışı; "offline" tercihi (görünmez)
+// her zaman çevrimdışı gösterilir; aksi hâlde tercih edilen renk.
+export const resolveStatus = (status, lastSeen) => {
+  if (status === "offline") return "offline";
+  if (!lastSeen) return "offline";
+  const seen = new Date(lastSeen).getTime();
+  if (Number.isNaN(seen) || Date.now() - seen > ONLINE_WINDOW_MS) return "offline";
+  return status || "online";
+};
 
 export const updateUserStatus = async (uid, status) => {
   try {

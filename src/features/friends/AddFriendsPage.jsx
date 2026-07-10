@@ -7,6 +7,7 @@ import { IoIosSearch, IoMdPersonAdd } from "react-icons/io";
 import profileBackground2_small from "../../assets/profileBackground2_small.png";
 import { useAuth } from "../../context/AuthContext";
 import { GetUserByFriendshipID, sendFriendRequest } from "../../services/friendService";
+import { resolveStatus } from "../../services/userService";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 const AddFriendsPage = () => {
@@ -122,15 +123,16 @@ const AddFriendsPage = () => {
                   <p className="text-gray-400">
                     #{friendData?.friendshipID || "ID Bulunamadı"}
                   </p>
-                  {friendData?.status === "online" || !friendData?.status ? (
-                    <span className="text-green-500 text-sm">● Çevrimiçi</span>
-                  ) : friendData?.status === "offline" ? (
-                    <span className="text-gray-500 text-sm">● Çevrimdışı</span>
-                  ) : friendData?.status === "sleeping" ? (
-                    <span className="text-blue-500 text-sm">● Uykuda</span>
-                  ) : (
-                    <span className="text-red-500 text-sm">● Rahatsız Etmeyin</span>
-                  )}
+                  {(() => {
+                    const st = resolveStatus(friendData?.status, friendData?.lastSeen);
+                    if (st === "online")
+                      return <span className="text-green-500 text-sm">● Çevrimiçi</span>;
+                    if (st === "sleeping")
+                      return <span className="text-blue-500 text-sm">● Uykuda</span>;
+                    if (st === "dnd")
+                      return <span className="text-red-500 text-sm">● Rahatsız Etmeyin</span>;
+                    return <span className="text-gray-500 text-sm">● Çevrimdışı</span>;
+                  })()}
                 </div>
 
                 {/* Arkadaş Ekle Butonu */}

@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 import { getFriendsList } from "../../services/friendService";
-import { getUser } from "../../services/userService";
+import { getUser, resolveStatus } from "../../services/userService";
 import { getOrCreateDMChannel, getDMOverview, markDmRead } from "../../services/groupService";
 import ChatPanel from "../../Components/chat/ChatPanel";
 
@@ -71,6 +71,7 @@ const DirectMessagingPage = () => {
           nickName: p.nickName || p.name || "Kullanıcı",
           photoURL: p.photoURL || "/1.png",
           status: p.status || "offline",
+          lastSeen: p.lastSeen || null,
         }));
       setFriends(mapped);
       setLoadingFriends(false);
@@ -139,6 +140,7 @@ const DirectMessagingPage = () => {
           nickName: friend.nickName || friend.name || "Kullanıcı",
           photoURL: friend.photoURL || "/1.png",
           status: friend.status || "offline",
+          lastSeen: friend.lastSeen || null,
         });
       }
     };
@@ -240,7 +242,7 @@ const DirectMessagingPage = () => {
                         className="w-10 h-10 rounded-full border border-[var(--primary-border)] object-cover"
                       />
                       <span
-                        className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[var(--primary-bg)] ${statusColor(friend.status)}`}
+                        className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[var(--primary-bg)] ${statusColor(resolveStatus(friend.status, friend.lastSeen))}`}
                       />
                     </div>
                     <div className="min-w-0 flex-1">

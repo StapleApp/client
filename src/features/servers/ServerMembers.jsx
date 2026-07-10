@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Crown, Users } from "lucide-react";
-import { getUser } from "../../services/userService";
+import { getUser, resolveStatus } from "../../services/userService";
 import ProfilePanel from "../../Components/layout/ProfilePanel";
 
 const statusColor = (status) => {
@@ -16,16 +16,24 @@ const statusColor = (status) => {
 const ServerMembers = ({ serverData }) => {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [tick, setTick] = useState(0); // periyodik yenileme tetikleyicisi
 
   // Profil kartı popup state
   const [selectedUser, setSelectedUser] = useState(null);
   const [cardExpanded, setCardExpanded] = useState(false);
   const [cardPos, setCardPos] = useState({ top: 0, left: 0 });
 
+  // last_seen zamana bağlı olduğundan ve başkalarının heartbeat'i DB'de
+  // güncellendiğinden, üye listesini periyodik yenile (skeleton flaşı olmadan).
   useEffect(() => {
+    const iv = setInterval(() => setTick((t) => t + 1), 30 * 1000);
+    return () => clearInterval(iv);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
     const load = async () => {
       if (!serverData?.Users) return;
-      setLoading(true);
       const roleMap = {};
       (serverData.Roles || []).forEach((r) => (roleMap[r.RoleID] = r));
 
@@ -39,6 +47,7 @@ const ServerMembers = ({ serverData }) => {
             nickName: p.nickName || p.name || "Kullanıcı",
             photoURL: p.photoURL || "/1.png",
             status: p.status || "offline",
+            lastSeen: p.lastSeen || null,
             friendshipID: p.friendshipID,
             about: p.about,
             createdDate: p.createdDate,
@@ -53,11 +62,15 @@ const ServerMembers = ({ serverData }) => {
         if (a.isOwner !== b.isOwner) return a.isOwner ? -1 : 1;
         return a.nickName.localeCompare(b.nickName, "tr");
       });
+      if (cancelled) return;
       setMembers(mapped);
       setLoading(false);
     };
     load();
-  }, [serverData]);
+    return () => {
+      cancelled = true;
+    };
+  }, [serverData, tick]);
 
   const handleClick = (e, member) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -103,7 +116,7 @@ const ServerMembers = ({ serverData }) => {
                     className="w-8 h-8 rounded-full object-cover"
                   />
                   <span
-                    className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--primary-bg)] ${statusColor(m.status)}`}
+                    className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--primary-bg)] ${statusColor(resolveStatus(m.status, m.lastSeen))}`}
                   />
                 </div>
                 <span

@@ -24,6 +24,8 @@ export const GetUserByFriendshipID = async (friendshipCode) => {
       surname: data.surname || "",
       email: data.email || "",
       friendshipID: data.friendship_code || "",
+      status: data.status || "offline",
+      lastSeen: data.last_seen || null,
     };
   } catch (error) {
     console.error("Error fetching user by friendshipID:", error);

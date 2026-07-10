@@ -12,7 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getServersList } from "../../services/serverService";
 import { getFriendsList } from "../../services/friendService";
-import { getUser } from "../../services/userService";
+import { getUser, resolveStatus } from "../../services/userService";
 import { listenNotifications } from "../../services/notificationService";
 
 import icon from "../../assets/360.png";
@@ -80,7 +80,7 @@ const HomePage = () => {
           userID: p.userID,
           nickName: p.nickName || p.name || "Kullanıcı",
           photoURL: p.photoURL || "/1.png",
-          status: p.status || "offline",
+          status: resolveStatus(p.status, p.lastSeen),
         }))
       );
       setLoading(false);

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { supabase } from "../config/supabase";
-import { ensureUserDoc, getUser } from "../services/userService";
+import { ensureUserDoc, getUser, updateLastSeen } from "../services/userService";
 
 const AuthContext = createContext();
 
@@ -119,6 +119,24 @@ export const AuthProvider = ({ children }) => {
       subscription?.unsubscribe();
     };
   }, []);
+
+  // Presence heartbeat: oturum açıkken periyodik olarak last_seen'i tazele.
+  // Sekme kapanınca heartbeat durur → ONLINE_WINDOW_MS sonra otomatik çevrimdışı.
+  const uid = currentUser?.uid;
+  useEffect(() => {
+    if (!uid) return;
+    updateLastSeen(uid); // hemen bir kez
+    const iv = setInterval(() => updateLastSeen(uid), 30 * 1000);
+    // Sekme geri gelince anında tazele (arka planda interval throttle olabilir)
+    const onFocus = () => updateLastSeen(uid);
+    document.addEventListener("visibilitychange", onFocus);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      clearInterval(iv);
+      document.removeEventListener("visibilitychange", onFocus);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [uid]);
 
   return (
     <AuthContext.Provider
