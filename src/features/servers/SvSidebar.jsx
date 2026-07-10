@@ -28,6 +28,7 @@ import ServerMembers from "./ServerMembers";
 import ServerSettings from "./ServerSettings";
 import { useVoice } from "../../context/VoiceContext";
 import { useAuth } from "../../context/AuthContext";
+import { supabase } from "../../config/supabase";
 import {
   createChannel,
   renameChannel as apiRenameChannel,
@@ -38,6 +39,42 @@ import {
   deleteCategory as apiDeleteCategory,
   reorderCategories,
 } from "../../services/serverService";
+
+// ---- Realtime satır eşlemeleri ----
+const mapChannelRow = (r) => ({
+  id: r.id,
+  name: r.name,
+  type: r.type,
+  position: r.position ?? 0,
+  categoryId: r.category_id ?? null,
+});
+
+const mapCategoryRow = (r) => ({
+  id: r.id,
+  name: r.name,
+  position: r.position ?? 0,
+});
+
+const sameRow = (a, b) =>
+  !!a && Object.keys(b).every((k) => a[k] === b[k]);
+
+// Gelen postgres_changes olayını yerel listeye uygula.
+// Kendi yazdığımız satır geri geldiğinde (echo) state'e dokunmayız — aksi hâlde
+// sürükleme sırasında liste yeniden kurulup zıplardı.
+const applyRowChange = (prev, payload, mapRow) => {
+  if (payload.eventType === "DELETE") {
+    const id = payload.old?.id;
+    if (!id || !prev.some((r) => r.id === id)) return prev;
+    return prev.filter((r) => r.id !== id);
+  }
+
+  const row = mapRow(payload.new);
+  const existing = prev.find((r) => r.id === row.id);
+
+  if (!existing) return [...prev, row];
+  if (sameRow(existing, row)) return prev;
+  return prev.map((r) => (r.id === row.id ? { ...r, ...row } : r));
+};
 
 // ---- Tek kanal satırı (Reorder.Item içeriği) ----
 const ChannelRow = ({ channel, h }) => {
@@ -58,11 +95,18 @@ const ChannelRow = ({ channel, h }) => {
     moveChannelToCategory,
     voiceState,
     voiceAvatars,
+    speaking,
+    myUserId,
   } = h;
   const [showMove, setShowMove] = useState(false);
   const active = isChannelActive(channel);
   const menuOpen = channelOptions === channel.id;
   const occupants = channel.type === "voice" ? voiceState[channel.id] || [] : [];
+
+  // Konuşma algılama yalnızca BAĞLI OLDUĞUN kanal için var (WebRTC peer'ları).
+  // Başka kanallardaki kişiler için halka çıkmaz — bilgimiz yok.
+  const isSpeaking = (u) =>
+    u.userId === myUserId ? !!speaking.self : !!speaking[u.socketId];
 
   return (
     <>
@@ -128,7 +172,9 @@ const ChannelRow = ({ channel, h }) => {
               <img
                 src={voiceAvatars[u.userId] || "/1.png"}
                 alt=""
-                className="w-4 h-4 rounded-full object-cover shrink-0"
+                className={`w-4 h-4 rounded-full object-cover shrink-0 ring-2 transition-colors ${
+                  isSpeaking(u) ? "ring-green-500" : "ring-transparent"
+                }`}
               />
               <span className="text-xs text-[var(--primary-text)] truncate">
                 {u.nickName || "Bilinmeyen"}
@@ -488,6 +534,50 @@ const SvSidebar = ({ serverData, onRefresh }) => {
     setChannels(loaded);
   }, [serverData]);
 
+  // Kanal/kategori değişikliklerini canlı dinle (başka kullanıcılar ekleyip
+  // silip taşıdığında sayfa yenilemeden görünsün).
+  useEffect(() => {
+    if (!serverId) return;
+
+    // Aynı topic'e iki kez abone olmak senkron hata fırlatıp React ağacını
+    // düşürüyor → topic'i benzersizleştir.
+    const nonce = Math.random().toString(36).slice(2);
+    const rt = supabase
+      .channel(`server-structure:${serverId}:${nonce}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "channels",
+          filter: `server_id=eq.${serverId}`,
+        },
+        (payload) => {
+          if (payload.eventType === "DELETE" && payload.old?.id) {
+            setActiveChannel((cur) => (cur?.id === payload.old.id ? null : cur));
+          }
+          setChannels((prev) => applyRowChange(prev, payload, mapChannelRow));
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "channel_categories",
+          filter: `server_id=eq.${serverId}`,
+        },
+        (payload) => {
+          setCategories((prev) => applyRowChange(prev, payload, mapCategoryRow));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(rt);
+    };
+  }, [serverId]);
+
   // Sunucudaki sesli kanalların doluluğunu izle
   const { watchServerVoice } = voice;
   useEffect(() => {
@@ -651,6 +741,8 @@ const SvSidebar = ({ serverData, onRefresh }) => {
     moveChannelToCategory,
     voiceState: voice.voiceState,
     voiceAvatars: voice.voiceAvatars,
+    speaking: voice.speaking,
+    myUserId: currentUser?.uid,
   };
 
   return (

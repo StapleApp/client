@@ -5,6 +5,7 @@ import {
   MicOff,
   PhoneOff,
   Volume2,
+  VolumeX,
   Loader2,
   Users,
   GripVertical,
@@ -37,12 +38,36 @@ const VoiceBar = () => {
     toggleSelfPreview,
     watchScreen,
     stopWatching,
+    speaking,
+    getUserVolume,
+    setUserVolume,
   } = useVoice();
   const { userData } = useAuth();
   const [showList, setShowList] = useState(false);
   const boundsRef = useRef(null);
   const videoRef = useRef(null);
+  const listWrapRef = useRef(null);
   const dragControls = useDragControls();
+
+  // Liste açıkken dışarı tıklama / Escape ile kapan
+  useEffect(() => {
+    if (!showList) return;
+
+    const onPointerDown = (e) => {
+      if (!listWrapRef.current?.contains(e.target)) setShowList(false);
+    };
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setShowList(false);
+    };
+
+    // pointerdown: sürükleme başlamadan önce yakalar
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [showList]);
 
   // Konum (sürükleme) — boyutlandırma telafisi için de kullanılıyor
   const x = useMotionValue(0);
@@ -137,9 +162,9 @@ const VoiceBar = () => {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 8, scale: 0.97 }}
           transition={{ duration: 0.15 }}
-          className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-64
+          className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-72
                      rounded-xl border-2 border-[var(--primary-border)]
-                     bg-[var(--primary-bg)] shadow-2xl p-2"
+                     bg-[var(--primary-bg)] shadow-2xl p-2 text-left"
         >
           <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--primary-text)] px-2 pb-1">
             Seste ({total})
@@ -150,8 +175,12 @@ const VoiceBar = () => {
             <img
               src={userData?.photoURL || "/1.png"}
               alt=""
-              className={`w-8 h-8 rounded-full border-2 ${
-                muted ? "border-red-500" : "border-[var(--tertiary-border)]"
+              className={`w-8 h-8 rounded-full border-2 transition-colors ${
+                muted
+                  ? "border-red-500"
+                  : speaking.self
+                  ? "border-green-500"
+                  : "border-[var(--tertiary-border)]"
               }`}
             />
             <span className="text-sm truncate flex-1">
@@ -168,35 +197,72 @@ const VoiceBar = () => {
           {participants.map((p) => {
             const sharing = sharingSocketIds.includes(p.socketId);
             const watchingThis = watchingSocketId === p.socketId;
+            const vol = getUserVolume(p.userId);
+            const pct = Math.round(vol * 100);
             return (
-              <div
-                key={p.socketId}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-lg"
-              >
-                <img
-                  src={p.photoURL || "/1.png"}
-                  alt=""
-                  className="w-8 h-8 rounded-full border-2 border-[var(--primary-border)]"
-                />
-                <span className="text-sm truncate flex-1">{p.nickName}</span>
-                {sharing &&
-                  (watchingThis ? (
-                    <button
-                      onClick={() => stopWatching()}
-                      title="İzlemeyi durdur"
-                      className="p-1 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] hover:opacity-90 transition"
-                    >
-                      <MonitorX size={16} />
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => watchScreen(p.socketId)}
-                      title="Ekranı izle"
-                      className="p-1 rounded-lg text-[var(--quaternary-text)] hover:bg-[var(--secondary-bg)] transition"
-                    >
-                      <MonitorPlay size={16} />
-                    </button>
-                  ))}
+              <div key={p.socketId} className="px-2 py-1.5 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <img
+                    src={p.photoURL || "/1.png"}
+                    alt=""
+                    className={`w-8 h-8 rounded-full border-2 transition-colors ${
+                      speaking[p.socketId]
+                        ? "border-green-500"
+                        : "border-[var(--primary-border)]"
+                    }`}
+                  />
+                  <span className="text-sm truncate flex-1">{p.nickName}</span>
+                  {sharing &&
+                    (watchingThis ? (
+                      <button
+                        onClick={() => stopWatching()}
+                        title="İzlemeyi durdur"
+                        className="p-1 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] hover:opacity-90 transition"
+                      >
+                        <MonitorX size={16} />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => watchScreen(p.socketId)}
+                        title="Ekranı izle"
+                        className="p-1 rounded-lg text-[var(--quaternary-text)] hover:bg-[var(--secondary-bg)] transition"
+                      >
+                        <MonitorPlay size={16} />
+                      </button>
+                    ))}
+                </div>
+
+                {/* Kişiye özel ses seviyesi — %100 üstü boost (gain > 1) */}
+                <div className="flex items-center gap-2 mt-1.5 pl-10">
+                  <button
+                    onClick={() => setUserVolume(p.userId, vol === 0 ? 1 : 0)}
+                    title={vol === 0 ? "Sesini aç" : "Sesini kapat"}
+                    className={`shrink-0 transition-colors ${
+                      vol === 0
+                        ? "text-red-400"
+                        : "text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
+                    }`}
+                  >
+                    {vol === 0 ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                  </button>
+                  <input
+                    type="range"
+                    min={0}
+                    max={200}
+                    step={5}
+                    value={pct}
+                    onChange={(e) =>
+                      setUserVolume(p.userId, Number(e.target.value) / 100)
+                    }
+                    title={`${p.nickName} · %${pct}`}
+                    aria-label={`${p.nickName} ses seviyesi`}
+                    className="flex-1 h-1 cursor-pointer"
+                    style={{ accentColor: "var(--quaternary-text)" }}
+                  />
+                  <span className="w-9 shrink-0 text-right text-[10px] tabular-nums text-[var(--primary-text)]">
+                    %{pct}
+                  </span>
+                </div>
               </div>
             );
           })}
@@ -218,11 +284,21 @@ const VoiceBar = () => {
 
       {/* Durum + kanal bilgisi */}
       <div className="flex items-center gap-3 pr-3 border-r border-[var(--primary-border)]">
-        <div className="w-9 h-9 rounded-full bg-[var(--secondary-bg)] border-2 border-[var(--tertiary-border)] flex items-center justify-center shrink-0">
+        {/* Konuşurken yeşile döner (kendi mikrofonun) */}
+        <div
+          className={`w-9 h-9 rounded-full bg-[var(--secondary-bg)] border-2 flex items-center justify-center shrink-0 transition-colors ${
+            speaking.self ? "border-green-500" : "border-gray-500"
+          }`}
+        >
           {connecting ? (
             <Loader2 size={18} className="animate-spin text-[var(--quaternary-text)]" />
           ) : (
-            <Volume2 size={18} className="text-[var(--quaternary-text)]" />
+            <Volume2
+              size={18}
+              className={`transition-colors ${
+                speaking.self ? "text-green-500" : "text-[var(--quaternary-text)]"
+              }`}
+            />
           )}
         </div>
         <div className="leading-tight">
@@ -241,7 +317,7 @@ const VoiceBar = () => {
       </div>
 
       {/* Katılımcı sayısı — tıklayınca liste. Paylaşım göstergesi. */}
-      <div className="relative">
+      <div className="relative" ref={listWrapRef}>
         <button
           onClick={() => setShowList((v) => !v)}
           title="Katılımcılar"

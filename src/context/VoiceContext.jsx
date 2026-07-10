@@ -18,6 +18,31 @@ const ICE = {
   ],
 };
 
+// ===== Konuşma algılama (VAD) ve kişi bazlı ses seviyesi ayarları =====
+const VOL_KEY = "staple-voice-volumes";
+const SPEAK_THRESHOLD = 0.015; // RMS eşiği
+const SPEAK_HANGOVER_MS = 300; // eşiğin altına inince bu kadar süre "konuşuyor" kalsın
+const LEVEL_INTERVAL_MS = 80;
+
+const loadVolumes = () => {
+  try {
+    return JSON.parse(localStorage.getItem(VOL_KEY)) || {};
+  } catch {
+    return {};
+  }
+};
+
+// getByteTimeDomainData çıktısından RMS (0..1)
+const rmsOf = (analyser, buf) => {
+  analyser.getByteTimeDomainData(buf);
+  let sum = 0;
+  for (let i = 0; i < buf.length; i++) {
+    const x = (buf[i] - 128) / 128;
+    sum += x * x;
+  }
+  return Math.sqrt(sum / buf.length);
+};
+
 const VoiceContext = createContext();
 
 export const VoiceProvider = ({ children }) => {
@@ -44,8 +69,23 @@ export const VoiceProvider = ({ children }) => {
   const [watchingSocketId, setWatchingSocketId] = useState(null); // izlediğim kişi
   const [remoteScreenStream, setRemoteScreenStream] = useState(null); // izlenen ekran akışı
 
+  // Konuşma algılama: socketId (veya "self") -> bool
+  const [speaking, setSpeaking] = useState({});
+  // Kişi bazlı ses seviyesi: userId -> 0..2 (1 = normal, >1 = boost)
+  const [volumes, setVolumes] = useState(loadVolumes);
+
   const localStreamRef = useRef(null);
   const peersRef = useRef({}); // socketId -> { pc, nickName } (ses mesh'i)
+
+  // WebAudio: uzak sesler gain node'undan geçer, seviyeleri analyser ölçer
+  const audioCtxRef = useRef(null);
+  const remoteNodesRef = useRef({}); // socketId -> { source, gain, analyser, buf }
+  const localNodeRef = useRef(null); // { source, analyser, buf }
+  const levelTimerRef = useRef(null);
+  const lastAboveRef = useRef({}); // id -> son eşik üstü zaman damgası
+  const speakingRef = useRef({});
+  const volumesRef = useRef(volumes);
+  const mutedRef = useRef(false);
 
   // Ekran paylaşımı ref'leri (ses mesh'inden ayrı)
   const screenStreamRef = useRef(null); // benim paylaştığım ekran akışı
@@ -119,26 +159,168 @@ export const VoiceProvider = ({ children }) => {
     socket.emit("voice:watch", { serverId });
   }, []);
 
+  useEffect(() => {
+    volumesRef.current = volumes;
+  }, [volumes]);
+  useEffect(() => {
+    mutedRef.current = muted;
+  }, [muted]);
+
+  const getAudioCtx = () => {
+    if (!audioCtxRef.current) {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      audioCtxRef.current = new Ctx();
+    }
+    // Otomatik oynatma politikası: kullanıcı hareketiyle (kanala tıklama) açılır
+    if (audioCtxRef.current.state === "suspended") {
+      audioCtxRef.current.resume().catch(() => {});
+    }
+    return audioCtxRef.current;
+  };
+
+  const makeAnalyser = (ctx, source) => {
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 512;
+    analyser.smoothingTimeConstant = 0.3;
+    source.connect(analyser);
+    return { analyser, buf: new Uint8Array(analyser.fftSize) };
+  };
+
+  const volumeFor = (userId) => {
+    const v = volumesRef.current[userId];
+    return typeof v === "number" ? v : 1;
+  };
+
   const attachRemoteAudio = (socketId, stream) => {
+    // Chrome, akış bir <audio> öğesine bağlı değilse MediaStreamAudioSourceNode'u
+    // sessiz bırakıyor. Öğeyi tutuyoruz ama muted — ses WebAudio'dan çıkıyor,
+    // yoksa çift duyulurdu.
     let el = document.getElementById(`voice-audio-${socketId}`);
     if (!el) {
       el = document.createElement("audio");
       el.id = `voice-audio-${socketId}`;
       el.autoplay = true;
       el.playsInline = true;
+      el.muted = true;
       el.style.display = "none";
       document.body.appendChild(el);
     }
     el.srcObject = stream;
+
+    // ontrack birden çok kez tetiklenebilir → grafiği bir kez kur
+    if (remoteNodesRef.current[socketId]) return;
+
+    try {
+      const ctx = getAudioCtx();
+      const source = ctx.createMediaStreamSource(stream);
+      const { analyser, buf } = makeAnalyser(ctx, source);
+      const gain = ctx.createGain();
+      gain.gain.value = volumeFor(peersRef.current[socketId]?.userId);
+      source.connect(gain);
+      gain.connect(ctx.destination);
+      remoteNodesRef.current[socketId] = { source, gain, analyser, buf };
+    } catch (err) {
+      // WebAudio kurulamazsa sesi tamamen kaybetme — öğeyi çalar hâle getir
+      console.error("WebAudio graph error:", err);
+      el.muted = false;
+    }
   };
 
   const removeRemoteAudio = (socketId) => {
+    const nodes = remoteNodesRef.current[socketId];
+    if (nodes) {
+      try {
+        nodes.source.disconnect();
+        nodes.gain.disconnect();
+        nodes.analyser.disconnect();
+      } catch {
+        /* zaten kopmuş */
+      }
+      delete remoteNodesRef.current[socketId];
+    }
+    delete lastAboveRef.current[socketId];
+
     const el = document.getElementById(`voice-audio-${socketId}`);
     if (el) {
       el.srcObject = null;
       el.remove();
     }
   };
+
+  // ===== Konuşma algılama döngüsü =====
+  const tickLevels = () => {
+    const now = Date.now();
+    const next = {};
+
+    const evaluate = (id, rms, allowed) => {
+      if (allowed && rms > SPEAK_THRESHOLD) lastAboveRef.current[id] = now;
+      const last = lastAboveRef.current[id] || 0;
+      if (allowed && now - last < SPEAK_HANGOVER_MS) next[id] = true;
+    };
+
+    const local = localNodeRef.current;
+    if (local) {
+      // Mikrofon kapalıyken konuşuyor gösterme
+      evaluate("self", rmsOf(local.analyser, local.buf), !mutedRef.current);
+    }
+
+    Object.entries(remoteNodesRef.current).forEach(([socketId, n]) => {
+      evaluate(socketId, rmsOf(n.analyser, n.buf), true);
+    });
+
+    // 80ms'de bir setState etmeyelim — yalnızca küme değiştiyse
+    const prev = speakingRef.current;
+    const prevKeys = Object.keys(prev);
+    const nextKeys = Object.keys(next);
+    const changed =
+      prevKeys.length !== nextKeys.length || nextKeys.some((k) => !prev[k]);
+    if (changed) {
+      speakingRef.current = next;
+      setSpeaking(next);
+    }
+  };
+
+  const startLevelLoop = () => {
+    if (levelTimerRef.current) return;
+    levelTimerRef.current = setInterval(tickLevels, LEVEL_INTERVAL_MS);
+  };
+
+  const stopLevelLoop = () => {
+    if (levelTimerRef.current) {
+      clearInterval(levelTimerRef.current);
+      levelTimerRef.current = null;
+    }
+    lastAboveRef.current = {};
+    speakingRef.current = {};
+    setSpeaking({});
+  };
+
+  // ===== Kişi bazlı ses seviyesi =====
+  const setUserVolume = (userId, value) => {
+    if (!userId) return;
+    const v = Math.min(Math.max(value, 0), 2);
+
+    setVolumes((prev) => {
+      const next = { ...prev, [userId]: v };
+      try {
+        localStorage.setItem(VOL_KEY, JSON.stringify(next));
+      } catch {
+        /* kota dolu / gizli mod */
+      }
+      return next;
+    });
+
+    // Aynı kullanıcının açık peer'larına anında uygula
+    Object.entries(peersRef.current).forEach(([socketId, p]) => {
+      if (p.userId !== userId) return;
+      const nodes = remoteNodesRef.current[socketId];
+      if (nodes) nodes.gain.gain.value = v;
+    });
+  };
+
+  // Render sırasında okunur → ref değil, state'ten (ref bir render geriden gelir)
+  const getUserVolume = (userId) =>
+    typeof volumes[userId] === "number" ? volumes[userId] : 1;
 
   const createPeer = (socketId, info, isInitiator) => {
     const pc = new RTCPeerConnection(ICE);
@@ -426,6 +608,18 @@ export const VoiceProvider = ({ children }) => {
     }
     watchingRef.current = null;
 
+    // Seviye ölçümü teardown
+    stopLevelLoop();
+    if (localNodeRef.current) {
+      try {
+        localNodeRef.current.source.disconnect();
+        localNodeRef.current.analyser.disconnect();
+      } catch {
+        /* zaten kopmuş */
+      }
+      localNodeRef.current = null;
+    }
+
     // Ses mesh teardown
     socket.emit("voice:leave");
     Object.keys(peersRef.current).forEach(closePeer);
@@ -433,6 +627,13 @@ export const VoiceProvider = ({ children }) => {
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     localStreamRef.current = null;
     unregisterSocketHandlers();
+
+    // AudioContext'i kapat — her katılımda yenisi açılır (tarayıcı başına
+    // eşzamanlı AudioContext sayısı sınırlı)
+    if (audioCtxRef.current) {
+      audioCtxRef.current.close().catch(() => {});
+      audioCtxRef.current = null;
+    }
 
     setParticipants([]);
     setMuted(false);
@@ -464,6 +665,17 @@ export const VoiceProvider = ({ children }) => {
       toast.error("Mikrofona erişilemedi. Tarayıcı iznini kontrol et.");
       return;
     }
+
+    // Kendi mikrofonunu analiz et — destination'a BAĞLAMA, yoksa kendini duyarsın
+    try {
+      const ctx = getAudioCtx();
+      const source = ctx.createMediaStreamSource(localStreamRef.current);
+      const { analyser, buf } = makeAnalyser(ctx, source);
+      localNodeRef.current = { source, analyser, buf };
+    } catch (err) {
+      console.error("Local analyser error:", err);
+    }
+    startLevelLoop();
 
     registerSocketHandlers();
     if (!socket.connected) socket.connect();
@@ -572,6 +784,10 @@ export const VoiceProvider = ({ children }) => {
         voiceState,
         voiceAvatars,
         watchServerVoice,
+        // konuşma algılama + kişi bazlı ses seviyesi
+        speaking,
+        getUserVolume,
+        setUserVolume,
         // ekran paylaşımı
         isScreenSharing,
         localScreenStream,
