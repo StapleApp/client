@@ -26,6 +26,7 @@ import {
   MonitorX,
   Eye,
   EyeOff,
+  Users,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import profileBanner from "../../assets/backgrounds/profile-banner.png";
@@ -636,6 +637,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
 
   const [theaterHeight, setTheaterHeight] = useState(300); // 300px default
   const [isResizing, setIsResizing] = useState(false);
+  const [showMembers, setShowMembers] = useState(true);
 
   const isDocked = voice.active && !isDetached;
   const isWatching = !!remoteScreenStream;
@@ -1056,7 +1058,22 @@ const SvSidebar = ({ serverData, onRefresh }) => {
         )}
       </motion.div>
 
-      <ServerMembers serverData={serverData} onRefresh={onRefresh} />
+      <ServerMembers
+        serverData={serverData}
+        onRefresh={onRefresh}
+        showMembers={showMembers}
+        onToggleCollapse={() => setShowMembers(false)}
+      />
+
+      {!showMembers && (
+        <button
+          onClick={() => setShowMembers(true)}
+          title="Üye listesini göster"
+          className="fixed top-3 right-4 z-30 p-2 rounded-xl border border-[var(--primary-border)] bg-[var(--primary-bg)] text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:border-[var(--tertiary-border)] hover:scale-105 transition-all duration-200"
+        >
+          <Users size={16} />
+        </button>
+      )}
 
       {showSettings && (
         <ServerSettings
@@ -1070,7 +1087,9 @@ const SvSidebar = ({ serverData, onRefresh }) => {
         />
       )}
 
-      <div className="fixed top-0 left-80 right-56 h-screen z-20 flex flex-col">
+      <div className={`fixed top-0 left-80 h-screen z-20 flex flex-col transition-all duration-200 ${
+        showMembers ? "right-56" : "right-0"
+      }`}>
         {/* Screen Share Video Area (when voice bar is docked) */}
         <AnimatePresence>
           {isTheater && (

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Crown, Users, MoreVertical, UserMinus, Shield } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Crown, Users, MoreVertical, UserMinus, Shield, ChevronRight } from "lucide-react";
 import { getUser, resolveStatus } from "../../services/userService";
 import { assignMemberRole, kickMember } from "../../services/roleService";
 import { useAuth } from "../../context/AuthContext";
@@ -16,7 +17,7 @@ const statusColor = (status) => {
   }
 };
 
-const ServerMembers = ({ serverData, onRefresh }) => {
+const ServerMembers = ({ serverData, onRefresh, showMembers, onToggleCollapse }) => {
   const { currentUser } = useAuth();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -152,12 +153,27 @@ const ServerMembers = ({ serverData, onRefresh }) => {
   };
 
   return (
-    <div className="fixed top-0 right-0 h-screen w-56 bg-[var(--primary-bg)] border-l border-[var(--primary-border)] flex flex-col z-20">
-      <div className="p-4 border-b border-[var(--primary-border)]">
-        <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--primary-text)] flex items-center gap-2">
-          <Users size={14} /> Üyeler — {members.length}
-        </h2>
-      </div>
+    <AnimatePresence>
+      {showMembers && (
+        <motion.div
+          initial={{ x: 224, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: 224, opacity: 0 }}
+          transition={{ duration: 0.2, ease: "easeInOut" }}
+          className="fixed top-0 right-0 h-screen w-56 bg-[var(--primary-bg)] border-l border-[var(--primary-border)] flex flex-col z-20"
+        >
+          <div className="p-4 border-b border-[var(--primary-border)] flex items-center justify-between">
+            <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--primary-text)] flex items-center gap-2">
+              <Users size={14} /> Üyeler — {members.length}
+            </h2>
+            <button
+              onClick={onToggleCollapse}
+              title="Üye listesini gizle"
+              className="p-1 rounded-md text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--secondary-bg)] transition-colors"
+            >
+              <ChevronRight size={15} />
+            </button>
+          </div>
 
       <div className="flex-1 overflow-y-auto p-2">
         {loading ? (
@@ -294,7 +310,9 @@ const ServerMembers = ({ serverData, onRefresh }) => {
           />,
           document.body
         )}
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
