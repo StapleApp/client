@@ -27,17 +27,20 @@ import ResetPasswordPage from "./features/auth/ResetPasswordPage";
 import ProtectedRoute from "./Components/layout/ProtectedRoute";
 import NotFound from "./Components/layout/NotFound";
 import ErrorBoundary from "./Components/layout/ErrorBoundary";
+import { MobileMenuProvider } from "./context/MobileMenuContext";
 
 function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <VoiceProvider>
-          <Router>
-            <MainLayout />
-            <VoiceBar />
-          </Router>
-        </VoiceProvider>
+        <MobileMenuProvider>
+          <VoiceProvider>
+            <Router>
+              <MainLayout />
+              <VoiceBar />
+            </Router>
+          </VoiceProvider>
+        </MobileMenuProvider>
       </AuthProvider>
     </ErrorBoundary>
   );
@@ -69,8 +72,12 @@ function MainLayout() {
 
   return (
     <div className="flex">
-      {!hideNavigatorRoutes.includes(location.pathname) && <Navigator />}
-      <div className="flex-1">
+      {!hideNavigatorRoutes.includes(location.pathname) && (
+        <div className="hidden md:block shrink-0">
+          <Navigator />
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
         <AnimatedSwitch />
       </div>
     </div>

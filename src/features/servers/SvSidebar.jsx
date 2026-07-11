@@ -30,6 +30,7 @@ import {
   Users,
   PanelLeftClose,
   PanelLeftOpen,
+  Menu,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import profileBanner from "../../assets/backgrounds/profile-banner.png";
@@ -38,6 +39,8 @@ import ServerMembers from "./ServerMembers";
 import ServerSettings from "./ServerSettings";
 import { useVoice } from "../../context/VoiceContext";
 import { useAuth } from "../../context/AuthContext";
+import { useMobileMenu } from "../../context/MobileMenuContext";
+import Navigator from "../../Components/layout/Navigator";
 import { supabase } from "../../config/supabase";
 import { hasPermission } from "../../config/permissions";
 import {
@@ -703,6 +706,8 @@ const SvSidebar = ({ serverData, onRefresh }) => {
   const [isResizing, setIsResizing] = useState(false);
   const [showMembers, setShowMembers] = useState(true);
 
+  const { isMobile, isOpen, setIsOpen } = useMobileMenu();
+
   const isDocked = voice.active && !isDetached;
 
   // Sidebar kapandığında voicebar docked ise otomatik dışarı (detached) al
@@ -831,6 +836,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
     } else {
       setActiveChannel(channel);
     }
+    setIsOpen(false);
   };
 
   const isChannelActive = (channel) =>
@@ -980,18 +986,9 @@ const SvSidebar = ({ serverData, onRefresh }) => {
     canManageChannels,
   };
 
-  return (
-    <>
-      <motion.div
-        initial={{ x: -256, opacity: 0 }}
-        animate={{
-          x: showSidebar ? 0 : -256,
-          opacity: showSidebar ? 1 : 0,
-          pointerEvents: showSidebar ? "auto" : "none"
-        }}
-        transition={{ duration: 0.2, ease: "easeInOut" }}
-        className="fixed left-16 top-0 h-screen w-64 bg-[var(--primary-bg)] text-[var(--secondary-text)] shadow-2xl border-l border-r border-[var(--primary-border)] flex flex-col z-30"
-      >
+  const renderChannelListSidebar = () => {
+    return (
+      <>
         <div
           className="relative h-36 w-full bg-cover bg-center"
           style={{
@@ -1012,7 +1009,13 @@ const SvSidebar = ({ serverData, onRefresh }) => {
           </button>
 
           <button
-            onClick={() => setShowSidebar(false)}
+            onClick={() => {
+              if (isMobile) {
+                setIsOpen(false);
+              } else {
+                setShowSidebar(false);
+              }
+            }}
             title="Kanal listesini gizle"
             className="absolute top-2 left-10 p-1.5 rounded-lg bg-[var(--primary-bg)]/80 text-[var(--secondary-text)] hover:text-[var(--quaternary-text)] hover:scale-105 transition-all duration-200"
           >
@@ -1030,7 +1033,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
           )}
         </div>
 
-        {/* Banner altı içerik grubu (sürükleme sırasında sarı outline eklenir) */}
+        {/* Banner altı içerik grubu */}
         <div
           className="flex-1 flex flex-col min-h-0 relative transition-all duration-200"
           style={
@@ -1039,7 +1042,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
               : {}
           }
         >
-          {/* Ekleme butonları — yalnızca kanal yönetim izni olanlara */}
+          {/* Ekleme butonları */}
           {canManageChannels && (
           <div className="p-2 relative flex gap-2">
           <div className="relative flex-1">
@@ -1052,103 +1055,157 @@ const SvSidebar = ({ serverData, onRefresh }) => {
             <AnimatePresence>
               {showAddDropdown && (
                 <motion.div
-                  initial={{ opacity: 0, y: -6 }}
+                  initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  className="absolute left-0 right-0 mt-1 z-40 rounded-xl overflow-hidden border-2 border-[var(--primary-border)] bg-[var(--secondary-bg)] shadow-xl"
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute left-0 right-0 mt-2 z-50 rounded-xl border border-[var(--primary-border)] bg-[var(--primary-bg)] shadow-xl overflow-hidden"
                 >
                   <button
-                    onClick={() => addChannel("text", null)}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-[var(--tertiary-bg)] hover:text-[var(--tertiary-text)] transition-colors"
+                    onClick={() => {
+                      setEditingChannel({ type: "text" });
+                      setShowAddDropdown(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-[var(--secondary-text)] hover:bg-[var(--secondary-bg)] hover:text-[var(--quaternary-text)] transition-colors text-left font-medium"
                   >
-                    <Hash size={15} /> Yazı Kanalı
+                    <Hash size={15} /> Metin Kanalı Ekle
                   </button>
                   <button
-                    onClick={() => addChannel("voice", null)}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-[var(--tertiary-bg)] hover:text-[var(--tertiary-text)] transition-colors"
+                    onClick={() => {
+                      setEditingChannel({ type: "voice" });
+                      setShowAddDropdown(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-[var(--secondary-text)] hover:bg-[var(--secondary-bg)] hover:text-[var(--quaternary-text)] transition-colors text-left font-medium border-t border-[var(--primary-border)]/30"
                   >
-                    <Volume2 size={15} /> Sesli Kanal
+                    <Volume2 size={15} /> Ses Kanalı Ekle
                   </button>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
+
           <button
-            onClick={addCategory}
-            title="Kategori ekle"
-            aria-label="Kategori ekle"
-            className="px-3 py-2 rounded-xl border-2 border-[var(--primary-border)] bg-[var(--secondary-bg)] text-[var(--secondary-text)] hover:border-[var(--tertiary-border)] hover:text-[var(--quaternary-text)] transition-all duration-200"
+            onClick={() => {
+              const name = prompt("Yeni Kategori Adı:");
+              if (name) addCategory(name);
+            }}
+            className="flex items-center justify-center p-2 rounded-xl border-2 border-[var(--primary-border)] bg-[var(--secondary-bg)] text-[var(--secondary-text)] hover:border-[var(--tertiary-border)] hover:text-[var(--quaternary-text)] transition-all duration-200"
+            title="Kategori Ekle"
           >
             <FolderPlus size={16} />
           </button>
-        </div>
-        )}
-
-        <div className="flex-1 overflow-y-auto px-2 pb-4">
-          {/* Kategorisiz kanallar */}
-          <Reorder.Group
-            axis="y"
-            values={uncategorized}
-            onReorder={(arr) => onGroupReorder(null, arr)}
-            className="flex flex-col gap-1 list-none m-0 p-0"
-          >
-            {uncategorized.map((channel) => (
-              <Reorder.Item
-                key={channel.id}
-                value={channel}
-                onDragEnd={persistChannelPlacements}
-                className="relative"
-              >
-                <ChannelRow channel={channel} h={channelHandlers} />
-              </Reorder.Item>
-            ))}
-          </Reorder.Group>
-
-          {/* Kategoriler */}
-          <Reorder.Group
-            axis="y"
-            values={sortedCategories}
-            onReorder={onCategoriesReorder}
-            className="flex flex-col list-none m-0 p-0"
-          >
-            {sortedCategories.map((category) => (
-              <CategorySection
-                key={category.id}
-                category={category}
-                channels={byCat(category.id)}
-                h={channelHandlers}
-                onGroupReorder={onGroupReorder}
-                persistChannelPlacements={persistChannelPlacements}
-                persistCategories={persistCategories}
-                addChannel={addChannel}
-                renameCategoryCommit={renameCategoryCommit}
-                deleteCategoryCommit={deleteCategoryCommit}
-              />
-            ))}
-          </Reorder.Group>
-
-          {channels.length === 0 && categories.length === 0 && (
-            <p className="text-center text-xs text-[var(--primary-text)] py-6">
-              Henüz kanal yok. Yukarıdan ekle.
-            </p>
+          </div>
           )}
-        </div>
+
+          {/* Kanal/Kategori Listesi */}
+          <div className="flex-1 overflow-y-auto px-2 pb-4 custom-scrollbar">
+            {/* Kategorisiz kanallar */}
+            <Reorder.Group
+              axis="y"
+              values={uncategorized}
+              onReorder={(arr) => onGroupReorder(null, arr)}
+              className="flex flex-col gap-1 list-none m-0 p-0"
+            >
+              {uncategorized.map((channel) => (
+                <Reorder.Item
+                  key={channel.id}
+                  value={channel}
+                  onDragEnd={persistChannelPlacements}
+                  className="relative select-none"
+                >
+                  <ChannelRow channel={channel} h={channelHandlers} />
+                </Reorder.Item>
+              ))}
+            </Reorder.Group>
+
+            {/* Kategoriler */}
+            <Reorder.Group
+              axis="y"
+              values={sortedCategories}
+              onReorder={onCategoriesReorder}
+              className="flex flex-col list-none m-0 p-0"
+            >
+              {sortedCategories.map((category) => (
+                <CategorySection
+                  key={category.id}
+                  category={category}
+                  channels={byCat(category.id)}
+                  h={channelHandlers}
+                  onGroupReorder={onGroupReorder}
+                  persistChannelPlacements={persistChannelPlacements}
+                  persistCategories={persistCategories}
+                  addChannel={addChannel}
+                  renameCategoryCommit={renameCategoryCommit}
+                  deleteCategoryCommit={deleteCategoryCommit}
+                />
+              ))}
+            </Reorder.Group>
+
+            {channels.length === 0 && categories.length === 0 && (
+              <p className="text-center text-xs text-[var(--primary-text)] py-6">
+                Henüz kanal yok. Yukarıdan ekle.
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Reserving space for docked VoiceBar at the bottom of the sidebar */}
         {isDocked && (
           <div className="h-[96px] shrink-0 border-t border-[var(--primary-border)]/10" />
         )}
-      </motion.div>
+      </>
+    );
+  };
 
-      <ServerMembers
-        serverData={serverData}
-        onRefresh={onRefresh}
-        showMembers={showMembers}
-        onToggleCollapse={() => setShowMembers(false)}
-      />
+  return (
+    <>
+      {!isMobile && (
+        <motion.div
+          initial={{ x: -256, opacity: 0 }}
+          animate={{
+            x: showSidebar ? 0 : -256,
+            opacity: showSidebar ? 1 : 0,
+            pointerEvents: showSidebar ? "auto" : "none"
+          }}
+          transition={{ duration: 0.2, ease: "easeInOut" }}
+          className="fixed left-16 top-0 h-screen w-64 bg-[var(--primary-bg)] text-[var(--secondary-text)] shadow-2xl border-l border-r border-[var(--primary-border)] flex flex-col z-30"
+        >
+          {renderChannelListSidebar()}
+        </motion.div>
+      )}
 
-      {!showMembers && (
+      {isMobile && (
+        <>
+          {isOpen && (
+            <div
+              className="fixed inset-0 bg-black/60 z-40 transition-opacity duration-200"
+              onClick={() => setIsOpen(false)}
+            />
+          )}
+          <div
+            className={`fixed top-0 bottom-0 left-0 z-50 flex transition-transform duration-200 w-[320px] ${
+              isOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
+          >
+            <div className="w-16 h-full shrink-0 relative bg-[var(--primary-bg)] border-r border-[var(--primary-border)]">
+              <Navigator />
+            </div>
+            <div className="w-64 h-full bg-[var(--primary-bg)] flex flex-col relative">
+              {renderChannelListSidebar()}
+            </div>
+          </div>
+        </>
+      )}
+
+      {!isMobile && (
+        <ServerMembers
+          serverData={serverData}
+          onRefresh={onRefresh}
+          showMembers={showMembers}
+          onToggleCollapse={() => setShowMembers(false)}
+        />
+      )}
+
+      {!showMembers && !isMobile && (
         <button
           onClick={() => setShowMembers(true)}
           title="Üye listesini göster"
@@ -1158,7 +1215,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
         </button>
       )}
 
-      {!showSidebar && (
+      {!showSidebar && !isMobile && (
         <button
           onClick={() => setShowSidebar(true)}
           title="Kanal listesini göster"
@@ -1181,11 +1238,11 @@ const SvSidebar = ({ serverData, onRefresh }) => {
       )}
 
       <div className={`fixed top-0 h-screen z-20 flex flex-col transition-all duration-200 ${
-        showSidebar ? "left-80" : "left-16"
+        isMobile
+          ? "left-0 right-0"
+          : `${showSidebar ? "left-80" : "left-16"} ${showMembers ? "right-56" : "right-0"}`
       } ${
-        showMembers ? "right-56" : "right-0"
-      } ${
-        !showSidebar ? "sidebar-collapsed-padding" : ""
+        !showSidebar && !isMobile ? "sidebar-collapsed-padding" : ""
       }`}>
         <style>{`
           .sidebar-collapsed-padding .px-5.py-4 {
@@ -1273,15 +1330,28 @@ const SvSidebar = ({ serverData, onRefresh }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="parallax-bg w-full h-full flex flex-col items-center justify-center gap-4 text-[var(--primary-text)] bg-[var(--secondary-bg)]"
+                className="w-full h-full flex flex-col bg-[var(--secondary-bg)]"
               >
-                <div className="w-20 h-20 rounded-full bg-[var(--primary-bg)] border-4 border-[var(--tertiary-border)] flex items-center justify-center">
-                  <Hash size={36} className="text-[var(--quaternary-text)]" />
+                {isMobile && (
+                  <div className="flex items-center h-[60px] px-5 py-4 bg-[var(--primary-bg)] border-b-2 border-[var(--primary-border)] text-[var(--secondary-text)] shrink-0">
+                    <button
+                      onClick={() => setIsOpen(true)}
+                      className="p-1.5 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors mr-3"
+                    >
+                      <Menu size={20} />
+                    </button>
+                    <span className="font-bold truncate text-lg">{serverData?.ServerName}</span>
+                  </div>
+                )}
+                <div className="parallax-bg flex-1 flex flex-col items-center justify-center gap-4 text-[var(--primary-text)]">
+                  <div className="w-20 h-20 rounded-full bg-[var(--primary-bg)] border-4 border-[var(--tertiary-border)] flex items-center justify-center">
+                    <Hash size={36} className="text-[var(--quaternary-text)]" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-[var(--secondary-text)] px-4 text-center">
+                    {serverData?.ServerName}
+                  </h2>
+                  <p className="px-4 text-center">Başlamak için soldaki menüden bir kanal seç.</p>
                 </div>
-                <h2 className="text-2xl font-bold text-[var(--secondary-text)]">
-                  {serverData?.ServerName}
-                </h2>
-                <p>Başlamak için soldaki menüden bir kanal seç.</p>
               </motion.div>
             )}
           </AnimatePresence>

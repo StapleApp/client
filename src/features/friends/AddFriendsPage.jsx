@@ -3,12 +3,13 @@ import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import { IoIosSearch, IoMdPersonAdd } from "react-icons/io";
-import { Check, X, Clock } from "lucide-react";
+import { Check, X, Clock, Menu } from "lucide-react";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 import pfp from "../../assets/branding/staple-icon.png";
 import profileBanner from "../../assets/backgrounds/profile-banner.png";
 import { useAuth } from "../../context/AuthContext";
+import { useMobileMenu } from "../../context/MobileMenuContext";
 import {
   GetUserByFriendshipID,
   sendFriendRequest,
@@ -47,6 +48,7 @@ const RequestRow = ({ profile, children }) => (
 
 const AddFriendsPage = () => {
   const { userData } = useAuth();
+  const { isMobile, setIsOpen } = useMobileMenu();
   const location = useLocation();
   const [searchId, setSearchId] = useState("");
   const [searched, setSearched] = useState(false);
@@ -146,13 +148,25 @@ const AddFriendsPage = () => {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 100 }}
       transition={{ duration: 0.1 }}
-      className="parallax-bg fixed top-0 left-0 w-full h-screen bg-[var(--secondary-bg)] text-[var(--secondary-text)] overflow-y-auto text-left"
+      className="parallax-bg fixed top-0 left-0 w-full h-screen bg-[var(--secondary-bg)] text-[var(--secondary-text)] overflow-hidden text-left flex flex-col"
       style={{
-        paddingLeft: "80px",
+        paddingLeft: isMobile ? "0px" : "80px",
       }}
     >
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <h1 className="text-2xl font-bold mb-6">Arkadaşlar</h1>
+      {isMobile && (
+        <div className="flex items-center h-[60px] px-5 py-4 bg-[var(--primary-bg)] border-b-2 border-[var(--primary-border)] text-[var(--secondary-text)] shrink-0 z-30">
+          <button
+            onClick={() => setIsOpen(true)}
+            className="p-1.5 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors mr-3 text-[var(--secondary-text)]"
+          >
+            <Menu size={20} />
+          </button>
+          <span className="font-bold truncate text-lg">Arkadaşlar</span>
+        </div>
+      )}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-4xl mx-auto px-6 py-8">
+          <h1 className="text-2xl font-bold mb-6">Arkadaşlar</h1>
 
         {/* Arama */}
         <div className="mb-8">
@@ -298,6 +312,7 @@ const AddFriendsPage = () => {
             )}
           </div>
         </div>
+      </div>
       </div>
     </motion.div>
   );

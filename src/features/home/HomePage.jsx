@@ -12,9 +12,11 @@ import {
   ChevronDown,
   Volume2,
   Copy,
+  Menu,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useMobileMenu } from "../../context/MobileMenuContext";
 import {
   getServersList,
   getVoiceChannelsMap,
@@ -192,6 +194,7 @@ const RailTitle = ({ children }) => (
 const HomePage = () => {
   const navigate = useNavigate();
   const { userData, currentUser, refreshUserData } = useAuth();
+  const { isMobile, setIsOpen } = useMobileMenu();
 
   const [servers, setServers] = useState([]);
   const [friends, setFriends] = useState([]);
@@ -322,36 +325,50 @@ const HomePage = () => {
 
   return (
     <div
-      className="parallax-bg fixed top-0 left-16 right-0 h-screen overflow-y-auto bg-[var(--secondary-bg)] text-left"
+      className={`parallax-bg fixed top-0 right-0 h-screen overflow-y-auto bg-[var(--secondary-bg)] text-left flex flex-col ${
+        isMobile ? "left-0" : "left-16"
+      }`}
     >
-      <div className="max-w-6xl mx-auto px-6 sm:px-8 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* ================= ANA SÜTUN ================= */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Hero */}
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`p-5 rounded-2xl ${GLASS}`}
-            >
-              <p className="text-xs font-medium text-[var(--primary-text)]">{greetingForHour()},</p>
-              <h1 className="text-2xl font-bold text-[var(--secondary-text)]">
-                {userData?.nickName || "gezgin"} 👋
-              </h1>
-              <div className="flex flex-wrap gap-2 mt-4">
-                <StatChip value={servers.length} label="Sunucu" />
-                <StatChip value={friends.length} label="Arkadaş" />
-                <StatChip value={onlineFriends.length} label="Çevrimiçi" />
-                {totalUnread > 0 && <StatChip value={totalUnread} label="Okunmamış" />}
-              </div>
-            </motion.div>
+      {isMobile && (
+        <div className="flex items-center h-[60px] px-5 py-4 bg-[var(--primary-bg)] border-b-2 border-[var(--primary-border)] text-[var(--secondary-text)] shrink-0 z-30">
+          <button
+            onClick={() => setIsOpen(true)}
+            className="p-1.5 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors mr-3 text-[var(--secondary-text)]"
+          >
+            <Menu size={20} />
+          </button>
+          <span className="font-bold truncate text-lg">Staple App</span>
+        </div>
+      )}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-6xl mx-auto px-6 sm:px-8 py-10">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* ================= ANA SÜTUN ================= */}
+            <div className="lg:col-span-2 space-y-8">
+              {/* Hero */}
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`p-5 rounded-2xl ${GLASS}`}
+              >
+                <p className="text-xs font-medium text-[var(--primary-text)]">{greetingForHour()},</p>
+                <h1 className="text-2xl font-bold text-[var(--secondary-text)]">
+                  {userData?.nickName || "gezgin"} 👋
+                </h1>
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <StatChip value={servers.length} label="Sunucu" />
+                  <StatChip value={friends.length} label="Arkadaş" />
+                  <StatChip value={onlineFriends.length} label="Çevrimiçi" />
+                  {totalUnread > 0 && <StatChip value={totalUnread} label="Okunmamış" />}
+                </div>
+              </motion.div>
 
-            {/* Hızlı aksiyonlar */}
-            <div className="grid grid-cols-3 gap-3">
-              <QuickAction icon={<Plus size={20} />} label="Sunucu Oluştur" onClick={() => navigate("/create-server")} />
-              <QuickAction icon={<UserPlus size={20} />} label="Arkadaş Ekle" onClick={() => navigate("/AddFriends")} />
-              <QuickAction icon={<MessageCircle size={20} />} label="Mesajlar" onClick={() => navigate("/DirectMessaging")} />
-            </div>
+              {/* Hızlı aksiyonlar */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <QuickAction icon={<Plus size={20} />} label="Sunucu Oluştur" onClick={() => navigate("/create-server")} />
+                <QuickAction icon={<UserPlus size={20} />} label="Arkadaş Ekle" onClick={() => navigate("/AddFriends")} />
+                <QuickAction icon={<MessageCircle size={20} />} label="Mesajlar" onClick={() => navigate("/DirectMessaging")} />
+              </div>
 
             {/* Okunmamış mesajlar — okunmamış DM varsa öncelikli göster */}
             {!loading && unreadDms.length > 0 && (
@@ -577,6 +594,7 @@ const HomePage = () => {
             </div>
           </aside>
         </div>
+      </div>
       </div>
     </div>
   );

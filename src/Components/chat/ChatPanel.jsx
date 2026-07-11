@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Send, Hash, Smile, Pencil, Trash2, Check, X, ChevronDown, Reply } from "lucide-react";
+import { Send, Hash, Smile, Pencil, Trash2, Check, X, ChevronDown, Reply, Menu } from "lucide-react";
 import toast from "react-hot-toast";
 import EmojiPicker from "emoji-picker-react";
 import { useAuth } from "../../context/AuthContext";
+import { useMobileMenu } from "../../context/MobileMenuContext";
 import {
   sendMessage,
   listenMessages,
@@ -67,6 +68,9 @@ const dayLabel = (createdAt) => {
  */
 const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader = true, memberColors }) => {
   const { userData } = useAuth();
+  const mobileMenu = useMobileMenu();
+  const isMobile = mobileMenu?.isMobile ?? false;
+  const setIsOpen = mobileMenu?.setIsOpen ?? (() => {});
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -444,6 +448,15 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
       {/* Header */}
       {showHeader && (
         <div className="flex items-center gap-2 px-5 py-4 border-b-2 border-[var(--primary-border)] bg-[var(--primary-bg)]">
+          {isMobile && (
+            <button
+              onClick={() => setIsOpen(true)}
+              className="p-1.5 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors mr-1 text-[var(--secondary-text)]"
+              aria-label="Menüyü Aç"
+            >
+              <Menu size={20} />
+            </button>
+          )}
           {headerUserId ? (
             <span
               className="flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity"
