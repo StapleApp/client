@@ -16,8 +16,8 @@ const NAV_ITEMS = [
   { path: "/", label: "Ana Sayfa", icon: <MdHome size="25" /> },
   { path: "/AddFriends", label: "Arkadaş Ekle", icon: <FaStapler size="20" /> },
   { path: "/SearchServer", label: "Sunucu Ara", icon: <MdSearch size="25" /> },
-  { custom: "notifications", label: "Bildirimler" },
   { path: "/DirectMessaging", label: "Mesajlar", icon: <MdOutlineMessage size="25" /> },
+  { custom: "notifications", label: "Bildirimler" },
 ];
 
 // Öğelerin genişleme animasyonu gecikmeleri (orijinal tasarımla birebir)
@@ -102,8 +102,8 @@ const Navigator = () => {
               ) : (
                 <NavItem {...item} />
               )}
-              {/* Mesajlar'dan sonra ayraç (orijinal tasarım) */}
-              {item.path === "/DirectMessaging" && (
+              {/* Bildirimler'den sonra ayraç (orijinal tasarım) */}
+              {item.custom === "notifications" && (
                 <hr className="border-[var(--primary-border)] border" />
               )}
             </div>
