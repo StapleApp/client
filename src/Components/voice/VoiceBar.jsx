@@ -49,6 +49,8 @@ const VoiceBar = () => {
     setUserVolume,
     isDetached,
     setIsDetached,
+    isDragOverSidebar,
+    setIsDragOverSidebar,
   } = useVoice();
   const { userData } = useAuth();
   const navigate = useNavigate();
@@ -681,7 +683,12 @@ const VoiceBar = () => {
             dragConstraints={isDocked ? undefined : boundsRef}
             dragMomentum={false}
             dragElastic={0.05}
+            onDrag={(event, info) => {
+              const isOver = onServerPage && info.point.x < 320 && info.point.x > 0;
+              setIsDragOverSidebar(isOver);
+            }}
             onDragEnd={(event, info) => {
+              setIsDragOverSidebar(false);
               if (onServerPage && info.point.x < 320) {
                 setIsDetached(false);
               }

@@ -631,6 +631,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
     stopWatching,
     isTheaterExpanded,
     setIsTheaterExpanded,
+    isDragOverSidebar,
   } = voice;
 
   const [theaterHeight, setTheaterHeight] = useState(300); // 300px default
@@ -944,9 +945,18 @@ const SvSidebar = ({ serverData, onRefresh }) => {
           )}
         </div>
 
-        {/* Ekleme butonları — yalnızca kanal yönetim izni olanlara */}
-        {canManageChannels && (
-        <div className="p-2 relative flex gap-2">
+        {/* Banner altı içerik grubu (sürükleme sırasında sarı outline eklenir) */}
+        <div
+          className="flex-1 flex flex-col min-h-0 relative transition-all duration-200"
+          style={
+            isDragOverSidebar
+              ? { outline: "3px dashed var(--tertiary-border)", outlineOffset: "-3px", backgroundColor: "rgba(255, 188, 31, 0.05)" }
+              : {}
+          }
+        >
+          {/* Ekleme butonları — yalnızca kanal yönetim izni olanlara */}
+          {canManageChannels && (
+          <div className="p-2 relative flex gap-2">
           <div className="relative flex-1">
             <button
               onClick={() => setShowAddDropdown(!showAddDropdown)}
@@ -1037,6 +1047,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
               Henüz kanal yok. Yukarıdan ekle.
             </p>
           )}
+        </div>
         </div>
 
         {/* Reserving space for docked VoiceBar at the bottom of the sidebar */}
