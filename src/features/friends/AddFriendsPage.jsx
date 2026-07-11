@@ -1,10 +1,10 @@
 import { IoIosAddCircle } from "react-icons/io";
-import pfp from "../../assets/360.png";
+import pfp from "../../assets/branding/staple-icon.png";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { IoIosSearch, IoMdPersonAdd } from "react-icons/io";
-import profileBackground2_small from "../../assets/profileBackground2_small.png";
+import profileBanner from "../../assets/backgrounds/profile-banner.png";
 import { useAuth } from "../../context/AuthContext";
 import { GetUserByFriendshipID, sendFriendRequest } from "../../services/friendService";
 import { resolveStatus } from "../../services/userService";
@@ -91,7 +91,7 @@ const AddFriendsPage = () => {
               {/* Profil Fotoğrafı ve Kullanıcı Bilgileri */}
               <div
                 className="flex items-center justify-start relative w-100 h-30 bg-[var(--secondary-bg)] mx-auto pl-10 rounded-lg bg-cover bg-center"
-                style={{ backgroundImage: `url(${profileBackground2_small})` }}
+                style={{ backgroundImage: `url(${profileBanner})` }}
               >
                 {/* Profil Fotoğrafı Dönen Kart */}
                 <div className="relative w-22 h-22 group mt-4">

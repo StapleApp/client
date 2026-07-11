@@ -6,6 +6,7 @@ import { FaPowerOff } from "react-icons/fa6";
 import { Check, Loader2, Trash2, AlertTriangle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { updateUserProfile } from "../../services/userService";
+import AvatarUpload from "../../Components/AvatarUpload";
 
 const AVATARS = ["/0.png", "/1.png", "/2.png", "/3.png", "/4.png", "/5.png", "/6.png", "/7.png"];
 
@@ -116,7 +117,7 @@ const SettingsPage = () => {
           <label className="block text-sm font-medium mb-2">
             Profil Fotoğrafı
           </label>
-          <div className="grid grid-cols-8 gap-2 mb-5">
+          <div className="grid grid-cols-8 gap-2 mb-3">
             {AVATARS.map((img) => (
               <button
                 key={img}
@@ -131,6 +132,17 @@ const SettingsPage = () => {
                 <img src={img} alt="" className="w-full aspect-square object-cover" />
               </button>
             ))}
+          </div>
+          <div className="flex items-center gap-3 mb-5">
+            <AvatarUpload
+              uid={userData?.userID}
+              onUploaded={(url) => setPhotoURL(url)}
+            />
+            {!AVATARS.includes(photoURL) && (
+              <span className="text-xs text-[var(--quaternary-text)]">
+                Yüklenen fotoğraf seçili
+              </span>
+            )}
           </div>
 
           {/* Takma ad */}

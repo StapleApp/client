@@ -13,7 +13,7 @@
 @layer components {
   
   .background {
-    background-image: url("../assets/background_tile.png");
+    background-image: url("../assets/backgrounds/tile.png");
     background-position: center;
     background-repeat: repeat;
     background-attachment: scroll;

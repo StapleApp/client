@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import toast from 'react-hot-toast';
 import { UpdateNickname } from "../../services/userService";
 import { useAuth } from "../../context/AuthContext";
+import AvatarUpload from "../../Components/AvatarUpload";
 
 const CreateProfilePage = () => {
   const [nickname, setNickname] = useState('');
@@ -107,6 +108,13 @@ const CreateProfilePage = () => {
                   draggable={false}
                 />
               ))}
+            </div>
+
+            <div className="mt-4 flex justify-center">
+              <AvatarUpload
+                uid={currentUser?.uid}
+                onUploaded={(url) => setSelectedImage(url)}
+              />
             </div>
           </div>
 

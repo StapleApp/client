@@ -4,7 +4,7 @@ import { IoMdClose } from "react-icons/io";
 import { CgProfile } from "react-icons/cg";
 import { FaTelegramPlane } from "react-icons/fa";
 import { useEffect, useRef, useState } from "react";
-import profileBackground2_small from "../../assets/profileBackground2_small.png";
+import profileBanner from "../../assets/backgrounds/profile-banner.png";
 import { findDMGroup, createGroup } from "../../services/groupService";
 import { getUser } from "../../services/userService";
 import { getFriendsList } from "../../services/friendService";
@@ -119,7 +119,7 @@ const ProfilePanel = ({
           <div className="row-span-2">
             <img
               className="rounded-t-md h-32 w-80"
-              src={profileBackground2_small}
+              src={profileBanner}
             />
           </div>
 

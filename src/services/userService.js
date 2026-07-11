@@ -149,6 +149,33 @@ export const resolveStatus = (status, lastSeen) => {
   return status || "online";
 };
 
+// ** Avatar yükle → Supabase Storage'a koy, herkese açık URL döndür **
+export const AVATAR_MAX_BYTES = 2 * 1024 * 1024; // 2 MB
+
+export const uploadAvatar = async (uid, file) => {
+  if (!uid || !file) throw new Error("Eksik parametre");
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Yalnızca resim dosyası yükleyebilirsin.");
+  }
+  if (file.size > AVATAR_MAX_BYTES) {
+    throw new Error("Dosya çok büyük (en fazla 2 MB).");
+  }
+
+  const ext = (file.name.split(".").pop() || "png").toLowerCase();
+  // Klasör = kullanıcı id'si (RLS bunu zorunlu tutuyor). Zaman damgalı ad → cache kırılır.
+  const path = `${uid}/${Date.now()}.${ext}`;
+
+  const { error } = await supabase.storage.from("avatars").upload(path, file, {
+    cacheControl: "3600",
+    upsert: true,
+    contentType: file.type,
+  });
+  if (error) throw error;
+
+  const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+  return data.publicUrl;
+};
+
 export const updateUserStatus = async (uid, status) => {
   try {
     const { error } = await supabase

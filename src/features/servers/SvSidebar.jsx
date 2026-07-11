@@ -23,7 +23,7 @@ import {
   MicOff,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import profileBackground2_small from "../../assets/profileBackground2_small.png";
+import profileBanner from "../../assets/backgrounds/profile-banner.png";
 import ChatPanel from "../../Components/chat/ChatPanel";
 import ServerMembers from "./ServerMembers";
 import ServerSettings from "./ServerSettings";
@@ -785,7 +785,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
       >
         <div
           className="relative h-28 w-full bg-cover bg-center"
-          style={{ backgroundImage: `url(${profileBackground2_small})` }}
+          style={{ backgroundImage: `url(${profileBanner})` }}
         >
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
             <h1 className="text-white font-bold text-lg px-3 text-center truncate">

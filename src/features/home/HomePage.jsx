@@ -15,8 +15,8 @@ import { getFriendsList } from "../../services/friendService";
 import { getUser, resolveStatus } from "../../services/userService";
 import { listenNotifications } from "../../services/notificationService";
 
-import icon from "../../assets/360.png";
-import backgroundTile from "../../assets/background_tile.png";
+import icon from "../../assets/branding/staple-icon.png";
+import backgroundTile from "../../assets/backgrounds/tile.png";
 
 const statusColor = (status) => {
   switch (status) {

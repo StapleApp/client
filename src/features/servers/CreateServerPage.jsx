@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { saveServerToFirestore } from "../../services/serverService";
 import { useAuth } from "../../context/AuthContext";
-import icon from "../../assets/360.png";
+import icon from "../../assets/branding/staple-icon.png";
 
 const inputClass =
   "w-full px-3 py-2 rounded-lg bg-[var(--secondary-bg)] text-[var(--secondary-text)] border border-[var(--primary-border)] focus:outline-none focus:border-[var(--tertiary-border)] placeholder:text-[var(--primary-text)] text-sm transition-colors";
