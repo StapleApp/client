@@ -732,7 +732,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
       {/* Send area */}
       <form
         onSubmit={handleSend}
-        className={`p-4 bg-[var(--primary-bg)] flex gap-3 relative items-end ${
+        className={`p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-[var(--primary-bg)] flex gap-3 relative items-end ${
           replyingTo ? "" : "border-t-2 border-[var(--primary-border)]"
         }`}
       >

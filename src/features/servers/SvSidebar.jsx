@@ -1237,7 +1237,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
         />
       )}
 
-      <div className={`fixed top-0 h-screen z-20 flex flex-col transition-all duration-200 ${
+      <div className={`fixed top-0 h-[100dvh] z-20 flex flex-col transition-all duration-200 ${
         isMobile
           ? "left-0 right-0"
           : `${showSidebar ? "left-80" : "left-16"} ${showMembers ? "right-56" : "right-0"}`

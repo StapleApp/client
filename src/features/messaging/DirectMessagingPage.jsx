@@ -318,7 +318,7 @@ const DirectMessagingPage = () => {
       )}
 
       {/* Chat alanı */}
-      <div className={`fixed top-0 right-0 h-screen bg-[var(--secondary-bg)] z-20 ${
+      <div className={`fixed top-0 right-0 h-[100dvh] bg-[var(--secondary-bg)] z-20 ${
         isMobile ? "left-0" : "left-80"
       }`}>
         {activeFriend && activeChannelId ? (
