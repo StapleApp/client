@@ -683,11 +683,15 @@ const VoiceBar = () => {
             dragConstraints={isDocked ? undefined : boundsRef}
             dragMomentum={false}
             dragElastic={0.05}
+            onDragStart={() => {
+              document.body.classList.add("select-none");
+            }}
             onDrag={(event, info) => {
               const isOver = onServerPage && info.point.x < 320 && info.point.x > 0;
               setIsDragOverSidebar(isOver);
             }}
             onDragEnd={(event, info) => {
+              document.body.classList.remove("select-none");
               setIsDragOverSidebar(false);
               if (onServerPage && info.point.x < 320) {
                 setIsDetached(false);
@@ -700,8 +704,8 @@ const VoiceBar = () => {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             className={isDocked
-              ? "pointer-events-auto flex flex-col bg-[var(--primary-bg)] border-t border-[var(--primary-border)] text-[var(--secondary-text)] w-full"
-              : "pointer-events-auto flex flex-col rounded-2xl bg-[var(--primary-bg)] border-2 border-[var(--primary-border)] shadow-2xl text-[var(--secondary-text)]"
+              ? "pointer-events-auto flex flex-col bg-[var(--primary-bg)] border-t border-[var(--primary-border)] text-[var(--secondary-text)] w-full select-none"
+              : "pointer-events-auto flex flex-col rounded-2xl bg-[var(--primary-bg)] border-2 border-[var(--primary-border)] shadow-2xl text-[var(--secondary-text)] select-none"
             }
           >
             {/* Ekran alanı (izleme veya kendi önizleme) — sol üstten boyutlandırılabilir */}
