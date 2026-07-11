@@ -66,3 +66,23 @@
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
+
+/* Custom Scrollbar for specific scroll areas (e.g. notifications) */
+.custom-scrollbar::-webkit-scrollbar {
+  display: block !important;
+  width: 6px !important;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--primary-bg) !important;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--primary-border) !important;
+  border-radius: 4px !important;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--tertiary-border) !important;
+}
+.custom-scrollbar {
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--primary-border) var(--primary-bg) !important;
+}

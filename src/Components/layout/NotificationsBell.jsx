@@ -114,7 +114,7 @@ const NotificationsBell = () => {
               )}
             </div>
 
-            <div className="max-h-[70vh] overflow-y-auto">
+            <div className="max-h-[360px] overflow-y-auto custom-scrollbar pr-1">
               {notifications.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 py-10 text-[var(--primary-text)]">
                   <Bell size={26} className="opacity-40" />
