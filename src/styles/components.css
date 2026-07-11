@@ -85,4 +85,5 @@
 .custom-scrollbar {
   scrollbar-width: thin !important;
   scrollbar-color: var(--primary-border) var(--primary-bg) !important;
+  scrollbar-gutter: stable !important;
 }
