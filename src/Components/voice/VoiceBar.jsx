@@ -49,7 +49,6 @@ const VoiceBar = () => {
     setUserVolume,
     isDetached,
     setIsDetached,
-    isDragOverSidebar,
     setIsDragOverSidebar,
     showSidebar,
   } = useVoice();

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Send, Hash, Smile, Pencil, Trash2, Check, X, ChevronDown, Reply } from "lucide-react";
+import toast from "react-hot-toast";
 import EmojiPicker from "emoji-picker-react";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -185,7 +186,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     let el = document.getElementById(`msg-${id}`);
     if (!el && listenerRef.current?.loadUntilMessage) {
       // Mesaj listede yoksa, veritabanından hedef mesaja kadar olan aralığı yükle
-      const loadToast = toast.loading("Eski mesajlar yükleniyor...", { id: "jump-loading" });
+      toast.loading("Eski mesajlar yükleniyor...", { id: "jump-loading" });
       const success = await listenerRef.current.loadUntilMessage(id);
       toast.dismiss("jump-loading");
       if (success) {
