@@ -3,63 +3,70 @@ import { supabase } from "../config/supabase";
 /**
  * Create a notification for a user.
  */
+let notificationQueue = Promise.resolve();
+
 export const createNotification = async (targetUid, notification) => {
-  try {
-    // Mesaj bildirimi ise ve gönderen bilgisi varsa, alıcının henüz okumadığı
-    // eski bir mesaj bildirimi var mı diye kontrol et.
-    if (notification.type === "message" && notification.from_user_id) {
-      const { data: matching, error: fetchError } = await supabase
-        .from("notifications")
-        .select("id, data")
-        .eq("user_id", targetUid)
-        .eq("type", "message")
-        .eq("from_user_id", notification.from_user_id)
-        .eq("read", false)
-        .order("created_at", { ascending: false })
-        .limit(1);
-
-      if (!fetchError && matching && matching.length > 0) {
-        const existing = matching[0];
-        // En sonuncuyu güncelle ve zamanını yenile
-        const { error: updateError } = await supabase
+  const run = async () => {
+    try {
+      // Mesaj bildirimi ise ve gönderen bilgisi varsa, alıcının henüz okumadığı
+      // eski bir mesaj bildirimi var mı diye kontrol et.
+      if (notification.type === "message" && notification.from_user_id) {
+        const { data: matching, error: fetchError } = await supabase
           .from("notifications")
-          .update({
-            data: {
-              ...existing.data,
-              ...notification.data,
-            },
-            created_at: new Date().toISOString(),
-          })
-          .eq("id", existing.id);
-
-        if (updateError) throw updateError;
-
-        // Olası eski diğer okunmamış kopyaları arkadan temizle
-        await supabase
-          .from("notifications")
-          .delete()
+          .select("id, data")
           .eq("user_id", targetUid)
           .eq("type", "message")
           .eq("from_user_id", notification.from_user_id)
           .eq("read", false)
-          .neq("id", existing.id);
+          .order("created_at", { ascending: false })
+          .limit(1);
 
-        return;
+        if (!fetchError && matching && matching.length > 0) {
+          const existing = matching[0];
+          // En sonuncuyu güncelle ve zamanını yenile
+          const { error: updateError } = await supabase
+            .from("notifications")
+            .update({
+              data: {
+                ...existing.data,
+                ...notification.data,
+              },
+              created_at: new Date().toISOString(),
+            })
+            .eq("id", existing.id);
+
+          if (updateError) throw updateError;
+
+          // Olası eski diğer okunmamış kopyaları arkadan temizle
+          await supabase
+            .from("notifications")
+            .delete()
+            .eq("user_id", targetUid)
+            .eq("type", "message")
+            .eq("from_user_id", notification.from_user_id)
+            .eq("read", false)
+            .neq("id", existing.id);
+
+          return;
+        }
       }
+
+      const { error } = await supabase.from("notifications").insert({
+        user_id: targetUid,
+        type: notification.type,
+        data: notification.data || {},
+        from_user_id: notification.from_user_id || null,
+        read: notification.read ?? false,
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error creating notification:", error);
     }
+  };
 
-    const { error } = await supabase.from("notifications").insert({
-      user_id: targetUid,
-      type: notification.type,
-      data: notification.data || {},
-      from_user_id: notification.from_user_id || null,
-      read: notification.read ?? false,
-    });
-
-    if (error) throw error;
-  } catch (error) {
-    console.error("Error creating notification:", error);
-  }
+  notificationQueue = notificationQueue.then(run).catch(() => {});
+  return notificationQueue;
 };
 
 /**
