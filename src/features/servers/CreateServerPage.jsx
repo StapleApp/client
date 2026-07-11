@@ -99,7 +99,7 @@ const CreateServerPage = () => {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
-        className="w-full max-w-lg mx-4 bg-[var(--primary-bg)] border-2 border-[var(--primary-border)] rounded-2xl shadow-2xl overflow-hidden text-left"
+        className="w-full max-w-2xl mx-4 bg-[var(--primary-bg)] border-2 border-[var(--primary-border)] rounded-2xl shadow-2xl overflow-hidden text-left"
       >
         {/* Banner önizleme */}
         <div
@@ -135,62 +135,92 @@ const CreateServerPage = () => {
             </p>
           </div>
 
-          {/* Ad */}
-          <div>
-            <Label>Sunucu Adı</Label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Örn. Oyun Kulübü"
-              maxLength={50}
-              autoFocus
-              className={inputClass}
-            />
-          </div>
+          {/* Row 1: Adı, Gizlilik ve Açıklama */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
+              {/* Ad */}
+              <div>
+                <Label>Sunucu Adı</Label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Örn. Oyun Kulübü"
+                  maxLength={50}
+                  autoFocus
+                  className={inputClass}
+                />
+              </div>
 
-          {/* Açıklama */}
-          <div>
-            <Label hint="(isteğe bağlı)">Açıklama</Label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Sunucun ne hakkında?"
-              rows={3}
-              maxLength={300}
-              className={`${inputClass} resize-none`}
-            />
-          </div>
+              {/* Tip */}
+              <div>
+                <Label>Gizlilik</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: "public", label: "Herkese Açık", icon: <Globe size={14} />, desc: "Keşfette görünür" },
+                    { id: "private", label: "Özel", icon: <Lock size={14} />, desc: "Sadece davetle" },
+                  ].map((opt) => (
+                    <button
+                      type="button"
+                      key={opt.id}
+                      onClick={() => setType(opt.id)}
+                      className={`flex flex-col items-start gap-0.5 p-2 rounded-lg border-2 transition-all text-left ${
+                        type === opt.id
+                          ? "border-[var(--tertiary-border)] bg-[var(--secondary-bg)]"
+                          : "border-[var(--primary-border)] hover:border-[var(--tertiary-border)]/50"
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--secondary-text)]">
+                        {opt.icon} {opt.label}
+                      </span>
+                      <span className="text-[10px] text-[var(--primary-text)]">{opt.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
 
-          {/* Tip */}
-          <div>
-            <Label>Gizlilik</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { id: "public", label: "Herkese Açık", icon: <Globe size={16} />, desc: "Keşfette görünür" },
-                { id: "private", label: "Özel", icon: <Lock size={16} />, desc: "Sadece davetle" },
-              ].map((opt) => (
-                <button
-                  type="button"
-                  key={opt.id}
-                  onClick={() => setType(opt.id)}
-                  className={`flex flex-col items-start gap-0.5 p-3 rounded-lg border-2 transition-all ${
-                    type === opt.id
-                      ? "border-[var(--tertiary-border)] bg-[var(--secondary-bg)]"
-                      : "border-[var(--primary-border)] hover:border-[var(--tertiary-border)]/50"
-                  }`}
-                >
-                  <span className="flex items-center gap-1.5 text-sm font-semibold text-[var(--secondary-text)]">
-                    {opt.icon} {opt.label}
-                  </span>
-                  <span className="text-[11px] text-[var(--primary-text)]">{opt.desc}</span>
-                </button>
-              ))}
+            {/* Açıklama */}
+            <div className="flex flex-col">
+              <Label hint="(isteğe bağlı)">Açıklama</Label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Sunucun ne hakkında?"
+                maxLength={300}
+                className={`${inputClass} resize-none flex-1 min-h-[110px]`}
+              />
             </div>
           </div>
 
-          {/* Etiketler */}
-          <div>
+          {/* Row 2: İkon & Banner */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label hint="(isteğe bağlı)">Sunucu İkonu</Label>
+              <ImagePicker
+                value={iconUrl}
+                onChange={setIconUrl}
+                defaults={DEFAULT_SERVER_ICONS}
+                uid={currentUser?.uid}
+                bucket="server-icons"
+                aspect="square"
+              />
+            </div>
+            <div>
+              <Label hint="(isteğe bağlı)">Sunucu Bannerı</Label>
+              <ImagePicker
+                value={bannerUrl}
+                onChange={setBannerUrl}
+                defaults={DEFAULT_SERVER_BANNERS}
+                uid={currentUser?.uid}
+                bucket="server-banners"
+                aspect="wide"
+              />
+            </div>
+          </div>
+
+          {/* Row 3: Etiketler */}
+          <div className="border-t border-[var(--primary-border)] pt-4">
             <Label hint="(en fazla 8)">Etiketler</Label>
             <div className="flex flex-wrap gap-1.5 mb-2">
               {tags.map((t) => (
@@ -219,45 +249,19 @@ const CreateServerPage = () => {
             </div>
           </div>
 
-          {/* İkon & Banner */}
-          <div className="space-y-4">
-            <div>
-              <Label hint="(isteğe bağlı)">Sunucu İkonu</Label>
-              <ImagePicker
-                value={iconUrl}
-                onChange={setIconUrl}
-                defaults={DEFAULT_SERVER_ICONS}
-                uid={currentUser?.uid}
-                bucket="server-icons"
-                aspect="square"
-              />
-            </div>
-            <div>
-              <Label hint="(isteğe bağlı)">Sunucu Bannerı</Label>
-              <ImagePicker
-                value={bannerUrl}
-                onChange={setBannerUrl}
-                defaults={DEFAULT_SERVER_BANNERS}
-                uid={currentUser?.uid}
-                bucket="server-banners"
-                aspect="wide"
-              />
-            </div>
-          </div>
-
           {/* Gönder */}
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2 pt-2 border-t border-[var(--primary-border)]">
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="px-4 py-2.5 rounded-lg bg-[var(--secondary-bg)] text-[var(--secondary-text)] font-semibold text-sm hover:text-[var(--quaternary-text)] transition-colors"
+              className="px-4 py-2 rounded-lg bg-[var(--secondary-bg)] text-[var(--secondary-text)] font-semibold text-sm hover:text-[var(--quaternary-text)] transition-colors"
             >
               İptal
             </button>
             <button
               type="submit"
               disabled={submitting || !name.trim()}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] font-bold text-sm hover:bg-[var(--quaternary-bg)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] font-bold text-sm hover:bg-[var(--quaternary-bg)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {submitting ? <Loader2 size={16} className="animate-spin" /> : <Server size={16} />}
               {submitting ? "Oluşturuluyor..." : "Sunucuyu Oluştur"}

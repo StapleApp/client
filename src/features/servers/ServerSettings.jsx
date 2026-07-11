@@ -105,7 +105,7 @@ const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 16, scale: 0.98 }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-[var(--primary-bg)] border-2 border-[var(--primary-border)] rounded-2xl shadow-2xl text-left"
+          className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-[var(--primary-bg)] border-2 border-[var(--primary-border)] rounded-2xl shadow-2xl text-left"
         >
           {/* Banner önizleme */}
           <div
@@ -160,52 +160,86 @@ const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
               Sunucu Ayarları
             </h1>
 
-            <div>
-              <Label>Sunucu Adı</Label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                maxLength={50}
-                className={inputClass}
-              />
-            </div>
+            {/* Row 1: Adı, Gizlilik ve Açıklama */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
+                {/* Ad */}
+                <div>
+                  <Label>Sunucu Adı</Label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={50}
+                    className={inputClass}
+                  />
+                </div>
 
-            <div>
-              <Label hint="(isteğe bağlı)">Açıklama</Label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                maxLength={300}
-                className={`${inputClass} resize-none`}
-              />
-            </div>
+                {/* Gizlilik */}
+                <div>
+                  <Label>Gizlilik</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: "public", label: "Herkese Açık", icon: <Globe size={14} /> },
+                      { id: "private", label: "Özel", icon: <Lock size={14} /> },
+                    ].map((opt) => (
+                      <button
+                        type="button"
+                        key={opt.id}
+                        onClick={() => setType(opt.id)}
+                        className={`flex items-center justify-center gap-1.5 p-2 rounded-lg border-2 text-xs font-semibold transition-all ${
+                          type === opt.id
+                            ? "border-[var(--tertiary-border)] bg-[var(--secondary-bg)] text-[var(--secondary-text)]"
+                            : "border-[var(--primary-border)] text-[var(--primary-text)] hover:border-[var(--tertiary-border)]/50"
+                        }`}
+                      >
+                        {opt.icon} {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
 
-            <div>
-              <Label>Gizlilik</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { id: "public", label: "Herkese Açık", icon: <Globe size={16} /> },
-                  { id: "private", label: "Özel", icon: <Lock size={16} /> },
-                ].map((opt) => (
-                  <button
-                    type="button"
-                    key={opt.id}
-                    onClick={() => setType(opt.id)}
-                    className={`flex items-center gap-1.5 p-3 rounded-lg border-2 text-sm font-semibold transition-all ${
-                      type === opt.id
-                        ? "border-[var(--tertiary-border)] bg-[var(--secondary-bg)] text-[var(--secondary-text)]"
-                        : "border-[var(--primary-border)] text-[var(--primary-text)] hover:border-[var(--tertiary-border)]/50"
-                    }`}
-                  >
-                    {opt.icon} {opt.label}
-                  </button>
-                ))}
+              {/* Açıklama */}
+              <div className="flex flex-col">
+                <Label hint="(isteğe bağlı)">Açıklama</Label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  maxLength={300}
+                  className={`${inputClass} resize-none flex-1 min-h-[110px]`}
+                />
               </div>
             </div>
 
-            <div>
+            {/* Row 2: İkon & Banner */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label hint="(isteğe bağlı)">Sunucu İkonu</Label>
+                <ImagePicker
+                  value={iconUrl}
+                  onChange={setIconUrl}
+                  defaults={DEFAULT_SERVER_ICONS}
+                  uid={currentUser?.uid}
+                  bucket="server-icons"
+                  aspect="square"
+                />
+              </div>
+              <div>
+                <Label hint="(isteğe bağlı)">Sunucu Bannerı</Label>
+                <ImagePicker
+                  value={bannerUrl}
+                  onChange={setBannerUrl}
+                  defaults={DEFAULT_SERVER_BANNERS}
+                  uid={currentUser?.uid}
+                  bucket="server-banners"
+                  aspect="wide"
+                />
+              </div>
+            </div>
+
+            {/* Row 3: Etiketler */}
+            <div className="border-t border-[var(--primary-border)] pt-4">
               <Label hint="(en fazla 8)">Etiketler</Label>
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {tags.map((t) => (
@@ -239,86 +273,60 @@ const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <Label hint="(isteğe bağlı)">Sunucu İkonu</Label>
-                <ImagePicker
-                  value={iconUrl}
-                  onChange={setIconUrl}
-                  defaults={DEFAULT_SERVER_ICONS}
-                  uid={currentUser?.uid}
-                  bucket="server-icons"
-                  aspect="square"
-                />
-              </div>
-              <div>
-                <Label hint="(isteğe bağlı)">Sunucu Bannerı</Label>
-                <ImagePicker
-                  value={bannerUrl}
-                  onChange={setBannerUrl}
-                  defaults={DEFAULT_SERVER_BANNERS}
-                  uid={currentUser?.uid}
-                  bucket="server-banners"
-                  aspect="wide"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2.5 rounded-lg bg-[var(--secondary-bg)] text-[var(--secondary-text)] font-semibold text-sm hover:text-[var(--quaternary-text)] transition-colors"
-              >
-                İptal
-              </button>
-              <button
-                type="submit"
-                disabled={saving || !name.trim()}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] font-bold text-sm hover:bg-[var(--quaternary-bg)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                {saving ? <Loader2 size={16} className="animate-spin" /> : <Server size={16} />}
-                {saving ? "Kaydediliyor..." : "Kaydet"}
-              </button>
-            </div>
-
-            {/* Tehlikeli bölge */}
-            <div className="mt-4 pt-4 border-t border-[var(--primary-border)]">
-              <Label>Tehlikeli Bölge</Label>
-              {confirmDelete ? (
-                <div className="flex flex-col gap-2 p-3 rounded-lg border-2 border-red-500/40 bg-red-500/5">
-                  <span className="text-sm text-[var(--secondary-text)]">
-                    "{serverData?.ServerName}" kalıcı olarak silinecek. Tüm kanallar,
-                    mesajlar ve üyelikler gidecek. Emin misin?
-                  </span>
-                  <div className="flex gap-2">
+            {/* Alt İşlem Çubuğu: İptal, Kaydet ve Sil (Tehlikeli Bölge) yan yana */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[var(--primary-border)]">
+              {/* Tehlikeli Bölge */}
+              <div className="flex-1 min-w-[200px]">
+                {confirmDelete ? (
+                  <div className="flex items-center gap-2 p-1.5 rounded-lg border border-red-500/40 bg-red-500/5">
+                    <span className="text-[11px] text-[var(--secondary-text)] leading-tight flex-1">
+                      Kalıcı silinecek. Emin misin?
+                    </span>
                     <button
                       type="button"
                       onClick={handleDelete}
                       disabled={deleting}
-                      className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-50 transition-colors"
+                      className="px-2.5 py-1.5 rounded bg-red-500 text-white text-xs font-semibold hover:bg-red-600 disabled:opacity-50 transition-colors"
                     >
-                      {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                      Kalıcı Olarak Sil
+                      {deleting ? <Loader2 size={12} className="animate-spin" /> : "Sil"}
                     </button>
                     <button
                       type="button"
                       onClick={() => setConfirmDelete(false)}
-                      className="flex-1 py-2 rounded-md bg-[var(--secondary-bg)] text-[var(--secondary-text)] text-sm font-semibold hover:text-[var(--quaternary-text)] transition-colors"
+                      className="px-2.5 py-1.5 rounded bg-[var(--secondary-bg)] text-[var(--secondary-text)] text-xs font-semibold hover:text-[var(--quaternary-text)] transition-colors"
                     >
                       İptal
                     </button>
                   </div>
-                </div>
-              ) : (
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(true)}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-red-500/40 text-red-400 text-xs font-semibold hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors"
+                  >
+                    <Trash2 size={13} /> Sunucuyu Sil
+                  </button>
+                )}
+              </div>
+
+              {/* Kaydet / İptal */}
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setConfirmDelete(true)}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 border-red-500/40 text-red-400 text-sm font-semibold hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors"
+                  onClick={onClose}
+                  className="px-4 py-2 rounded-lg bg-[var(--secondary-bg)] text-[var(--secondary-text)] font-semibold text-xs hover:text-[var(--quaternary-text)] transition-colors"
                 >
-                  <Trash2 size={15} /> Sunucuyu Sil
+                  İptal
                 </button>
-              )}
+                <button
+                  type="submit"
+                  disabled={saving || !name.trim()}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] font-bold text-xs hover:bg-[var(--quaternary-bg)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {saving ? <Loader2 size={13} className="animate-spin" /> : <Server size={13} />}
+                  {saving ? "Kaydediliyor..." : "Kaydet"}
+                </button>
+              </div>
             </div>
           </form>
             )}
