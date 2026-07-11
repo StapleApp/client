@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   motion,
   AnimatePresence,
@@ -110,6 +111,7 @@ const ChannelRow = ({ channel, h }) => {
     canManageChannels,
   } = h;
   const [showMove, setShowMove] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const active = isChannelActive(channel);
   const menuOpen = channelOptions === channel.id;
   const occupants = channel.type === "voice" ? voiceState[channel.id] || [] : [];
@@ -168,6 +170,13 @@ const ChannelRow = ({ channel, h }) => {
               e.stopPropagation();
               setConfirmDeleteId(null);
               setShowMove(false);
+              
+              const rect = e.currentTarget.getBoundingClientRect();
+              const left = rect.right - 176; // w-44 is 176px
+              const overflowBottom = rect.bottom + 150 > window.innerHeight;
+              const top = overflowBottom ? rect.top - 130 : rect.bottom + 4;
+              
+              setMenuPos({ top, left });
               setChannelOptions(menuOpen ? null : channel.id);
             }}
             className={`transition-opacity ${
@@ -208,102 +217,120 @@ const ChannelRow = ({ channel, h }) => {
         </ul>
       )}
 
-      <AnimatePresence>
-        {menuOpen && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="absolute right-0 top-full mt-1 z-50 w-44 rounded-xl overflow-hidden border-2 border-[var(--primary-border)] bg-[var(--secondary-bg)] shadow-xl"
-          >
-            <button
-              onClick={() => {
-                setEditingChannel(channel.id);
-                setNewChannelName(channel.name);
-                setChannelOptions(null);
-                setConfirmDeleteId(null);
-              }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--secondary-text)] hover:bg-[var(--tertiary-bg)] hover:text-[var(--tertiary-text)] transition-colors"
-            >
-              <Pencil size={14} /> Yeniden Adlandır
-            </button>
+      {createPortal(
+        <AnimatePresence>
+          {menuOpen && (
+            <>
+              {/* Fullscreen backdrop to close menu on click outside */}
+              <div
+                className="fixed inset-0 z-40 bg-transparent cursor-default"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setChannelOptions(null);
+                }}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                style={{
+                  position: "fixed",
+                  top: menuPos.top,
+                  left: menuPos.left,
+                }}
+                className="z-50 w-44 rounded-xl overflow-hidden border-2 border-[var(--primary-border)] bg-[var(--secondary-bg)] shadow-xl"
+              >
+                <button
+                  onClick={() => {
+                    setEditingChannel(channel.id);
+                    setNewChannelName(channel.name);
+                    setChannelOptions(null);
+                    setConfirmDeleteId(null);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--secondary-text)] hover:bg-[var(--tertiary-bg)] hover:text-[var(--tertiary-text)] transition-colors"
+                >
+                  <Pencil size={14} /> Yeniden Adlandır
+                </button>
 
-            {/* Kategoriye taşı */}
-            <button
-              onClick={() => setShowMove((v) => !v)}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--secondary-text)] hover:bg-[var(--tertiary-bg)] hover:text-[var(--tertiary-text)] transition-colors"
-            >
-              <FolderInput size={14} /> Kategoriye taşı
-            </button>
-            {showMove && (
-              <div className="max-h-40 overflow-y-auto border-t border-[var(--primary-border)] bg-[var(--primary-bg)]">
-                {channel.categoryId && (
+                {/* Kategoriye taşı */}
+                <button
+                  onClick={() => setShowMove((v) => !v)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--secondary-text)] hover:bg-[var(--tertiary-bg)] hover:text-[var(--tertiary-text)] transition-colors"
+                >
+                  <FolderInput size={14} /> Kategoriye taşı
+                </button>
+                {showMove && (
+                  <div className="max-h-40 overflow-y-auto border-t border-[var(--primary-border)] bg-[var(--primary-bg)]">
+                    {channel.categoryId && (
+                      <button
+                        onClick={() => {
+                          moveChannelToCategory(channel.id, null);
+                          setChannelOptions(null);
+                          setShowMove(false);
+                        }}
+                        className="w-full text-left px-4 py-1.5 text-xs text-[var(--primary-text)] hover:bg-[var(--tertiary-bg)] hover:text-[var(--tertiary-text)] transition-colors"
+                      >
+                        Kategorisiz
+                      </button>
+                    )}
+                    {categories
+                      .filter((c) => c.id !== channel.categoryId)
+                      .map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => {
+                            moveChannelToCategory(channel.id, c.id);
+                            setChannelOptions(null);
+                            setShowMove(false);
+                          }}
+                          className="w-full text-left px-4 py-1.5 text-xs text-[var(--secondary-text)] hover:bg-[var(--tertiary-bg)] hover:text-[var(--tertiary-text)] transition-colors truncate"
+                        >
+                          {c.name}
+                        </button>
+                      ))}
+                    {categories.filter((c) => c.id !== channel.categoryId).length === 0 &&
+                      !channel.categoryId && (
+                        <p className="px-4 py-1.5 text-xs text-[var(--primary-text)]">
+                          Kategori yok
+                        </p>
+                      )}
+                  </div>
+                )}
+
+                {confirmDeleteId === channel.id ? (
+                  <div className="flex flex-col gap-1 px-3 py-2 border-t border-[var(--primary-border)]">
+                    <span className="text-xs text-[var(--secondary-text)]">
+                      "{channel.name}" silinsin mi?
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => deleteChannel(channel.id)}
+                        className="flex-1 py-1 rounded-md bg-red-500 text-white text-xs font-semibold hover:bg-red-600 transition-colors"
+                      >
+                        Sil
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(null)}
+                        className="flex-1 py-1 rounded-md bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] text-xs font-semibold hover:bg-[var(--quaternary-bg)] transition-colors"
+                      >
+                        İptal
+                      </button>
+                    </div>
+                  </div>
+                ) : (
                   <button
-                    onClick={() => {
-                      moveChannelToCategory(channel.id, null);
-                      setChannelOptions(null);
-                      setShowMove(false);
-                    }}
-                    className="w-full text-left px-4 py-1.5 text-xs text-[var(--primary-text)] hover:bg-[var(--tertiary-bg)] hover:text-[var(--tertiary-text)] transition-colors"
+                    onClick={() => setConfirmDeleteId(channel.id)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500 hover:text-white transition-colors border-t border-[var(--primary-border)]"
                   >
-                    Kategorisiz
+                    <Trash2 size={14} /> Sil
                   </button>
                 )}
-                {categories
-                  .filter((c) => c.id !== channel.categoryId)
-                  .map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => {
-                        moveChannelToCategory(channel.id, c.id);
-                        setChannelOptions(null);
-                        setShowMove(false);
-                      }}
-                      className="w-full text-left px-4 py-1.5 text-xs text-[var(--secondary-text)] hover:bg-[var(--tertiary-bg)] hover:text-[var(--tertiary-text)] transition-colors truncate"
-                    >
-                      {c.name}
-                    </button>
-                  ))}
-                {categories.filter((c) => c.id !== channel.categoryId).length === 0 &&
-                  !channel.categoryId && (
-                    <p className="px-4 py-1.5 text-xs text-[var(--primary-text)]">
-                      Kategori yok
-                    </p>
-                  )}
-              </div>
-            )}
-
-            {confirmDeleteId === channel.id ? (
-              <div className="flex flex-col gap-1 px-3 py-2 border-t border-[var(--primary-border)]">
-                <span className="text-xs text-[var(--secondary-text)]">
-                  "{channel.name}" silinsin mi?
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => deleteChannel(channel.id)}
-                    className="flex-1 py-1 rounded-md bg-red-500 text-white text-xs font-semibold hover:bg-red-600 transition-colors"
-                  >
-                    Sil
-                  </button>
-                  <button
-                    onClick={() => setConfirmDeleteId(null)}
-                    className="flex-1 py-1 rounded-md bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] text-xs font-semibold hover:bg-[var(--quaternary-bg)] transition-colors"
-                  >
-                    İptal
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => setConfirmDeleteId(channel.id)}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500 hover:text-white transition-colors border-t border-[var(--primary-border)]"
-              >
-                <Trash2 size={14} /> Sil
-              </button>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   );
 };
