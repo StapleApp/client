@@ -27,7 +27,7 @@ import ResetPasswordPage from "./features/auth/ResetPasswordPage";
 import ProtectedRoute from "./Components/layout/ProtectedRoute";
 import NotFound from "./Components/layout/NotFound";
 import ErrorBoundary from "./Components/layout/ErrorBoundary";
-import { MobileMenuProvider } from "./context/MobileMenuContext";
+import { MobileMenuProvider, useMobileMenu } from "./context/MobileMenuContext";
 
 function App() {
   return (
@@ -48,6 +48,12 @@ function App() {
 
 function MainLayout() {
   const location = useLocation();
+  const { setIsOpen } = useMobileMenu();
+
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname, setIsOpen]);
+
   const hideNavigatorRoutes = [
     "/login",
     "/signin",
