@@ -89,6 +89,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
   const listenerRef = useRef(null);
   const [hasMore, setHasMore] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const isInitialLoad = useRef(true);
 
   // "Yazıyor..." durumu (socket üzerinden, DB'den bağımsız)
   const [typingUsers, setTypingUsers] = useState({}); // userId -> nickName
@@ -180,12 +181,33 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
   };
 
   // Alıntıya tıklayınca yanıtlanan mesaja kaydır + kısa vurgula
-  const scrollToMessage = (id) => {
-    const el = document.getElementById(`msg-${id}`);
-    if (!el) return; // mesaj yüklü değil (çok eski) ya da silinmiş
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
-    setHighlightId(id);
-    setTimeout(() => setHighlightId((cur) => (cur === id ? null : cur)), 1500);
+  const scrollToMessage = async (id) => {
+    let el = document.getElementById(`msg-${id}`);
+    if (!el && listenerRef.current?.loadUntilMessage) {
+      // Mesaj listede yoksa, veritabanından hedef mesaja kadar olan aralığı yükle
+      const loadToast = toast.loading("Eski mesajlar yükleniyor...", { id: "jump-loading" });
+      const success = await listenerRef.current.loadUntilMessage(id);
+      toast.dismiss("jump-loading");
+      if (success) {
+        // DOM'un render edilip elementin eklenmesini bekleyen döngü
+        for (let i = 0; i < 20; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          el = document.getElementById(`msg-${id}`);
+          if (el) break;
+        }
+      } else {
+        toast.error("Orijinal mesaj silinmiş veya bulunamadı.");
+        return;
+      }
+    }
+
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightId(id);
+      setTimeout(() => setHighlightId((cur) => (cur === id ? null : cur)), 1500);
+    } else {
+      toast.error("Mesaj yüklenemedi.");
+    }
   };
 
   const handleInputChange = (e) => {
@@ -253,7 +275,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
 
     try {
       const loadedCount = await listenerRef.current.loadMore();
-      if (loadedCount < 30) {
+      if (loadedCount < 50) {
         setHasMore(false);
       }
 
@@ -279,12 +301,18 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     setConfirmDeleteId(null);
     setHasMore(true);
     setLoadingOlder(false);
+    isInitialLoad.current = true; // reset initial load flag
     if (!context) return;
     const hasServer = context.serverId && context.channelId;
     const hasGroup = context.groupId;
     if (!hasServer && !hasGroup) return;
 
-    const listener = listenMessages(context, setMessages);
+    const listener = listenMessages(context, (msgs, hasMoreMsgs) => {
+      setMessages(msgs);
+      if (hasMoreMsgs !== undefined) {
+        setHasMore(hasMoreMsgs);
+      }
+    });
     listenerRef.current = listener;
     return () => {
       if (listener) listener.unsubscribe();
@@ -292,17 +320,19 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [context?.serverId, context?.channelId, context?.groupId]);
 
-  // Yeni mesajda: yalnızca kullanıcı zaten dipteyse otomatik kaydır
+  // Yeni mesajda veya ilk yüklemede otomatik kaydır
   useEffect(() => {
-    if (isNearBottom()) scrollToBottom();
-  }, [messages]);
-
-  // İlk yüklemede veya liste güncellendiğinde eğer 30'dan az mesaj varsa hasMore = false
-  useEffect(() => {
-    if (messages.length < 30) {
-      setHasMore(false);
+    if (isInitialLoad.current) {
+      if (messages.length > 0) {
+        setTimeout(() => {
+          scrollToBottom("auto");
+          isInitialLoad.current = false;
+        }, 50);
+      }
+    } else {
+      if (isNearBottom()) scrollToBottom();
     }
-  }, [messages.length]);
+  }, [messages]);
 
   const handleScroll = () => {
     setShowScrollBtn(!isNearBottom());

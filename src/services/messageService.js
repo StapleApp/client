@@ -183,14 +183,15 @@ export function listenMessages(context, callback) {
       createdAt: msg.created_at
         ? { seconds: Math.floor(new Date(msg.created_at).getTime() / 1000) }
         : null,
+      rawCreatedAt: msg.created_at,
       editedAt: msg.edited_at,
     };
   }
 
   let currentMessages = [];
-  const limitCount = 30;
+  const limitCount = 50;
 
-  // 1. İlk yükleme — en yeni 30 mesajı çek
+  // 1. İlk yükleme — en yeni 50 mesajı çek
   async function fetchInitial() {
     const { data, error } = await supabase
       .from("messages")
@@ -201,14 +202,14 @@ export function listenMessages(context, callback) {
 
     if (error) {
       console.error("listenMessages initial fetch error:", error);
-      callback([]);
+      callback([], false);
       return;
     }
 
     const reversed = [...(data || [])].reverse();
     const mapped = await Promise.all(reversed.map(mapMessage));
     currentMessages = mapped;
-    callback([...currentMessages]);
+    callback([...currentMessages], data.length === limitCount);
   }
 
   fetchInitial();
@@ -272,9 +273,9 @@ export function listenMessages(context, callback) {
     if (currentMessages.length === 0) return 0;
 
     const oldestMsg = currentMessages[0];
-    const oldestTime = oldestMsg.createdAt?.seconds
+    const oldestTime = oldestMsg.rawCreatedAt || (oldestMsg.createdAt?.seconds
       ? new Date(oldestMsg.createdAt.seconds * 1000).toISOString()
-      : null;
+      : null);
 
     if (!oldestTime) return 0;
 
@@ -291,12 +292,52 @@ export function listenMessages(context, callback) {
     const reversed = [...data].reverse();
     const mapped = await Promise.all(reversed.map(mapMessage));
     currentMessages = [...mapped, ...currentMessages];
-    callback([...currentMessages]);
+    callback([...currentMessages], data.length === limitCount);
     return data.length;
+  };
+
+  const loadUntilMessage = async (targetId) => {
+    if (currentMessages.length === 0) return false;
+
+    // 1. Hedef mesajın oluşturulma zamanını al
+    const { data: targetMsg, error: targetError } = await supabase
+      .from("messages")
+      .select("created_at")
+      .eq("id", targetId)
+      .single();
+
+    if (targetError || !targetMsg) return false;
+
+    const oldestMsg = currentMessages[0];
+    const oldestTime = oldestMsg.rawCreatedAt || (oldestMsg.createdAt?.seconds
+      ? new Date(oldestMsg.createdAt.seconds * 1000).toISOString()
+      : null);
+
+    if (!oldestTime) return false;
+
+    // Hedef mesaj zaten en eski yüklü mesajdan daha yeniyse, listededir veya yüklenmiştir
+    if (targetMsg.created_at >= oldestTime) return true;
+
+    // 2. Hedef mesaj ile en eski mesaj arasındaki tüm geçmiş mesaj köprüsünü çek
+    const { data, error } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("channel_id", channelId)
+      .gte("created_at", targetMsg.created_at)
+      .lt("created_at", oldestTime)
+      .order("created_at", { ascending: true }); // kronolojik sıra
+
+    if (error || !data || data.length === 0) return false;
+
+    const mapped = await Promise.all(data.map(mapMessage));
+    currentMessages = [...mapped, ...currentMessages];
+    callback([...currentMessages]);
+    return true;
   };
 
   return {
     unsubscribe,
     loadMore,
+    loadUntilMessage,
   };
 }
