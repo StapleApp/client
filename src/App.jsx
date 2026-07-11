@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import Navigator from "./Components/layout/Navigator";
 import SettingsPage from "./features/settings/SettingsPage";
@@ -53,6 +54,18 @@ function MainLayout() {
     "/auth/callback",
     "/reset-password",
   ];
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      const x = (e.clientX - window.innerWidth / 2) / (window.innerWidth / 2);
+      const y = (e.clientY - window.innerHeight / 2) / (window.innerHeight / 2);
+      document.documentElement.style.setProperty("--parallax-x", `${x * 12}px`);
+      document.documentElement.style.setProperty("--parallax-y", `${y * 12}px`);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   return (
     <div className="flex">

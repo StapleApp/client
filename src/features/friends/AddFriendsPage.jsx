@@ -8,7 +8,6 @@ import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 import pfp from "../../assets/branding/staple-icon.png";
 import profileBanner from "../../assets/backgrounds/profile-banner.png";
-import backgroundTile from "../../assets/backgrounds/tile.png";
 import { useAuth } from "../../context/AuthContext";
 import {
   GetUserByFriendshipID,
@@ -147,13 +146,9 @@ const AddFriendsPage = () => {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 100 }}
       transition={{ duration: 0.1 }}
-      className="fixed top-0 left-0 w-full h-screen bg-[var(--secondary-bg)] text-[var(--secondary-text)] overflow-y-auto text-left"
+      className="parallax-bg fixed top-0 left-0 w-full h-screen bg-[var(--secondary-bg)] text-[var(--secondary-text)] overflow-y-auto text-left"
       style={{
         paddingLeft: "80px",
-        backgroundImage: `url(${backgroundTile})`,
-        backgroundSize: "7vw 7vw",
-        backgroundRepeat: "repeat",
-        backgroundPosition: "center",
       }}
     >
       <div className="max-w-4xl mx-auto px-6 py-8">

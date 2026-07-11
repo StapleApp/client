@@ -29,7 +29,6 @@ import { getDMOverview } from "../../services/groupService";
 import { socket } from "../../config/socket";
 
 import icon from "../../assets/branding/staple-icon.png";
-import backgroundTile from "../../assets/backgrounds/tile.png";
 
 // Düz renk — koyu mavi kartlar/butonlar (projenin geneliyle aynı), gri paneller.
 const GLASS = "bg-[var(--primary-bg)] border-2 border-[var(--primary-border)]";
@@ -323,13 +322,7 @@ const HomePage = () => {
 
   return (
     <div
-      className="fixed top-0 left-16 right-0 h-screen overflow-y-auto bg-[var(--secondary-bg)] text-left"
-      style={{
-        backgroundImage: `url(${backgroundTile})`,
-        backgroundSize: "7vw 7vw",
-        backgroundRepeat: "repeat",
-        backgroundPosition: "center",
-      }}
+      className="parallax-bg fixed top-0 left-16 right-0 h-screen overflow-y-auto bg-[var(--secondary-bg)] text-left"
     >
       <div className="max-w-6xl mx-auto px-6 sm:px-8 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
