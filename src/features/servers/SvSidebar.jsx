@@ -27,6 +27,8 @@ import {
   Eye,
   EyeOff,
   Users,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import profileBanner from "../../assets/backgrounds/profile-banner.png";
@@ -630,6 +632,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
     watchingSocketId,
     remoteScreenStream,
     isDetached,
+    setIsDetached,
     participants,
     stopWatching,
     isTheaterExpanded,
@@ -640,8 +643,16 @@ const SvSidebar = ({ serverData, onRefresh }) => {
   const [theaterHeight, setTheaterHeight] = useState(300); // 300px default
   const [isResizing, setIsResizing] = useState(false);
   const [showMembers, setShowMembers] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(true);
 
   const isDocked = voice.active && !isDetached;
+
+  // Sidebar kapandığında voicebar docked ise otomatik dışarı (detached) al
+  useEffect(() => {
+    if (!showSidebar && isDocked) {
+      setIsDetached(true);
+    }
+  }, [showSidebar, isDocked, setIsDetached]);
   const isWatching = !!remoteScreenStream;
   const anyoneSharing = isScreenSharing || sharingSocketIds.length > 0;
   const showingSelfPreview = !isWatching && isScreenSharing && showSelfPreview && !!localScreenStream;
@@ -914,9 +925,13 @@ const SvSidebar = ({ serverData, onRefresh }) => {
   return (
     <>
       <motion.div
-        initial={{ x: -80, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.2 }}
+        initial={{ x: -256, opacity: 0 }}
+        animate={{
+          x: showSidebar ? 0 : -256,
+          opacity: showSidebar ? 1 : 0,
+          pointerEvents: showSidebar ? "auto" : "none"
+        }}
+        transition={{ duration: 0.2, ease: "easeInOut" }}
         className="fixed left-16 top-0 h-screen w-64 bg-[var(--primary-bg)] text-[var(--secondary-text)] shadow-2xl border-l border-r border-[var(--primary-border)] flex flex-col z-30"
       >
         <div
@@ -936,6 +951,14 @@ const SvSidebar = ({ serverData, onRefresh }) => {
             className="absolute top-2 left-2 p-1.5 rounded-lg bg-[var(--primary-bg)]/80 text-[var(--secondary-text)] hover:text-[var(--quaternary-text)] hover:scale-105 transition-all duration-200"
           >
             <ChevronLeft size={18} />
+          </button>
+
+          <button
+            onClick={() => setShowSidebar(false)}
+            title="Kanal listesini gizle"
+            className="absolute top-2 left-10 p-1.5 rounded-lg bg-[var(--primary-bg)]/80 text-[var(--secondary-text)] hover:text-[var(--quaternary-text)] hover:scale-105 transition-all duration-200"
+          >
+            <PanelLeftClose size={18} />
           </button>
           {canManageServer && (
             <button
@@ -1077,6 +1100,16 @@ const SvSidebar = ({ serverData, onRefresh }) => {
         </button>
       )}
 
+      {!showSidebar && (
+        <button
+          onClick={() => setShowSidebar(true)}
+          title="Kanal listesini göster"
+          className="fixed top-3 left-[76px] z-30 p-2 rounded-xl border border-[var(--primary-border)] bg-[var(--primary-bg)] text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:border-[var(--tertiary-border)] hover:scale-105 transition-all duration-200"
+        >
+          <PanelLeftOpen size={16} />
+        </button>
+      )}
+
       {showSettings && (
         <ServerSettings
           serverData={serverData}
@@ -1089,9 +1122,19 @@ const SvSidebar = ({ serverData, onRefresh }) => {
         />
       )}
 
-      <div className={`fixed top-0 left-80 h-screen z-20 flex flex-col transition-all duration-200 ${
+      <div className={`fixed top-0 h-screen z-20 flex flex-col transition-all duration-200 ${
+        showSidebar ? "left-80" : "left-16"
+      } ${
         showMembers ? "right-56" : "right-0"
+      } ${
+        !showSidebar ? "sidebar-collapsed-padding" : ""
       }`}>
+        <style>{`
+          .sidebar-collapsed-padding .px-5.py-4 {
+            padding-left: 3.5rem !important;
+            transition: padding-left 0.2s ease-in-out;
+          }
+        `}</style>
         {/* Screen Share Video Area (when voice bar is docked) */}
         <AnimatePresence>
           {isTheater && (
