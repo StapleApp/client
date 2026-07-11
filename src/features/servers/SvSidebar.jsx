@@ -684,6 +684,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
     isScreenSharing,
     localScreenStream,
     showSelfPreview,
+    toggleSelfPreview,
     sharingSocketIds,
     watchingSocketId,
     remoteScreenStream,
@@ -1222,16 +1223,25 @@ const SvSidebar = ({ serverData, onRefresh }) => {
         </AnimatePresence>
 
         {/* Minimized Screen Share indicator bar at the top of content area */}
-        {!isTheaterExpanded && anyoneSharing && isDocked && (
+        {(!isTheaterExpanded || !theaterStream) && anyoneSharing && isDocked && (
           <div className={`w-full bg-[var(--primary-bg)] border-b border-[var(--primary-border)] py-2 flex items-center justify-between z-10 shrink-0 transition-all duration-200 ${
             showMembers ? "px-4" : "pl-4 pr-16"
           }`}>
             <div className="flex items-center gap-2 text-xs font-semibold text-[var(--secondary-text)]">
               <MonitorPlay size={14} className="text-[var(--quaternary-text)] animate-pulse" />
-              <span>Yayını izlemek için genişletin</span>
+              <span>
+                {!theaterStream && isScreenSharing
+                  ? "Ekran önizlemesi kapalı"
+                  : "Yayını izlemek için genişletin"}
+              </span>
             </div>
             <button
-              onClick={() => setIsTheaterExpanded(true)}
+              onClick={() => {
+                setIsTheaterExpanded(true);
+                if (isScreenSharing && !showSelfPreview) {
+                  toggleSelfPreview();
+                }
+              }}
               className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] hover:bg-[var(--quaternary-bg)] text-xs font-semibold transition-colors"
             >
               <Eye size={12} /> Göster
