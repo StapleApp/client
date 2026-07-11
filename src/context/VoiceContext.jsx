@@ -84,6 +84,7 @@ export const VoiceProvider = ({ children }) => {
   const [connecting, setConnecting] = useState(false);
   const [muted, setMuted] = useState(false);
   const [participants, setParticipants] = useState([]); // uzak katılımcılar
+  const [isDetached, setIsDetached] = useState(false);
 
   // Sesli kanal doluluğu: sunucudaki tüm sesli kanallar için { channelId: [users] }
   // (kanala girmeden kimin içeride olduğunu göstermek için)
@@ -797,6 +798,7 @@ export const VoiceProvider = ({ children }) => {
     // Başka kanaldaysak önce oradan çık
     if (active) cleanup();
 
+    setIsDetached(false);
     setConnecting(true);
     try {
       localStreamRef.current = await navigator.mediaDevices.getUserMedia({
@@ -931,6 +933,8 @@ export const VoiceProvider = ({ children }) => {
         joinVoice,
         leaveVoice,
         toggleMute,
+        isDetached,
+        setIsDetached,
         // sesli kanal doluluğu
         voiceState,
         voiceAvatars,

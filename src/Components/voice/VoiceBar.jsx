@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence, useDragControls, useMotionValue } from "framer-motion";
 import {
   Mic,
@@ -46,9 +46,16 @@ const VoiceBar = () => {
     setVadAggressiveness,
     getUserVolume,
     setUserVolume,
+    isDetached,
+    setIsDetached,
   } = useVoice();
   const { userData } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const match = location.pathname.match(/^\/server\/([^/]+)/);
+  const onServerPage = !!match;
+  const isDocked = onServerPage && !isDetached;
   const [showList, setShowList] = useState(false);
   const [showVadSettings, setShowVadSettings] = useState(false);
   const boundsRef = useRef(null);
@@ -126,7 +133,7 @@ const VoiceBar = () => {
   const showingSelfPreview =
     !isWatching && isScreenSharing && showSelfPreview && !!localScreenStream;
   const theaterStream = isWatching ? remoteScreenStream : (showingSelfPreview ? localScreenStream : null);
-  const isTheater = !!theaterStream;
+  const isTheater = !!theaterStream && !isDocked;
   const theaterLabel = isWatching
     ? watchingName
       ? `${watchingName} · ekran paylaşımı`
@@ -144,13 +151,31 @@ const VoiceBar = () => {
 
   // Sinema açılıp/kapanınca konumu ortala ve varsayılan boyuta dön
   useEffect(() => {
-    x.set(0);
-    y.set(0);
-    if (isTheater) setDims({ w: 560, h: 315 });
+    if (!isDocked) {
+      x.set(0);
+      y.set(0);
+      if (isTheater) setDims({ w: 560, h: 315 });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isTheater]);
+  }, [isTheater, isDocked]);
 
-  const startDrag = (e) => dragControls.start(e);
+  useEffect(() => {
+    if (isDocked) {
+      x.set(0);
+      y.set(0);
+    }
+  }, [isDocked, x, y]);
+
+  const startDrag = (e) => {
+    if (isDocked) {
+      setIsDetached(true);
+      const dockedX = 192 - window.innerWidth / 2;
+      const dockedY = 16;
+      x.set(dockedX);
+      y.set(dockedY);
+    }
+    dragControls.start(e);
+  };
 
   // Sürükleme tutamacı (her iki düzende ortak)
   const gripHandle = (
@@ -501,11 +526,116 @@ const VoiceBar = () => {
     </div>
   );
 
+  // Kontrol satırı (docked/sidebar sürümü)
+  const dockedControls = (
+    <div className="flex flex-col gap-2 w-full px-2 py-2 bg-[var(--primary-bg)] border-t border-[var(--primary-border)]">
+      {/* Üst Satır: Durum ve Grip */}
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-2 min-w-0">
+          <div
+            className={`w-7 h-7 rounded-full bg-[var(--secondary-bg)] border flex items-center justify-center shrink-0 transition-colors ${
+              speaking.self ? "border-green-500" : "border-gray-500"
+            }`}
+          >
+            {connecting ? (
+              <Loader2 size={14} className="animate-spin text-[var(--quaternary-text)]" />
+            ) : (
+              <Volume2
+                size={14}
+                className={`transition-colors ${
+                  speaking.self ? "text-green-500" : "text-[var(--quaternary-text)]"
+                }`}
+              />
+            )}
+          </div>
+          <div className="leading-none min-w-0">
+            <div className="flex items-center gap-1 text-xs font-semibold">
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  connecting ? "bg-yellow-400" : "bg-green-500 animate-pulse"
+                }`}
+              />
+              <span className="truncate">{connecting ? "Bağlanıyor..." : "Sesli Bağlı"}</span>
+            </div>
+            {active && (
+              <div className="text-[10px] text-[var(--primary-text)] truncate max-w-[120px] mt-0.5">
+                {active.channelName}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Grip ve Katılımcılar */}
+        <div className="flex items-center gap-1.5">
+          <div ref={listWrapRef} className="relative">
+            <button
+              onClick={() => setShowList((v) => !v)}
+              title="Katılımcılar"
+              className={`flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-md transition-colors ${
+                showList
+                  ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
+                  : "text-[var(--primary-text)] hover:bg-[var(--secondary-bg)]"
+              }`}
+            >
+              <Users size={12} />
+              {total}
+            </button>
+            {participantList}
+          </div>
+          {gripHandle}
+        </div>
+      </div>
+
+      {/* Alt Satır: İşlem Butonları */}
+      <div className="flex items-center justify-between gap-1 mt-1">
+        {/* Ekran Paylaşımı */}
+        <button
+          onClick={isScreenSharing ? stopScreenShare : startScreenShare}
+          title={isScreenSharing ? "Paylaşımı durdur" : "Ekran paylaş"}
+          disabled={!active}
+          className={`flex-1 flex items-center justify-center p-1.5 rounded-lg border transition-all disabled:opacity-40 text-xs gap-1 ${
+            isScreenSharing
+              ? "bg-[var(--tertiary-bg)] border-[var(--tertiary-border)] text-[var(--tertiary-text)]"
+              : "bg-[var(--secondary-bg)] border-[var(--primary-border)] text-[var(--secondary-text)] hover:border-[var(--tertiary-border)]"
+          }`}
+        >
+          {isScreenSharing ? <ScreenShareOff size={14} /> : <ScreenShare size={14} />}
+          <span className="text-[10px] font-semibold">Paylaş</span>
+        </button>
+
+        {/* Sustur/Aç */}
+        <button
+          onClick={toggleMute}
+          title={muted ? "Sesi aç" : "Sustur"}
+          disabled={!active}
+          className={`flex-1 flex items-center justify-center p-1.5 rounded-lg border transition-all disabled:opacity-40 text-xs gap-1 ${
+            muted
+              ? "bg-red-500/20 border-red-500 text-red-400"
+              : "bg-[var(--secondary-bg)] border-[var(--primary-border)] text-[var(--secondary-text)] hover:border-[var(--tertiary-border)]"
+          }`}
+        >
+          {muted ? <MicOff size={14} /> : <Mic size={14} />}
+          <span className="text-[10px] font-semibold">{muted ? "Aç" : "Sustur"}</span>
+        </button>
+
+        {/* Ayrıl */}
+        <button
+          onClick={leaveVoice}
+          title="Ayrıl"
+          className="flex-1 flex items-center justify-center p-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors text-xs gap-1"
+        >
+          <PhoneOff size={14} />
+          <span className="text-[10px] font-semibold">Ayrıl</span>
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     // Sürükleme sınırı = tüm ekran. pointer-events-none → sayfayı engellemez.
     <div
       ref={boundsRef}
-      className="fixed inset-0 z-[100] flex items-end justify-center pb-4 pointer-events-none"
+      className={isDocked ? "fixed left-16 bottom-0 w-64 z-[99] pointer-events-auto" : "fixed inset-0 z-[100] flex items-end justify-center pb-4 pointer-events-none"}
     >
       <AnimatePresence>
         {show && (
@@ -513,7 +643,7 @@ const VoiceBar = () => {
             drag
             dragListener={false}
             dragControls={dragControls}
-            dragConstraints={boundsRef}
+            dragConstraints={isDocked ? undefined : boundsRef}
             dragMomentum={false}
             dragElastic={0.05}
             style={{ x, y }}
@@ -521,9 +651,10 @@ const VoiceBar = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="pointer-events-auto flex flex-col rounded-2xl
-                       bg-[var(--primary-bg)] border-2 border-[var(--primary-border)]
-                       shadow-2xl text-[var(--secondary-text)]"
+            className={isDocked
+              ? "pointer-events-auto flex flex-col bg-[var(--primary-bg)] border-t border-[var(--primary-border)] text-[var(--secondary-text)] w-full"
+              : "pointer-events-auto flex flex-col rounded-2xl bg-[var(--primary-bg)] border-2 border-[var(--primary-border)] shadow-2xl text-[var(--secondary-text)]"
+            }
           >
             {/* Ekran alanı (izleme veya kendi önizleme) — sol üstten boyutlandırılabilir */}
             {isTheater && (
@@ -563,7 +694,9 @@ const VoiceBar = () => {
             )}
 
             {/* Kontrol satırı */}
-            <div className="p-3">{controls}</div>
+            <div className={isDocked ? "" : "p-3"}>
+              {isDocked ? dockedControls : controls}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

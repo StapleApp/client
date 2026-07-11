@@ -21,6 +21,9 @@ import {
   Settings,
   MonitorUp,
   MicOff,
+  ScreenShare,
+  MonitorPlay,
+  MonitorX,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import profileBanner from "../../assets/backgrounds/profile-banner.png";
@@ -519,6 +522,48 @@ const CategorySection = ({
   );
 };
 
+const SidebarTheater = ({ stream, showingSelf, stopWatching, label }) => {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.muted = showingSelf;
+    }
+  }, [stream, showingSelf]);
+
+  return (
+    <div className="w-full h-full relative">
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        className="w-full h-full object-contain bg-black"
+      />
+      {/* Kaynak etiketi (üst orta) */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-lg bg-black/60 text-white text-xs flex items-center gap-1.5 pointer-events-none">
+        {showingSelf ? (
+          <ScreenShare size={13} className="text-[var(--quaternary-text)]" />
+        ) : (
+          <MonitorPlay size={13} className="text-[var(--quaternary-text)]" />
+        )}
+        {label}
+      </div>
+
+      {/* İzlemeyi bırak butonu (yalnızca izlerken) */}
+      {!showingSelf && (
+        <button
+          onClick={stopWatching}
+          title="İzlemeyi durdur"
+          className="absolute top-3 right-3 p-2 rounded-xl bg-black/60 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white transition-all"
+        >
+          <MonitorX size={15} />
+        </button>
+      )}
+    </div>
+  );
+};
+
 const SvSidebar = ({ serverData, onRefresh }) => {
   const navigate = useNavigate();
   const voice = useVoice();
@@ -526,6 +571,25 @@ const SvSidebar = ({ serverData, onRefresh }) => {
   const serverId = serverData?.ServerId;
   const canManageChannels = hasPermission(serverData, currentUser?.uid, "MANAGE_CHANNELS");
   const canManageServer = hasPermission(serverData, currentUser?.uid, "MANAGE_SERVER");
+
+  const {
+    isScreenSharing,
+    localScreenStream,
+    showSelfPreview,
+    sharingSocketIds,
+    watchingSocketId,
+    remoteScreenStream,
+    isDetached,
+    participants,
+    stopWatching,
+  } = voice;
+
+  const isDocked = voice.active && !isDetached;
+  const isWatching = !!remoteScreenStream;
+  const anyoneSharing = isScreenSharing || sharingSocketIds.length > 0;
+  const showingSelfPreview = !isWatching && isScreenSharing && showSelfPreview && !!localScreenStream;
+  const theaterStream = isWatching ? remoteScreenStream : (showingSelfPreview ? localScreenStream : null);
+  const isTheater = !!theaterStream && isDocked;
 
   // Üye → rol rengi eşlemesi (chat'te isim rengi için ChatPanel'e geçilir)
   const memberColors = useMemo(() => {
@@ -922,6 +986,11 @@ const SvSidebar = ({ serverData, onRefresh }) => {
             </p>
           )}
         </div>
+
+        {/* Reserving space for docked VoiceBar at the bottom of the sidebar */}
+        {isDocked && (
+          <div className="h-[96px] shrink-0 border-t border-[var(--primary-border)]/10" />
+        )}
       </motion.div>
 
       <ServerMembers serverData={serverData} onRefresh={onRefresh} />
@@ -938,41 +1007,68 @@ const SvSidebar = ({ serverData, onRefresh }) => {
         />
       )}
 
-      <div className="fixed top-0 left-80 right-56 h-screen z-20">
-        <AnimatePresence mode="wait">
-          {activeChannel ? (
+      <div className="fixed top-0 left-80 right-56 h-screen z-20 flex flex-col">
+        {/* Screen Share Video Area (when voice bar is docked) */}
+        <AnimatePresence>
+          {isTheater && (
             <motion.div
-              key={activeChannel.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ duration: 0.15 }}
-              className="w-full h-full bg-[var(--secondary-bg)]"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "45vh", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+              className="w-full bg-black relative border-b-2 border-[var(--primary-border)] overflow-hidden"
             >
-              <ChatPanel
-                context={{ serverId, channelId: activeChannel.id }}
-                channelName={activeChannel.name}
-                memberColors={memberColors}
+              <SidebarTheater
+                stream={theaterStream}
+                showingSelf={showingSelfPreview}
+                stopWatching={stopWatching}
+                label={
+                  isWatching
+                    ? `${participants.find((p) => p.socketId === watchingSocketId)?.nickName || "Bilinmeyen"} · ekran paylaşımı`
+                    : "Senin ekranın · önizleme"
+                }
               />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="background w-full h-full flex flex-col items-center justify-center gap-4 text-[var(--primary-text)]"
-            >
-              <div className="w-20 h-20 rounded-full bg-[var(--primary-bg)] border-4 border-[var(--tertiary-border)] flex items-center justify-center">
-                <Hash size={36} className="text-[var(--quaternary-text)]" />
-              </div>
-              <h2 className="text-2xl font-bold text-[var(--secondary-text)]">
-                {serverData?.ServerName}
-              </h2>
-              <p>Başlamak için soldaki menüden bir kanal seç.</p>
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Content Area */}
+        <div className="flex-1 min-h-0 bg-[var(--secondary-bg)]">
+          <AnimatePresence mode="wait">
+            {activeChannel ? (
+              <motion.div
+                key={activeChannel.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.15 }}
+                className="w-full h-full"
+              >
+                <ChatPanel
+                  context={{ serverId, channelId: activeChannel.id }}
+                  channelName={activeChannel.name}
+                  memberColors={memberColors}
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="w-full h-full flex flex-col items-center justify-center gap-4 text-[var(--primary-text)] bg-[var(--secondary-bg)]"
+              >
+                <div className="w-20 h-20 rounded-full bg-[var(--primary-bg)] border-4 border-[var(--tertiary-border)] flex items-center justify-center">
+                  <Hash size={36} className="text-[var(--quaternary-text)]" />
+                </div>
+                <h2 className="text-2xl font-bold text-[var(--secondary-text)]">
+                  {serverData?.ServerName}
+                </h2>
+                <p>Başlamak için soldaki menüden bir kanal seç.</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </>
   );
