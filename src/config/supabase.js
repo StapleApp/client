@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { authStorage } from "./authStorage";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -27,6 +28,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     // tarayıcıda açılsa da çalışır (code verifier localStorage'a bağlı değil).
     flowType: "implicit",
     storageKey: "staple-auth",
+    // Masaüstünde (Tauri) oturumu diske yaz → kapanınca oturum kaybolmasın.
+    // Web'de authStorage undefined → varsayılan localStorage kullanılır.
+    ...(authStorage ? { storage: authStorage } : {}),
   },
 });
 

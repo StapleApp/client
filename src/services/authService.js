@@ -54,12 +54,28 @@ export const register = async (name, surname, email, password, birthdate) => {
 };
 
 // ** Google ile giriş/kayıt **
-// signInWithOAuth tarayıcıyı Google'a yönlendirir; oturum /auth/callback'te kurulur.
+// signInWithOAuth webview/tarayıcıyı Google'a yönlendirir; oturum /auth/callback'te kurulur.
+//
+// Masaüstünde (Tauri) OAuth dönüşü UYGULAMANIN kendi origin'ine (http://tauri.localhost)
+// gelmeli. Aksi halde webview yayındaki web adresine (VITE_SITE_URL) yönlenir ve oturum
+// o web origin'inin localStorage'ına yazılır → paketlenmiş uygulama (disk store) onu
+// göremez, her açılışta tekrar giriş gerekir. (E-posta girişinde bu sorun yok çünkü
+// signInWithPassword uygulama içinde çalışıp doğrudan store'a yazıyor.)
+//
+// NOT: Bu origin (http://tauri.localhost/auth/callback) Supabase → Authentication →
+//      URL Configuration → Redirect URLs listesine EKLENMELİDİR.
+const isTauri = () =>
+  typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+
 export const signInWithGoogle = async () => {
+  const redirectTo = isTauri()
+    ? `${window.location.origin}/auth/callback`
+    : authCallbackUrl();
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: authCallbackUrl(),
+      redirectTo,
       queryParams: { prompt: "select_account" },
     },
   });
