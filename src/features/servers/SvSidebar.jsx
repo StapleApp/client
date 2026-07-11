@@ -24,6 +24,8 @@ import {
   ScreenShare,
   MonitorPlay,
   MonitorX,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import profileBanner from "../../assets/backgrounds/profile-banner.png";
@@ -522,18 +524,39 @@ const CategorySection = ({
   );
 };
 
-const SidebarTheater = ({ stream, showingSelf, stopWatching, label }) => {
+const SidebarTheater = ({ stream, showingSelf, stopWatching, label, height, setHeight, toggleExpand }) => {
   const videoRef = useRef(null);
 
   useEffect(() => {
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream;
       videoRef.current.muted = showingSelf;
+      videoRef.current.play().catch((err) => console.debug("Video play error:", err));
     }
   }, [stream, showingSelf]);
 
+  const startResize = (e) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startH = height;
+
+    const onPointerMove = (moveEvent) => {
+      const deltaY = moveEvent.clientY - startY;
+      const newH = Math.max(160, Math.min(window.innerHeight * 0.8, startH + deltaY));
+      setHeight(newH);
+    };
+
+    const onPointerUp = () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+  };
+
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative group/theater">
       <video
         ref={videoRef}
         autoPlay
@@ -550,16 +573,35 @@ const SidebarTheater = ({ stream, showingSelf, stopWatching, label }) => {
         {label}
       </div>
 
-      {/* İzlemeyi bırak butonu (yalnızca izlerken) */}
-      {!showingSelf && (
+      {/* Kontroller (sağ üst) */}
+      <div className="absolute top-3 right-3 flex items-center gap-2">
+        {/* Küçült/Kapat butonu */}
         <button
-          onClick={stopWatching}
-          title="İzlemeyi durdur"
-          className="absolute top-3 right-3 p-2 rounded-xl bg-black/60 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white transition-all"
+          onClick={toggleExpand}
+          title="Ekranı Gizle"
+          className="p-2 rounded-xl bg-black/60 border border-[var(--primary-border)] text-[var(--secondary-text)] hover:text-white hover:bg-black transition-all"
         >
-          <MonitorX size={15} />
+          <EyeOff size={15} />
         </button>
-      )}
+
+        {/* İzlemeyi bırak butonu (yalnızca izlerken) */}
+        {!showingSelf && (
+          <button
+            onClick={stopWatching}
+            title="İzlemeyi durdur"
+            className="p-2 rounded-xl bg-black/60 border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white transition-all"
+          >
+            <MonitorX size={15} />
+          </button>
+        )}
+      </div>
+
+      {/* Alt kenarda resize çubuğu */}
+      <div
+        onPointerDown={startResize}
+        title="Boyutlandır (yukarı-aşağı çek)"
+        className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize hover:bg-[var(--quaternary-text)]/40 transition-colors z-20"
+      />
     </div>
   );
 };
@@ -582,14 +624,18 @@ const SvSidebar = ({ serverData, onRefresh }) => {
     isDetached,
     participants,
     stopWatching,
+    isTheaterExpanded,
+    setIsTheaterExpanded,
   } = voice;
+
+  const [theaterHeight, setTheaterHeight] = useState(300); // 300px default
 
   const isDocked = voice.active && !isDetached;
   const isWatching = !!remoteScreenStream;
   const anyoneSharing = isScreenSharing || sharingSocketIds.length > 0;
   const showingSelfPreview = !isWatching && isScreenSharing && showSelfPreview && !!localScreenStream;
   const theaterStream = isWatching ? remoteScreenStream : (showingSelfPreview ? localScreenStream : null);
-  const isTheater = !!theaterStream && isDocked;
+  const isTheater = !!theaterStream && isDocked && isTheaterExpanded;
 
   // Üye → rol rengi eşlemesi (chat'te isim rengi için ChatPanel'e geçilir)
   const memberColors = useMemo(() => {
@@ -1013,7 +1059,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
           {isTheater && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "45vh", opacity: 1 }}
+              animate={{ height: theaterHeight, opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.25, ease: "easeInOut" }}
               className="w-full bg-black relative border-b-2 border-[var(--primary-border)] overflow-hidden"
@@ -1022,6 +1068,9 @@ const SvSidebar = ({ serverData, onRefresh }) => {
                 stream={theaterStream}
                 showingSelf={showingSelfPreview}
                 stopWatching={stopWatching}
+                height={theaterHeight}
+                setHeight={setTheaterHeight}
+                toggleExpand={() => setIsTheaterExpanded(false)}
                 label={
                   isWatching
                     ? `${participants.find((p) => p.socketId === watchingSocketId)?.nickName || "Bilinmeyen"} · ekran paylaşımı`
@@ -1031,6 +1080,22 @@ const SvSidebar = ({ serverData, onRefresh }) => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Minimized Screen Share indicator bar at the top of content area */}
+        {!isTheaterExpanded && anyoneSharing && isDocked && (
+          <div className="w-full bg-[var(--primary-bg)] border-b border-[var(--primary-border)] px-4 py-2 flex items-center justify-between z-10 shrink-0">
+            <div className="flex items-center gap-2 text-xs font-semibold text-[var(--secondary-text)]">
+              <MonitorPlay size={14} className="text-[var(--quaternary-text)] animate-pulse" />
+              <span>Yayını izlemek için genişletin</span>
+            </div>
+            <button
+              onClick={() => setIsTheaterExpanded(true)}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] hover:bg-[var(--quaternary-bg)] text-xs font-semibold transition-colors"
+            >
+              <Eye size={12} /> Göster
+            </button>
+          </div>
+        )}
 
         {/* Content Area */}
         <div className="flex-1 min-h-0 bg-[var(--secondary-bg)]">

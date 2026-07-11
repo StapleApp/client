@@ -146,8 +146,9 @@ const VoiceBar = () => {
       videoRef.current.srcObject = theaterStream;
       // React'in muted prop'u mount sonrası güvenilmez → elle uygula
       videoRef.current.muted = showingSelfPreview;
+      videoRef.current.play().catch(e => console.debug("Video play error:", e));
     }
-  }, [theaterStream, showingSelfPreview]);
+  }, [theaterStream, showingSelfPreview, isTheater]);
 
   // Sinema açılıp/kapanınca konumu ortala ve varsayılan boyuta dön
   useEffect(() => {
@@ -646,6 +647,11 @@ const VoiceBar = () => {
             dragConstraints={isDocked ? undefined : boundsRef}
             dragMomentum={false}
             dragElastic={0.05}
+            onDragEnd={(event, info) => {
+              if (onServerPage && info.point.x < 320) {
+                setIsDetached(false);
+              }
+            }}
             style={{ x, y }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
