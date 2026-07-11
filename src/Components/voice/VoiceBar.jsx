@@ -571,10 +571,17 @@ const VoiceBar = () => {
               />
               <span className="truncate">{connecting ? "Bağlanıyor..." : "Sesli Bağlı"}</span>
             </div>
-            {active && (
-              <div className="text-[10px] text-[var(--primary-text)] truncate max-w-[120px] mt-0.5">
-                {active.channelName}
-              </div>
+            {active ? (
+              <button
+                type="button"
+                onClick={() => navigate(`/server/${active.serverId}`)}
+                title={`${active.serverName} · ${active.channelName} (Gitmek için tıklayın)`}
+                className="text-[10px] text-[var(--primary-text)] truncate max-w-[130px] mt-1 block hover:text-[var(--quaternary-text)] hover:underline transition-colors text-left font-medium"
+              >
+                {active.serverName} · {active.channelName}
+              </button>
+            ) : (
+              <div className="text-[10px] text-[var(--primary-text)] mt-1" />
             )}
           </div>
         </div>
