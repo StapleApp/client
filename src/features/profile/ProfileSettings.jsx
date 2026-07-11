@@ -2,8 +2,9 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { Check, Loader2, ArrowLeft } from "lucide-react";
+import { Check, Loader2, ArrowLeft, Menu } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useMobileMenu } from "../../context/MobileMenuContext";
 import { updateUserProfile } from "../../services/userService";
 import ImagePicker from "../../Components/ImagePicker";
 import {
@@ -22,6 +23,7 @@ const Label = ({ children }) => (
 const ProfileSettings = () => {
   const navigate = useNavigate();
   const { userData, currentUser, refreshUserData } = useAuth();
+  const { isMobile, setIsOpen } = useMobileMenu();
 
   const [nickName, setNickName] = useState("");
   const [about, setAbout] = useState("");
@@ -75,10 +77,23 @@ const ProfileSettings = () => {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 60 }}
       transition={{ duration: 0.15 }}
-      className="background fixed top-0 left-0 w-full h-screen overflow-y-auto bg-[var(--secondary-bg)] text-[var(--secondary-text)]"
-      style={{ paddingLeft: "80px" }}
+      className="background fixed top-0 left-0 w-full h-screen bg-[var(--secondary-bg)] text-[var(--secondary-text)] flex flex-col overflow-hidden"
+      style={{ paddingLeft: isMobile ? "0px" : "80px" }}
     >
-      <div className="max-w-2xl mx-auto px-4 py-10">
+      {isMobile && (
+        <div className="flex items-center h-[60px] px-5 py-4 bg-[var(--primary-bg)] border-b-2 border-[var(--primary-border)] text-[var(--secondary-text)] shrink-0 z-30">
+          <button
+            onClick={() => setIsOpen(true)}
+            className="p-1.5 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors mr-3 text-[var(--secondary-text)]"
+            aria-label="Menüyü Aç"
+          >
+            <Menu size={20} />
+          </button>
+          <span className="font-bold truncate text-lg">Profili Düzenle</span>
+        </div>
+      )}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto px-4 py-10">
         <div className="flex items-center gap-3 mb-8">
           <button
             onClick={() => navigate("/Settings")}
@@ -170,6 +185,7 @@ const ProfileSettings = () => {
             {saving ? "Kaydediliyor..." : "Kaydet"}
           </button>
         </section>
+      </div>
       </div>
     </motion.div>
   );

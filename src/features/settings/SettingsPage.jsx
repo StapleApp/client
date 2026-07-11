@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { FaPowerOff } from "react-icons/fa6";
-import { Loader2, Trash2, AlertTriangle, Pencil } from "lucide-react";
+import { Loader2, Trash2, AlertTriangle, Pencil, Menu } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useMobileMenu } from "../../context/MobileMenuContext";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
   const { userData, currentUser, signOut, deleteAccount } = useAuth();
+  const { isMobile, setIsOpen } = useMobileMenu();
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -46,11 +48,24 @@ const SettingsPage = () => {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 60 }}
       transition={{ duration: 0.15 }}
-      className="background fixed top-0 left-0 w-full h-screen overflow-y-auto bg-[var(--secondary-bg)] text-[var(--secondary-text)]"
-      style={{ paddingLeft: "80px" }}
+      className="background fixed top-0 left-0 w-full h-screen bg-[var(--secondary-bg)] text-[var(--secondary-text)] flex flex-col overflow-hidden"
+      style={{ paddingLeft: isMobile ? "0px" : "80px" }}
     >
-      <div className="max-w-2xl mx-auto px-4 py-10">
-        <h1 className="text-3xl font-bold mb-8">Ayarlar</h1>
+      {isMobile && (
+        <div className="flex items-center h-[60px] px-5 py-4 bg-[var(--primary-bg)] border-b-2 border-[var(--primary-border)] text-[var(--secondary-text)] shrink-0 z-30">
+          <button
+            onClick={() => setIsOpen(true)}
+            className="p-1.5 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors mr-3 text-[var(--secondary-text)]"
+            aria-label="Menüyü Aç"
+          >
+            <Menu size={20} />
+          </button>
+          <span className="font-bold truncate text-lg">Ayarlar</span>
+        </div>
+      )}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto px-4 py-10">
+          <h1 className="text-3xl font-bold mb-8">Ayarlar</h1>
 
         {/* Profil özeti + düzenle */}
         <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)] mb-6">
@@ -164,6 +179,7 @@ const SettingsPage = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </motion.div>
   );
 };

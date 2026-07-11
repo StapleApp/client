@@ -2,11 +2,14 @@ import { motion } from "framer-motion";
 import { useState, useEffect, useMemo } from "react";
 import { IoIosSearch, IoMdPersonAdd } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
+import { Menu } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useMobileMenu } from "../../context/MobileMenuContext";
 import { getPublicServers, joinServer } from "../../services/serverService";
 
 const SearchServerPage = () => {
   const { currentUser } = useAuth();
+  const { isMobile, setIsOpen } = useMobileMenu();
   const navigate = useNavigate();
 
   const [searchInput, setSearchInput] = useState("");
@@ -51,11 +54,24 @@ const SearchServerPage = () => {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 100 }}
       transition={{ duration: 0.1 }}
-      className="background fixed top-0 left-0 w-full h-screen bg-[var(--secondary-bg)] text-[var(--secondary-text)] overflow-y-auto"
-      style={{ paddingLeft: "80px" }}
+      className="background fixed top-0 left-0 w-full h-screen bg-[var(--secondary-bg)] text-[var(--secondary-text)] overflow-hidden flex flex-col"
+      style={{ paddingLeft: isMobile ? "0px" : "80px" }}
     >
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6 text-center">Sunucu Keşfet</h1>
+      {isMobile && (
+        <div className="flex items-center h-[60px] px-5 py-4 bg-[var(--primary-bg)] border-b-2 border-[var(--primary-border)] text-[var(--secondary-text)] shrink-0 z-30">
+          <button
+            onClick={() => setIsOpen(true)}
+            className="p-1.5 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors mr-3 text-[var(--secondary-text)]"
+            aria-label="Menüyü Aç"
+          >
+            <Menu size={20} />
+          </button>
+          <span className="font-bold truncate text-lg">Sunucu Keşfet</span>
+        </div>
+      )}
+      <div className="flex-1 overflow-y-auto">
+        <div className="container mx-auto px-4 py-8">
+          <h1 className="text-2xl font-bold mb-6 text-center">Sunucu Keşfet</h1>
 
         {/* Arama Çubuğu */}
         <div className="flex items-center justify-center relative w-full max-w-xl mx-auto mb-8">
@@ -138,6 +154,7 @@ const SearchServerPage = () => {
             </div>
           )}
         </div>
+      </div>
       </div>
     </motion.div>
   );
