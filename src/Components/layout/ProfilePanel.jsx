@@ -126,7 +126,10 @@ const ProfilePanel = ({
 
           {/* Ortada Duracak İkon */}
           <div className="absolute top-1/12 grid grid-cols-3 w-76">
-            <ProfilePicture src={photoURL || "/defaults/avatars/1.png"} />
+            <ProfilePicture
+              src={photoURL || "/defaults/avatars/1.png"}
+              isMe={userData && userData.friendshipID === userID}
+            />
             <div className="grid col-span-2 expanded-text bg-[var(--primary-bg)] h-6 my-auto rounded-md mr-3 p-0">
               <div className="flex text-sm justify-between">
                 <span className="ml-2">{userName}</span>
@@ -144,12 +147,11 @@ const ProfilePanel = ({
               </div>
             ) : (
               userData && (
-                <>
-                  <ProfileButton />
+                <div className="flex gap-3 pl-1">
                   {!isFriend && <AddFriendButton friendshipCode={userID} />}
                   <DMButton userID={UID} userData={userData} />
                   <SideBarIconClose toggleExpand={() => setCheck(false)} />
-                </>
+                </div>
               )
             )}
           </div>
@@ -260,17 +262,24 @@ const SideBarIconClose = ({ toggleExpand }) => {
   );
 };
 
-const ProfilePicture = ({ src }) => {
+const ProfilePicture = ({ src, isMe }) => {
   const navigate = useNavigate();
-  return (
-    <>
+  if (isMe) {
+    return (
       <div
         className="icon group cursor-pointer hover:scale-105 w-15 h-15 my-auto ml-3 mr-2 rounded-full"
         onClick={() => navigate("/Profile")}
       >
         <img src={src} className="rounded-full h-14 w-14" />
       </div>
-    </>
+    );
+  }
+  return (
+    <div
+      className="relative flex items-center justify-center w-15 h-15 my-auto ml-3 mr-2 shadow-lg bg-[var(--primary-bg)] border-3 border-[var(--primary-border)] rounded-full select-none"
+    >
+      <img src={src} className="rounded-full h-14 w-14" />
+    </div>
   );
 };
 
