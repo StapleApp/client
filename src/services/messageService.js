@@ -106,7 +106,7 @@ export function listenMessages(context, callback) {
   const channelId = context?.channelId || context?.groupId;
   if (!channelId) {
     callback([]);
-    return () => {};
+    return { unsubscribe: () => {}, loadMore: async () => 0 };
   }
 
   // Kullanıcı cache'i: sender bilgilerini tekrar tekrar çekmemek için
@@ -188,14 +188,16 @@ export function listenMessages(context, callback) {
   }
 
   let currentMessages = [];
+  const limitCount = 30;
 
-  // 1. İlk yükleme — mevcut mesajları çek
+  // 1. İlk yükleme — en yeni 30 mesajı çek
   async function fetchInitial() {
     const { data, error } = await supabase
       .from("messages")
       .select("*")
       .eq("channel_id", channelId)
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: false })
+      .limit(limitCount);
 
     if (error) {
       console.error("listenMessages initial fetch error:", error);
@@ -203,7 +205,8 @@ export function listenMessages(context, callback) {
       return;
     }
 
-    const mapped = await Promise.all((data || []).map(mapMessage));
+    const reversed = [...(data || [])].reverse();
+    const mapped = await Promise.all(reversed.map(mapMessage));
     currentMessages = mapped;
     callback([...currentMessages]);
   }
@@ -211,7 +214,6 @@ export function listenMessages(context, callback) {
   fetchInitial();
 
   // 2. Realtime subscription — yeni mesajları dinle
-  // Topic çağrı başına benzersiz: aynı topic'e ikinci subscribe() throw eder.
   const subscription = supabase
     .channel(`messages:${channelId}:${Date.now()}-${Math.random().toString(36).slice(2)}`)
     .on(
@@ -261,8 +263,40 @@ export function listenMessages(context, callback) {
     )
     .subscribe();
 
-  // Unsubscribe fonksiyonu
-  return () => {
+  const unsubscribe = () => {
     supabase.removeChannel(subscription);
+  };
+
+  // 3. Geçmiş mesajları yükle
+  const loadMore = async () => {
+    if (currentMessages.length === 0) return 0;
+
+    const oldestMsg = currentMessages[0];
+    const oldestTime = oldestMsg.createdAt?.seconds
+      ? new Date(oldestMsg.createdAt.seconds * 1000).toISOString()
+      : null;
+
+    if (!oldestTime) return 0;
+
+    const { data, error } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("channel_id", channelId)
+      .lt("created_at", oldestTime)
+      .order("created_at", { ascending: false })
+      .limit(limitCount);
+
+    if (error || !data || data.length === 0) return 0;
+
+    const reversed = [...data].reverse();
+    const mapped = await Promise.all(reversed.map(mapMessage));
+    currentMessages = [...mapped, ...currentMessages];
+    callback([...currentMessages]);
+    return data.length;
+  };
+
+  return {
+    unsubscribe,
+    loadMore,
   };
 }

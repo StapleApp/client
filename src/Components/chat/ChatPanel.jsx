@@ -86,6 +86,9 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
   const messagesEndRef = useRef(null);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
+  const listenerRef = useRef(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
 
   // "Yazıyor..." durumu (socket üzerinden, DB'den bağımsız)
   const [typingUsers, setTypingUsers] = useState({}); // userId -> nickName
@@ -239,18 +242,53 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
+  const loadOlderMessages = async () => {
+    if (!listenerRef.current || loadingOlder || !hasMore) return;
+
+    setLoadingOlder(true);
+
+    const container = scrollRef.current;
+    const previousScrollHeight = container ? container.scrollHeight : 0;
+    const previousScrollTop = container ? container.scrollTop : 0;
+
+    try {
+      const loadedCount = await listenerRef.current.loadMore();
+      if (loadedCount < 30) {
+        setHasMore(false);
+      }
+
+      // Scroll sabitleme (Scroll Anchoring):
+      // DOM güncellendikten sonra scroll konumunu koru
+      requestAnimationFrame(() => {
+        if (container) {
+          const newScrollHeight = container.scrollHeight;
+          container.scrollTop = previousScrollTop + (newScrollHeight - previousScrollHeight);
+        }
+      });
+    } catch (e) {
+      console.error("Error loading older messages:", e);
+    } finally {
+      setLoadingOlder(false);
+    }
+  };
+
   // Listen to messages in real time
   useEffect(() => {
     setMessages([]);
     setEditingId(null);
     setConfirmDeleteId(null);
+    setHasMore(true);
+    setLoadingOlder(false);
     if (!context) return;
     const hasServer = context.serverId && context.channelId;
     const hasGroup = context.groupId;
     if (!hasServer && !hasGroup) return;
 
-    const unsubscribe = listenMessages(context, setMessages);
-    return () => unsubscribe && unsubscribe();
+    const listener = listenMessages(context, setMessages);
+    listenerRef.current = listener;
+    return () => {
+      if (listener) listener.unsubscribe();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [context?.serverId, context?.channelId, context?.groupId]);
 
@@ -259,11 +297,22 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     if (isNearBottom()) scrollToBottom();
   }, [messages]);
 
+  // İlk yüklemede veya liste güncellendiğinde eğer 30'dan az mesaj varsa hasMore = false
+  useEffect(() => {
+    if (messages.length < 30) {
+      setHasMore(false);
+    }
+  }, [messages.length]);
+
   const handleScroll = () => {
     setShowScrollBtn(!isNearBottom());
-    // Scroll'da açık profil kartını kapat — kart fixed konumlu olduğundan
-    // liste kayınca avatarından kopup havada kalıyordu.
     if (isProfileCardExpanded) setIsProfileCardExpanded(false);
+
+    // En üste yakınsa ve daha fazla mesaj varsa yükle
+    const el = scrollRef.current;
+    if (el && el.scrollTop < 15 && hasMore && !loadingOlder) {
+      loadOlderMessages();
+    }
   };
 
   // DM ise alıcıya kalıcı "message" bildirimi oluştur (sunucu kanallarında headerUserId yok).
@@ -391,6 +440,12 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
 
       {/* Messages — Discord tarzı: sola hizalı, baloncuksuz, gruplanmış */}
       <div className="flex-1 overflow-y-auto py-4 relative" ref={scrollRef} onScroll={handleScroll}>
+        {loadingOlder && (
+          <div className="flex items-center justify-center py-2 text-xs text-[var(--primary-text)] gap-2">
+            <span className="w-4 h-4 border-2 border-[var(--tertiary-bg)] border-t-transparent rounded-full animate-spin" />
+            <span>Geçmiş mesajlar yükleniyor...</span>
+          </div>
+        )}
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-[var(--primary-text)] text-sm gap-2">
             <Hash className="w-8 h-8 text-[var(--quaternary-text)]" />
