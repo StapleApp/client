@@ -69,7 +69,7 @@ const DirectMessagingPage = () => {
         .map((p) => ({
           userID: p.userID,
           nickName: p.nickName || p.name || "Kullanıcı",
-          photoURL: p.photoURL || "/1.png",
+          photoURL: p.photoURL || "/defaults/avatars/1.png",
           status: p.status || "offline",
           lastSeen: p.lastSeen || null,
         }));
@@ -138,7 +138,7 @@ const DirectMessagingPage = () => {
         openDM({
           userID: friend.userID,
           nickName: friend.nickName || friend.name || "Kullanıcı",
-          photoURL: friend.photoURL || "/1.png",
+          photoURL: friend.photoURL || "/defaults/avatars/1.png",
           status: friend.status || "offline",
           lastSeen: friend.lastSeen || null,
         });

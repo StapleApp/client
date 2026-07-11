@@ -128,13 +128,13 @@ export function listenMessages(context, callback) {
       userCache[senderId] = {
         senderId: data.id,
         senderName: data.nickname || "Bilinmeyen",
-        senderPhoto: data.avatar_url || "/1.png",
+        senderPhoto: data.avatar_url || "/defaults/avatars/1.png",
       };
     } else {
       userCache[senderId] = {
         senderId,
         senderName: "Bilinmeyen",
-        senderPhoto: "/1.png",
+        senderPhoto: "/defaults/avatars/1.png",
       };
     }
 

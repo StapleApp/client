@@ -70,7 +70,7 @@ const Navigator = () => {
         posX={242}
         posY={30}
         userName={userData?.nickName}
-        photoURL={userData?.photoURL || "/1.png"}
+        photoURL={userData?.photoURL || "/defaults/avatars/1.png"}
         userID={userData?.friendshipID}
         memberDate={userData?.createdDate}
         about={userData?.about}
@@ -93,7 +93,7 @@ const Navigator = () => {
               onClick={() => setIsExpanded(!isExpanded)}
             >
               <img
-                src={userData?.photoURL || "/1.png"}
+                src={userData?.photoURL || "/defaults/avatars/1.png"}
                 className="w-10 h-10 rounded-full"
                 alt={"logo"}
               />

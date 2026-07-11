@@ -258,7 +258,7 @@ const VoiceBar = () => {
           {/* Kendin */}
           <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
             <img
-              src={userData?.photoURL || "/1.png"}
+              src={userData?.photoURL || "/defaults/avatars/1.png"}
               alt=""
               className={`w-8 h-8 rounded-full border-2 transition-colors ${
                 muted
@@ -288,7 +288,7 @@ const VoiceBar = () => {
               <div key={p.socketId} className="px-2 py-1.5 rounded-lg">
                 <div className="flex items-center gap-2">
                   <img
-                    src={p.photoURL || "/1.png"}
+                    src={p.photoURL || "/defaults/avatars/1.png"}
                     alt=""
                     className={`w-8 h-8 rounded-full border-2 transition-colors ${
                       speaking[p.socketId]

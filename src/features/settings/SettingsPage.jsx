@@ -7,8 +7,9 @@ import { Check, Loader2, Trash2, AlertTriangle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { updateUserProfile } from "../../services/userService";
 import AvatarUpload from "../../Components/AvatarUpload";
+import { DEFAULT_AVATARS } from "../../config/defaults";
 
-const AVATARS = ["/0.png", "/1.png", "/2.png", "/3.png", "/4.png", "/5.png", "/6.png", "/7.png"];
+const AVATARS = DEFAULT_AVATARS;
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ const SettingsPage = () => {
 
   const [nickName, setNickName] = useState("");
   const [about, setAbout] = useState("");
-  const [photoURL, setPhotoURL] = useState("/1.png");
+  const [photoURL, setPhotoURL] = useState("/defaults/avatars/1.png");
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -31,7 +32,7 @@ const SettingsPage = () => {
     if (userData) {
       setNickName(userData.nickName || "");
       setAbout(userData.about || "");
-      setPhotoURL(userData.photoURL || "/1.png");
+      setPhotoURL(userData.photoURL || "/defaults/avatars/1.png");
     }
   }, [userData]);
 

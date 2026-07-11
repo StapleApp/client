@@ -48,7 +48,7 @@ const ProfilePage = () => {
         createdDate: userData.createdDate || "",
         friendshipId: userData.friendshipID || "",
         email: userData.email || "@",
-        profileImage: userData.photoURL || "/1.png",
+        profileImage: userData.photoURL || "/defaults/avatars/1.png",
         status: userData.status || "online",
         about: userData.about || "",
       }));
@@ -174,7 +174,7 @@ const ProfilePage = () => {
                     className="w-36 h-36 rounded-full overflow-hidden bg-[var(--secondary-bg)] cursor-pointer ring-0 hover:ring-4 hover:ring-[var(--tertiary-border)] transition-all"
                   >
                     <img
-                      src={profileData.profileImage || "/1.png"}
+                      src={profileData.profileImage || "/defaults/avatars/1.png"}
                       alt="Profil"
                       className="w-full h-full object-cover"
                     />

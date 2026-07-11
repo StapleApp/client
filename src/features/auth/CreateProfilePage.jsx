@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { UpdateNickname } from "../../services/userService";
 import { useAuth } from "../../context/AuthContext";
 import AvatarUpload from "../../Components/AvatarUpload";
+import { DEFAULT_AVATARS } from "../../config/defaults";
 
 const CreateProfilePage = () => {
   const [nickname, setNickname] = useState('');
@@ -11,16 +12,7 @@ const CreateProfilePage = () => {
   const { userData, currentUser, refreshUserData } = useAuth();
   const navigate = useNavigate();
 
-  const profileImages = [
-    "/0.png",
-    "/1.png",
-    "/2.png",
-    "/3.png",
-    "/4.png",
-    "/5.png",
-    "/6.png",
-    "/7.png",
-  ];
+  const profileImages = DEFAULT_AVATARS;
 
   const [selectedImage, setSelectedImage] = useState(profileImages[0]);
 

@@ -137,7 +137,7 @@ export const VoiceProvider = ({ children }) => {
         socketId,
         userId: p.userId,
         nickName: p.nickName || "Bilinmeyen",
-        photoURL: p.photoURL || "/1.png",
+        photoURL: p.photoURL || "/defaults/avatars/1.png",
         muted: !!p.muted,
       }))
     );
@@ -464,7 +464,7 @@ export const VoiceProvider = ({ children }) => {
       pc,
       userId: info.userId,
       nickName: info.nickName,
-      photoURL: "/1.png",
+      photoURL: "/defaults/avatars/1.png",
       muted: !!info.muted,
     };
     refreshParticipants();
@@ -476,7 +476,7 @@ export const VoiceProvider = ({ children }) => {
           const entry = peersRef.current[socketId];
           if (entry && u) {
             entry.nickName = u.nickName || info.nickName || "Bilinmeyen";
-            entry.photoURL = u.photoURL || "/1.png";
+            entry.photoURL = u.photoURL || "/defaults/avatars/1.png";
             refreshParticipants();
           }
         })

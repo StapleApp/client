@@ -177,7 +177,7 @@ const ChannelRow = ({ channel, h }) => {
           {occupants.map((u) => (
             <li key={u.socketId} className="flex items-center gap-1.5 min-w-0">
               <img
-                src={voiceAvatars[u.userId] || "/1.png"}
+                src={voiceAvatars[u.userId] || "/defaults/avatars/1.png"}
                 alt=""
                 className={`w-4 h-4 rounded-full object-cover shrink-0 ring-2 transition-colors ${
                   isSpeaking(u) ? "ring-green-500" : "ring-transparent"

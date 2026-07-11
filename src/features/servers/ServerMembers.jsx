@@ -61,7 +61,7 @@ const ServerMembers = ({ serverData, onRefresh }) => {
           return {
             userID: p.userID,
             nickName: p.nickName || p.name || "Kullanıcı",
-            photoURL: p.photoURL || "/1.png",
+            photoURL: p.photoURL || "/defaults/avatars/1.png",
             status: p.status || "offline",
             lastSeen: p.lastSeen || null,
             friendshipID: p.friendshipID,

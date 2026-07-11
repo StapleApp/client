@@ -405,7 +405,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
                   <div className="w-10 shrink-0 relative">
                     {!grouped ? (
                       <img
-                        src={message.senderPhoto || "/1.png"}
+                        src={message.senderPhoto || "/defaults/avatars/1.png"}
                         alt=""
                         className="w-10 h-10 rounded-full mt-0.5 cursor-pointer hover:opacity-85 transition-opacity"
                         onClick={(e) => handleAvatarClick(e, message.senderId)}

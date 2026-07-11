@@ -79,7 +79,7 @@ const HomePage = () => {
         friendProfiles.filter(Boolean).map((p) => ({
           userID: p.userID,
           nickName: p.nickName || p.name || "Kullanıcı",
-          photoURL: p.photoURL || "/1.png",
+          photoURL: p.photoURL || "/defaults/avatars/1.png",
           status: resolveStatus(p.status, p.lastSeen),
         }))
       );
