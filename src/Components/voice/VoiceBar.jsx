@@ -51,6 +51,7 @@ const VoiceBar = () => {
     setIsDetached,
     isDragOverSidebar,
     setIsDragOverSidebar,
+    showSidebar,
   } = useVoice();
   const { userData } = useAuth();
   const navigate = useNavigate();
@@ -393,8 +394,8 @@ const VoiceBar = () => {
   // Kontrol satırı (her iki düzende ortak)
   const controls = (
     <div className="flex items-center gap-3 w-full">
-      {/* Pop-in (Sabitle) butonu — sadece sunucu sayfasındayken gösterilir */}
-      {onServerPage && (
+      {/* Pop-in (Sabitle) butonu — sadece sunucu sayfasındayken VE sunucu kenar çubuğu açıkken gösterilir */}
+      {onServerPage && showSidebar && (
         <button
           type="button"
           onClick={() => {
@@ -687,13 +688,13 @@ const VoiceBar = () => {
               document.body.classList.add("select-none");
             }}
             onDrag={(event, info) => {
-              const isOver = onServerPage && info.point.x < 320 && info.point.x > 0;
+              const isOver = onServerPage && showSidebar && info.point.x < 320 && info.point.x > 0;
               setIsDragOverSidebar(isOver);
             }}
             onDragEnd={(event, info) => {
               document.body.classList.remove("select-none");
               setIsDragOverSidebar(false);
-              if (onServerPage && info.point.x < 320) {
+              if (onServerPage && showSidebar && info.point.x < 320) {
                 setIsDetached(false);
               }
             }}

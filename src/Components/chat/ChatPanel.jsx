@@ -621,7 +621,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
             value={newMessage}
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
-            placeholder={`Mesajınızı yazın...  (Shift+Enter: yeni satır)`}
+            placeholder="Mesajınızı yazın..."
             style={{ maxHeight: "160px" }}
             className="w-full px-4 py-2 pr-20 rounded-xl bg-[var(--secondary-bg)] text-[var(--secondary-text)] border-2 border-[var(--primary-border)] focus:outline-none focus:border-[var(--tertiary-border)] placeholder:text-[var(--primary-text)] transition-colors resize-none overflow-y-auto leading-6 block"
           />

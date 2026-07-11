@@ -87,6 +87,7 @@ export const VoiceProvider = ({ children }) => {
   const [isDetached, setIsDetached] = useState(false);
   const [isTheaterExpanded, setIsTheaterExpanded] = useState(true);
   const [isDragOverSidebar, setIsDragOverSidebar] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
 
   // Sesli kanal doluluğu: sunucudaki tüm sesli kanallar için { channelId: [users] }
   // (kanala girmeden kimin içeride olduğunu göstermek için)
@@ -942,6 +943,8 @@ export const VoiceProvider = ({ children }) => {
         setIsTheaterExpanded,
         isDragOverSidebar,
         setIsDragOverSidebar,
+        showSidebar,
+        setShowSidebar,
         // sesli kanal doluluğu
         voiceState,
         voiceAvatars,

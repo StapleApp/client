@@ -638,12 +638,13 @@ const SvSidebar = ({ serverData, onRefresh }) => {
     isTheaterExpanded,
     setIsTheaterExpanded,
     isDragOverSidebar,
+    showSidebar,
+    setShowSidebar,
   } = voice;
 
   const [theaterHeight, setTheaterHeight] = useState(300); // 300px default
   const [isResizing, setIsResizing] = useState(false);
   const [showMembers, setShowMembers] = useState(true);
-  const [showSidebar, setShowSidebar] = useState(true);
 
   const isDocked = voice.active && !isDetached;
 
