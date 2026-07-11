@@ -182,6 +182,26 @@ export const markAsRead = async (uid, notificationId) => {
 };
 
 /**
+ * Belirli bir kişiden gelen okunmamış "message" bildirimlerini okundu yap.
+ * (DM açıldığında çağrılır → o kişinin mesaj bildirimlerinin kırmızı noktası kalkar.)
+ */
+export const markMessageNotificationsRead = async (uid, fromUid) => {
+  try {
+    if (!uid || !fromUid) return;
+    const { error } = await supabase
+      .from("notifications")
+      .update({ read: true })
+      .eq("user_id", uid)
+      .eq("from_user_id", fromUid)
+      .eq("type", "message")
+      .eq("read", false);
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error marking message notifications read:", error);
+  }
+};
+
+/**
  * Mark all notifications as read.
  */
 export const markAllAsRead = async (uid) => {

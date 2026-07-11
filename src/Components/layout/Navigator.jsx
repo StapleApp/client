@@ -1,22 +1,22 @@
 import { BsGearFill } from "react-icons/bs";
 import { FaStapler } from "react-icons/fa6";
 import { MdHome, MdSearch, MdOutlineMessage } from "react-icons/md";
-import { IoMdNotifications } from "react-icons/io";
 
 import ProfilePanel from './ProfilePanel'
-import { useState, useEffect } from "react";
+import NotificationsBell from './NotificationsBell'
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../../styles/components.css";
 
 import { useAuth } from "../../context/AuthContext";
-import { listenNotifications } from "../../services/notificationService";
 
 // Sol menü öğeleri — tek kaynaktan yönetilir.
+// Bildirimler (custom) tıklanınca sayfaya gitmez, scroll dropdown açar.
 const NAV_ITEMS = [
   { path: "/", label: "Ana Sayfa", icon: <MdHome size="25" /> },
   { path: "/AddFriends", label: "Arkadaş Ekle", icon: <FaStapler size="20" /> },
   { path: "/SearchServer", label: "Sunucu Ara", icon: <MdSearch size="25" /> },
-  { path: "/Notifications", label: "Bildirimler", icon: <IoMdNotifications size="25" /> },
+  { custom: "notifications", label: "Bildirimler" },
   { path: "/DirectMessaging", label: "Mesajlar", icon: <MdOutlineMessage size="25" /> },
 ];
 
@@ -49,18 +49,6 @@ const NavItem = ({ path, label, icon, badge = 0 }) => {
 const Navigator = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { userData } = useAuth();
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  // Okunmamış bildirim sayısını canlı dinle
-  useEffect(() => {
-    if (!userData?.userID) return;
-    const unsubscribe = listenNotifications(userData.userID, (list) => {
-      setUnreadCount(list.filter((n) => !n.read).length);
-    });
-    return () => unsubscribe && unsubscribe();
-  }, [userData?.userID]);
-
-  const badges = { "/Notifications": unreadCount };
 
   return (
     <>
@@ -105,11 +93,15 @@ const Navigator = () => {
           {/* Gezinme öğeleri */}
           {NAV_ITEMS.map((item, i) => (
             <div
-              key={item.path}
+              key={item.path || item.custom}
               className={`${i >= 3 ? "flex flex-col h-16 " : ""}transition-all duration-250 ease-in-out ${ITEM_DELAYS[i]}
                       ${isExpanded ? '-translate-y-15' : 'translate-y-0'}`}
             >
-              <NavItem {...item} badge={badges[item.path] || 0} />
+              {item.custom === "notifications" ? (
+                <NotificationsBell />
+              ) : (
+                <NavItem {...item} />
+              )}
               {/* Mesajlar'dan sonra ayraç (orijinal tasarım) */}
               {item.path === "/DirectMessaging" && (
                 <hr className="border-[var(--primary-border)] border" />

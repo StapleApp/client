@@ -13,6 +13,7 @@ import MessageContent from "./MessageContent";
 import GifPicker from "./GifPicker";
 import ProfilePanel from "../layout/ProfilePanel";
 import { getUser } from "../../services/userService";
+import { createNotification } from "../../services/notificationService";
 import { socket } from "../../config/socket";
 
 const formatTime = (createdAt) => {
@@ -265,6 +266,26 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     if (isProfileCardExpanded) setIsProfileCardExpanded(false);
   };
 
+  // DM ise alıcıya kalıcı "message" bildirimi oluştur (sunucu kanallarında headerUserId yok).
+  const notifyDMRecipient = (content, type) => {
+    if (!headerUserId || !userData) return;
+    const preview =
+      type === "gif" ? "GIF gönderdi"
+      : type === "image" ? "Görsel gönderdi"
+      : content.length > 40 ? content.slice(0, 40) + "…" : content;
+    createNotification(headerUserId, {
+      type: "message",
+      from_user_id: userData.userID,
+      data: {
+        type: "message",
+        user: userData.nickName || "Kullanıcı",
+        fromUid: userData.userID,
+        photo: userData.photoURL || "",
+        message: preview,
+      },
+    });
+  };
+
   const handleGifSelect = async (gif) => {
     const formats = gif.media_formats || gif.media || {};
     const gifUrl = formats.gif?.url || formats.tinygif?.url || formats.mediumgif?.url || gif.url;
@@ -276,6 +297,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
       type: "gif",
       replyTo: replyingTo?.id || null,
     });
+    notifyDMRecipient(gifUrl, "gif");
     setReplyingTo(null);
     setShowGifPicker(false);
   };
@@ -301,6 +323,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
       content,
       replyTo: replyingTo?.id || null,
     });
+    notifyDMRecipient(content, "text");
     setReplyingTo(null);
     scrollToBottom();
   };

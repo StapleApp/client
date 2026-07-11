@@ -149,6 +149,28 @@ export const getServersList = async (uid) => {
   }
 };
 
+// Birden çok sunucunun sesli kanallarını tek sorguda getir → { channelId: { name, serverId } }
+// (Ana sayfadaki "aktif ses kanalları" rail'i kanal id'sini isme çevirmek için kullanır.)
+export const getVoiceChannelsMap = async (serverIds) => {
+  try {
+    if (!serverIds || serverIds.length === 0) return {};
+    const { data, error } = await supabase
+      .from("channels")
+      .select("id, name, server_id")
+      .in("server_id", serverIds)
+      .eq("type", "voice");
+    if (error) throw error;
+    const map = {};
+    (data || []).forEach((c) => {
+      map[c.id] = { name: c.name, serverId: c.server_id };
+    });
+    return map;
+  } catch (error) {
+    console.error("Error getting voice channels map:", error);
+    return {};
+  }
+};
+
 export const getServerById = async (serverID) => {
   try {
     // Sunucu verisini getir

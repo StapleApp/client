@@ -7,7 +7,6 @@ import ProfilePage from "./features/profile/ProfilePage";
 import ProfileSettings from "./features/profile/ProfileSettings";
 import HomePage from "./features/home/HomePage";
 import DirectMessagingPage from "./features/messaging/DirectMessagingPage";
-import NotificationsPage from "./features/notifications/NotificationsPage";
 import CreateServerPage from "./features/servers/CreateServerPage";
 import ServerPage from "./features/servers/ServerPage";
 
@@ -79,7 +78,6 @@ function AnimatedSwitch() {
           <Route path="/Profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/ProfileSettings" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
           <Route path="/DirectMessaging" element={<ProtectedRoute><DirectMessagingPage /></ProtectedRoute>} />
-          <Route path="/Notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
           <Route path="/create-server" element={<ProtectedRoute><CreateServerPage /></ProtectedRoute>} />
           <Route path="/server/:serverId/*" element={<ProtectedRoute><ServerPage /></ProtectedRoute>} />
 
