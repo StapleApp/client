@@ -524,7 +524,7 @@ const CategorySection = ({
   );
 };
 
-const SidebarTheater = ({ stream, showingSelf, stopWatching, label, height, setHeight, toggleExpand }) => {
+const SidebarTheater = ({ stream, showingSelf, stopWatching, label, height, setHeight, toggleExpand, setIsResizing }) => {
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -537,6 +537,7 @@ const SidebarTheater = ({ stream, showingSelf, stopWatching, label, height, setH
 
   const startResize = (e) => {
     e.preventDefault();
+    setIsResizing(true);
     const startY = e.clientY;
     const startH = height;
 
@@ -547,6 +548,7 @@ const SidebarTheater = ({ stream, showingSelf, stopWatching, label, height, setH
     };
 
     const onPointerUp = () => {
+      setIsResizing(false);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
     };
@@ -596,11 +598,14 @@ const SidebarTheater = ({ stream, showingSelf, stopWatching, label, height, setH
         )}
       </div>
 
+      {/* Sarı resize gösterge barı (ortada sabit duracak pill) */}
+      <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full bg-yellow-500/70 shadow-md pointer-events-none group-hover/theater:bg-yellow-500 transition-colors" />
+
       {/* Alt kenarda resize çubuğu */}
       <div
         onPointerDown={startResize}
         title="Boyutlandır (yukarı-aşağı çek)"
-        className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize hover:bg-[var(--quaternary-text)]/40 transition-colors z-20"
+        className="absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize hover:bg-yellow-500/10 transition-colors z-20"
       />
     </div>
   );
@@ -629,6 +634,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
   } = voice;
 
   const [theaterHeight, setTheaterHeight] = useState(300); // 300px default
+  const [isResizing, setIsResizing] = useState(false);
 
   const isDocked = voice.active && !isDetached;
   const isWatching = !!remoteScreenStream;
@@ -1061,7 +1067,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: theaterHeight, opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
+              transition={isResizing ? { duration: 0 } : { duration: 0.25, ease: "easeInOut" }}
               className="w-full bg-black relative border-b-2 border-[var(--primary-border)] overflow-hidden"
             >
               <SidebarTheater
@@ -1070,6 +1076,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
                 stopWatching={stopWatching}
                 height={theaterHeight}
                 setHeight={setTheaterHeight}
+                setIsResizing={setIsResizing}
                 toggleExpand={() => setIsTheaterExpanded(false)}
                 label={
                   isWatching

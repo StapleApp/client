@@ -9,7 +9,6 @@ import {
   VolumeX,
   Loader2,
   Users,
-  GripVertical,
   ScreenShare,
   ScreenShareOff,
   MonitorPlay,
@@ -17,6 +16,8 @@ import {
   Eye,
   EyeOff,
   Settings2,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { useVoice } from "../../context/VoiceContext";
 import { useAuth } from "../../context/AuthContext";
@@ -167,7 +168,19 @@ const VoiceBar = () => {
     }
   }, [isDocked, x, y]);
 
-  const startDrag = (e) => {
+  const handlePointerDown = (e) => {
+    // Tıklanan eleman etkileşimli bir buton, girdi veya katılımcı popover'ı ise sürüklemeyi başlatma
+    if (
+      e.target.closest("button") ||
+      e.target.closest("input") ||
+      e.target.closest("select") ||
+      e.target.closest("textarea") ||
+      e.target.closest("[role='slider']") ||
+      e.target.closest(".participant-list-popover")
+    ) {
+      return;
+    }
+
     if (isDocked) {
       setIsDetached(true);
       const dockedX = 192 - window.innerWidth / 2;
@@ -178,16 +191,6 @@ const VoiceBar = () => {
     dragControls.start(e);
   };
 
-  // Sürükleme tutamacı (her iki düzende ortak)
-  const gripHandle = (
-    <div
-      onPointerDown={startDrag}
-      className="cursor-grab active:cursor-grabbing touch-none text-[var(--primary-text)] hover:text-[var(--secondary-text)] px-0.5"
-    >
-      <GripVertical size={18} />
-    </div>
-  );
-
   // Katılımcı listesi (popover)
   const participantList = (
     <AnimatePresence>
@@ -197,7 +200,7 @@ const VoiceBar = () => {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 8, scale: 0.97 }}
           transition={{ duration: 0.15 }}
-          className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-72
+          className="participant-list-popover absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-72
                      rounded-xl border-2 border-[var(--primary-border)]
                      bg-[var(--primary-bg)] shadow-2xl p-2 text-left"
         >
@@ -392,7 +395,19 @@ const VoiceBar = () => {
   // Kontrol satırı (her iki düzende ortak)
   const controls = (
     <div className="flex items-center gap-3 w-full">
-      {gripHandle}
+      {/* Pop-in (Sabitle) butonu */}
+      <button
+        type="button"
+        onClick={() => {
+          setIsDetached(false);
+          x.set(0);
+          y.set(0);
+        }}
+        title="Kenar çubuğuna sabitle"
+        className="p-2 rounded-xl border border-[var(--primary-border)] bg-[var(--secondary-bg)] text-[var(--primary-text)] hover:border-[var(--tertiary-border)] hover:text-[var(--quaternary-text)] transition-colors"
+      >
+        <Minimize2 size={16} />
+      </button>
 
       {/* Durum + kanal bilgisi */}
       <div className="flex items-center gap-3 pr-3 border-r border-[var(--primary-border)]">
@@ -583,7 +598,21 @@ const VoiceBar = () => {
             </button>
             {participantList}
           </div>
-          {gripHandle}
+          
+          <button
+            type="button"
+            onClick={() => {
+              setIsDetached(true);
+              const dockedX = 192 - window.innerWidth / 2;
+              const dockedY = 16;
+              x.set(dockedX);
+              y.set(dockedY);
+            }}
+            title="Kenar çubuğundan çıkar"
+            className="p-1 rounded-md text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--secondary-bg)] transition-colors"
+          >
+            <Maximize2 size={14} />
+          </button>
         </div>
       </div>
 
@@ -652,6 +681,7 @@ const VoiceBar = () => {
                 setIsDetached(false);
               }
             }}
+            onPointerDown={handlePointerDown}
             style={{ x, y }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
