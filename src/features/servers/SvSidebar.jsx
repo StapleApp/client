@@ -622,7 +622,7 @@ const SidebarTheater = ({ stream, showingSelf, stopWatching, label, height, setH
         ref={videoRef}
         autoPlay
         playsInline
-        className="w-full h-full object-contain bg-black"
+        className="w-full h-full object-contain bg-[#2b2f36]"
       />
       {/* Kaynak etiketi (üst orta) */}
       <div className="absolute top-3 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-lg bg-black/60 text-white text-xs flex items-center gap-1.5 pointer-events-none">
@@ -1201,7 +1201,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
               animate={{ height: theaterHeight, opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={isResizing ? { duration: 0 } : { duration: 0.25, ease: "easeInOut" }}
-              className="w-full bg-black relative border-b-2 border-[var(--primary-border)] overflow-hidden"
+              className="w-full bg-[#2b2f36] relative border-b-2 border-[var(--primary-border)] overflow-hidden"
             >
               <SidebarTheater
                 stream={theaterStream}
@@ -1273,7 +1273,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="w-full h-full flex flex-col items-center justify-center gap-4 text-[var(--primary-text)] bg-[var(--secondary-bg)]"
+                className="parallax-bg w-full h-full flex flex-col items-center justify-center gap-4 text-[var(--primary-text)] bg-[var(--secondary-bg)]"
               >
                 <div className="w-20 h-20 rounded-full bg-[var(--primary-bg)] border-4 border-[var(--tertiary-border)] flex items-center justify-center">
                   <Hash size={36} className="text-[var(--quaternary-text)]" />

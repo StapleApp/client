@@ -711,7 +711,7 @@ const VoiceBar = () => {
             {/* Ekran alanı (izleme veya kendi önizleme) — sol üstten boyutlandırılabilir */}
             {isTheater && (
               <div
-                className="relative bg-black rounded-t-2xl overflow-hidden border-b-2 border-[var(--primary-border)]"
+                className="relative bg-[#2b2f36] rounded-t-2xl overflow-hidden border-b-2 border-[var(--primary-border)]"
                 style={{ width: dims.w, height: dims.h }}
               >
                 <video
@@ -721,7 +721,7 @@ const VoiceBar = () => {
                   // Kendi önizlemende sessiz (sistem sesini geri duyma);
                   // başkasını izlerken paylaşılan sesi duy.
                   muted={showingSelfPreview}
-                  className="w-full h-full object-contain bg-black"
+                  className="w-full h-full object-contain bg-[#2b2f36]"
                 />
 
                 {/* Kaynak etiketi (üst orta) */}
