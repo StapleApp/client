@@ -351,7 +351,12 @@ const CategorySection = ({
           aria-label={collapsed ? "Genişlet" : "Daralt"}
           className="shrink-0 text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
         >
-          {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+          <motion.div
+            animate={{ rotate: collapsed ? 0 : 90 }}
+            transition={{ duration: 0.15, ease: "easeInOut" }}
+          >
+            <ChevronRight size={14} />
+          </motion.div>
         </button>
         {renaming ? (
           <input
@@ -476,30 +481,40 @@ const CategorySection = ({
       </div>
 
       {/* Kategori içindeki kanallar */}
-      {!collapsed && (
-        <Reorder.Group
-          axis="y"
-          values={channels}
-          onReorder={(arr) => onGroupReorder(category.id, arr)}
-          className="flex flex-col gap-1 list-none m-0 p-0 pl-1"
-        >
-          {channels.map((channel) => (
-            <Reorder.Item
-              key={channel.id}
-              value={channel}
-              onDragEnd={persistChannelPlacements}
-              className="relative"
+      <AnimatePresence initial={false}>
+        {!collapsed && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <Reorder.Group
+              axis="y"
+              values={channels}
+              onReorder={(arr) => onGroupReorder(category.id, arr)}
+              className="flex flex-col gap-1 list-none m-0 p-0 pl-1"
             >
-              <ChannelRow channel={channel} h={h} />
-            </Reorder.Item>
-          ))}
-          {channels.length === 0 && (
-            <p className="text-[11px] text-[var(--primary-text)] px-2 py-1 italic">
-              Boş kategori
-            </p>
-          )}
-        </Reorder.Group>
-      )}
+              {channels.map((channel) => (
+                <Reorder.Item
+                  key={channel.id}
+                  value={channel}
+                  onDragEnd={persistChannelPlacements}
+                  className="relative"
+                >
+                  <ChannelRow channel={channel} h={h} />
+                </Reorder.Item>
+              ))}
+              {channels.length === 0 && (
+                <p className="text-[11px] text-[var(--primary-text)] px-2 py-1 italic">
+                  Boş kategori
+                </p>
+              )}
+            </Reorder.Group>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Reorder.Item>
   );
 };
