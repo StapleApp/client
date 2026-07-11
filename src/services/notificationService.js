@@ -5,6 +5,36 @@ import { supabase } from "../config/supabase";
  */
 export const createNotification = async (targetUid, notification) => {
   try {
+    // Mesaj bildirimi ise ve gönderen bilgisi varsa, alıcının henüz okumadığı
+    // eski bir mesaj bildirimi var mı diye kontrol et.
+    if (notification.type === "message" && notification.from_user_id) {
+      const { data: existing, error: fetchError } = await supabase
+        .from("notifications")
+        .select("id, data")
+        .eq("user_id", targetUid)
+        .eq("type", "message")
+        .eq("from_user_id", notification.from_user_id)
+        .eq("read", false)
+        .maybeSingle();
+
+      if (!fetchError && existing) {
+        // Eğer okunmamış bir bildirim varsa, üzerine yaz (güncelle) ve zamanı güncelle (en üste çıksın diye)
+        const { error: updateError } = await supabase
+          .from("notifications")
+          .update({
+            data: {
+              ...existing.data,
+              ...notification.data,
+            },
+            created_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+
+        if (updateError) throw updateError;
+        return;
+      }
+    }
+
     const { error } = await supabase.from("notifications").insert({
       user_id: targetUid,
       type: notification.type,
