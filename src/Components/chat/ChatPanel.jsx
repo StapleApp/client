@@ -682,6 +682,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
           memberDate={selectedUser.createdDate}
           UID={selectedUser.userID}
           about={selectedUser.about}
+          bannerURL={selectedUser.profileBannerUrl}
         />,
         document.body
       )}

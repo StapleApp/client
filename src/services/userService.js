@@ -59,6 +59,7 @@ export const mapProfileToLegacy = (profile) => {
     friendshipID: profile.friendship_code || "",
     status: profile.status || "offline",
     lastSeen: profile.last_seen || null,
+    profileBannerUrl: profile.profile_banner_url || "",
     about: profile.about || "",
     favoriteGifs: profile.favorite_gifs || [],
     // Bu alanlar artık ayrı tablolarda; geriye uyumluluk için boş döndür
@@ -203,6 +204,7 @@ export const updateUserProfile = async (uid, data) => {
     if ("name" in data) mapped.name = data.name;
     if ("surname" in data) mapped.surname = data.surname;
     if ("status" in data) mapped.status = data.status;
+    if ("profileBannerUrl" in data) mapped.profile_banner_url = data.profileBannerUrl;
     if ("favoriteGifs" in data) mapped.favorite_gifs = data.favoriteGifs;
     // Supabase alan adları doğrudan geçenleri de kabul et
     if ("nickname" in data) mapped.nickname = data.nickname;

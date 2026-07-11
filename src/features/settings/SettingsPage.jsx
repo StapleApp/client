@@ -3,55 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { FaPowerOff } from "react-icons/fa6";
-import { Check, Loader2, Trash2, AlertTriangle } from "lucide-react";
+import { Loader2, Trash2, AlertTriangle, Pencil } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { updateUserProfile } from "../../services/userService";
-import AvatarUpload from "../../Components/AvatarUpload";
-import { DEFAULT_AVATARS } from "../../config/defaults";
-
-const AVATARS = DEFAULT_AVATARS;
 
 const SettingsPage = () => {
   const navigate = useNavigate();
-  const { userData, currentUser, signOut, refreshUserData, deleteAccount } = useAuth();
+  const { userData, currentUser, signOut, deleteAccount } = useAuth();
 
-  const [nickName, setNickName] = useState("");
-  const [about, setAbout] = useState("");
-  const [photoURL, setPhotoURL] = useState("/defaults/avatars/1.png");
-  const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    if (!currentUser) {
-      navigate("/login");
-    }
+    if (!currentUser) navigate("/login");
   }, [currentUser, navigate]);
-
-  useEffect(() => {
-    if (userData) {
-      setNickName(userData.nickName || "");
-      setAbout(userData.about || "");
-      setPhotoURL(userData.photoURL || "/defaults/avatars/1.png");
-    }
-  }, [userData]);
-
-  const handleSave = async () => {
-    if (!userData?.userID) return;
-    if (nickName.trim().length > 12) {
-      toast.error("Takma ad 12 karakterden kısa olmalı");
-      return;
-    }
-    setSaving(true);
-    const ok = await updateUserProfile(userData.userID, {
-      nickName: nickName.trim(),
-      about: about.trim(),
-      photoURL,
-    });
-    await refreshUserData();
-    setSaving(false);
-    ok ? toast.success("Profil güncellendi") : toast.error("Kaydedilemedi");
-  };
 
   const handleLogout = async () => {
     await signOut();
@@ -88,94 +52,35 @@ const SettingsPage = () => {
       <div className="max-w-2xl mx-auto px-4 py-10">
         <h1 className="text-3xl font-bold mb-8">Ayarlar</h1>
 
-        {/* Hesap / Profil */}
+        {/* Profil özeti + düzenle */}
         <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)] mb-6">
           <h2 className="text-lg font-semibold mb-4 text-[var(--quaternary-text)]">
             Profil
           </h2>
-
-          {/* Seçili avatar önizleme */}
-          <div className="flex items-center gap-4 mb-5">
+          <div className="flex items-center gap-4">
             <img
-              src={photoURL}
+              src={userData?.photoURL || "/defaults/avatars/1.png"}
               alt="Avatar"
-              className="w-20 h-20 rounded-full border-4 border-[var(--tertiary-border)] object-cover"
+              className="w-16 h-16 rounded-full border-4 border-[var(--tertiary-border)] object-cover"
             />
-            <div>
-              <p className="font-bold text-lg">
-                {userData?.name} {userData?.surname}
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-lg truncate">
+                {userData?.nickName || `${userData?.name || ""} ${userData?.surname || ""}`}
               </p>
-              <p className="text-sm text-[var(--primary-text)]">
+              <p className="text-sm text-[var(--primary-text)] truncate">
                 {userData?.email}
               </p>
               <p className="text-xs text-[var(--primary-text)]">
                 #{userData?.friendshipID}
               </p>
             </div>
+            <button
+              onClick={() => navigate("/ProfileSettings")}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] font-semibold text-sm hover:bg-[var(--quaternary-bg)] transition-colors shrink-0"
+            >
+              <Pencil size={15} /> Profili Düzenle
+            </button>
           </div>
-
-          {/* Avatar seçici */}
-          <label className="block text-sm font-medium mb-2">
-            Profil Fotoğrafı
-          </label>
-          <div className="grid grid-cols-8 gap-2 mb-3">
-            {AVATARS.map((img) => (
-              <button
-                key={img}
-                type="button"
-                onClick={() => setPhotoURL(img)}
-                className={`rounded-full overflow-hidden border-4 transition-all hover:scale-105 ${
-                  photoURL === img
-                    ? "border-[var(--tertiary-border)] scale-105"
-                    : "border-transparent"
-                }`}
-              >
-                <img src={img} alt="" className="w-full aspect-square object-cover" />
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-3 mb-5">
-            <AvatarUpload
-              uid={userData?.userID}
-              onUploaded={(url) => setPhotoURL(url)}
-            />
-            {!AVATARS.includes(photoURL) && (
-              <span className="text-xs text-[var(--quaternary-text)]">
-                Yüklenen fotoğraf seçili
-              </span>
-            )}
-          </div>
-
-          {/* Takma ad */}
-          <label className="block text-sm font-medium mb-2">Takma Ad</label>
-          <input
-            type="text"
-            value={nickName}
-            onChange={(e) => setNickName(e.target.value)}
-            maxLength={12}
-            placeholder="Takma adın"
-            className="w-full mb-5 px-4 py-2 rounded-xl bg-[var(--secondary-bg)] text-[var(--secondary-text)] border-2 border-[var(--primary-border)] focus:outline-none focus:border-[var(--tertiary-border)] transition-colors"
-          />
-
-          {/* Hakkında */}
-          <label className="block text-sm font-medium mb-2">Hakkımda</label>
-          <textarea
-            value={about}
-            onChange={(e) => setAbout(e.target.value)}
-            maxLength={200}
-            rows={3}
-            placeholder="Kendinden bahset..."
-            className="w-full mb-5 px-4 py-2 rounded-xl bg-[var(--secondary-bg)] text-[var(--secondary-text)] border-2 border-[var(--primary-border)] focus:outline-none focus:border-[var(--tertiary-border)] resize-none transition-colors"
-          />
-
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 px-6 py-2 rounded-xl bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] font-semibold hover:bg-[var(--quaternary-bg)] disabled:opacity-50 transition-colors"
-          >
-            {saving ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
-            {saving ? "Kaydediliyor..." : "Kaydet"}
-          </button>
         </section>
 
         {/* Hesap işlemleri */}

@@ -66,6 +66,7 @@ const ServerMembers = ({ serverData, onRefresh }) => {
             lastSeen: p.lastSeen || null,
             friendshipID: p.friendshipID,
             about: p.about,
+            profileBannerUrl: p.profileBannerUrl,
             createdDate: p.createdDate,
             roleId: role?.RoleID || null,
             roleName: role?.RoleName || null,
@@ -289,6 +290,7 @@ const ServerMembers = ({ serverData, onRefresh }) => {
             memberDate={selectedUser.createdDate}
             UID={selectedUser.userID}
             about={selectedUser.about}
+            bannerURL={selectedUser.profileBannerUrl}
           />,
           document.body
         )}

@@ -21,6 +21,7 @@ const ProfilePanel = ({
   memberDate,
   UID,
   about,
+  bannerURL,
 }) => {
   const formattedUID = `${userID}`.padStart(6, "0");
   const panelRef = useRef(null);
@@ -119,7 +120,7 @@ const ProfilePanel = ({
           <div className="row-span-2">
             <img
               className="rounded-t-md h-32 w-80"
-              src={profileBanner}
+              src={bannerURL || profileBanner}
             />
           </div>
 

@@ -169,7 +169,7 @@ const ProfilePage = () => {
               <div className="flex flex-col items-center justify-center text-center h-full gap-6 px-6">
                 <div className="relative">
                   <div
-                    onClick={() => navigate("/Settings")}
+                    onClick={() => navigate("/ProfileSettings")}
                     title="Profil fotoğrafını değiştir"
                     className="w-36 h-36 rounded-full overflow-hidden bg-[var(--secondary-bg)] cursor-pointer ring-0 hover:ring-4 hover:ring-[var(--tertiary-border)] transition-all"
                   >
