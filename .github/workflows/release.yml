@@ -1,0 +1,64 @@
+name: Release
+
+# v ile başlayan bir tag push'landığında (örn. v0.1.2) tetiklenir:
+#   git tag v0.1.2 && git push origin v0.1.2
+# GitHub bulutta Tauri'yi derler ve installer'ı ekli bir Release oluşturur.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      # Frontend derlemesi VITE_ değişkenlerine ihtiyaç duyar (.env commit edilmiyor).
+      # Bunları GitHub → Settings → Secrets and variables → Actions altına ekle.
+      - name: Build & publish release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SITE_URL: ${{ secrets.VITE_SITE_URL }}
+          VITE_KLIPY_API_KEY: ${{ secrets.VITE_KLIPY_API_KEY }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Staple ${{ github.ref_name }}"
+          releaseBody: "Windows kurulumu için aşağıdaki **Staple-Setup.exe** dosyasını indir."
+          releaseDraft: false
+          prerelease: false
+
+      # Sürüm numarasından bağımsız, KALICI bir indirme linki için installer'ı
+      # sabit adla da yükle → .../releases/latest/download/Staple-Setup.exe
+      - name: Upload fixed-name installer (stable latest link)
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $exe = Get-ChildItem -Path src-tauri/target/release/bundle/nsis -Filter *-setup.exe -Recurse | Select-Object -First 1
+          if (-not $exe) { throw "NSIS installer bulunamadı" }
+          Copy-Item $exe.FullName "Staple-Setup.exe"
+          gh release upload ${{ github.ref_name }} "Staple-Setup.exe" --clobber
