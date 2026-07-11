@@ -211,15 +211,28 @@ export const updateUserProfile = async (uid, data) => {
     if ("avatar_url" in data) mapped.avatar_url = data.avatar_url;
     if ("favorite_gifs" in data) mapped.favorite_gifs = data.favorite_gifs;
 
-    const { error } = await supabase
+    console.log("[updateUserProfile] uid:", uid);
+    console.log("[updateUserProfile] gelen data:", data);
+    console.log("[updateUserProfile] mapped:", mapped);
+
+    const { data: result, error } = await supabase
       .from("profiles")
       .update(mapped)
-      .eq("id", uid);
+      .eq("id", uid)
+      .select();
 
     if (error) throw error;
+
+    console.log("[updateUserProfile] Güncellenen veri:", result);
+
+    if (!result || result.length === 0) {
+      console.warn("[updateUserProfile] 0 satır güncellendi — uid eşleşmedi veya RLS engeli");
+      return false;
+    }
+
     return true;
   } catch (error) {
-    console.error("Error updating profile:", error);
+    console.error("[updateUserProfile] HATA:", error);
     return false;
   }
 };

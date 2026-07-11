@@ -915,7 +915,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
         <ServerSettings
           serverData={serverData}
           onClose={() => setShowSettings(false)}
-          onSaved={() => onRefresh && onRefresh()}
+          onSaved={async () => onRefresh && await onRefresh()}
           onDeleted={() => {
             setShowSettings(false);
             navigate("/");

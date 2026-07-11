@@ -47,14 +47,24 @@ const ProfileSettings = () => {
     if (!nickName.trim()) return toast.error("Takma ad boş olamaz");
     if (nickName.trim().length > 12) return toast.error("Takma ad 12 karakterden kısa olmalı");
 
-    setSaving(true);
-    const ok = await updateUserProfile(userData.userID, {
+    const updateData = {
       nickName: nickName.trim(),
       about: about.trim(),
       photoURL,
       profileBannerUrl: bannerUrl,
+    };
+
+    console.log("[ProfileSettings] Kaydedilen değerler:", updateData);
+
+    setSaving(true);
+    const ok = await updateUserProfile(userData.userID, updateData);
+    const refreshed = await refreshUserData();
+
+    console.log("[ProfileSettings] refreshUserData sonucu:", {
+      profileBannerUrl: refreshed?.profileBannerUrl,
+      photoURL: refreshed?.photoURL,
     });
-    await refreshUserData();
+
     setSaving(false);
     ok ? toast.success("Profil güncellendi") : toast.error("Kaydedilemedi");
   };

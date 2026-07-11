@@ -241,18 +241,34 @@ export const updateServer = async (serverID, info) => {
   try {
     const { name, description, type, iconUrl, bannerUrl, tags } = info;
 
-    const { error } = await supabase
+    const updatePayload = {
+      name,
+      description: description || null,
+      type: type === "private" ? "private" : "public",
+      icon_url: iconUrl || null,
+      banner_url: bannerUrl || null,
+    };
+
+    console.log("[updateServer] serverID:", serverID);
+    console.log("[updateServer] payload:", updatePayload);
+
+    const { data, error } = await supabase
       .from("servers")
-      .update({
-        name,
-        description: description || null,
-        type: type === "private" ? "private" : "public",
-        icon_url: iconUrl || null,
-        banner_url: bannerUrl || null,
-      })
-      .eq("id", serverID);
+      .update(updatePayload)
+      .eq("id", serverID)
+      .select();
 
     if (error) throw error;
+
+    // .select() ile dönen satır sayısını kontrol et — RLS 0 satır etkilerse
+    // Supabase hata fırlatmaz ama hiçbir şey güncellenmez.
+    if (!data || data.length === 0) {
+      console.warn("[updateServer] 0 satır güncellendi — RLS izin vermiyor olabilir");
+      toast.error("Sunucu güncellenemedi — yetkiniz yok veya sunucu bulunamadı");
+      return false;
+    }
+
+    console.log("[updateServer] Güncellenen veri:", data[0]);
 
     // Etiketleri değiştir: eskileri sil, yenileri ekle
     if (Array.isArray(tags)) {
@@ -274,7 +290,7 @@ export const updateServer = async (serverID, info) => {
     toast.success("Sunucu güncellendi");
     return true;
   } catch (error) {
-    console.error("Error updating server:", error);
+    console.error("[updateServer] HATA:", error);
     toast.error(error?.message || "Sunucu güncellenemedi");
     return false;
   }

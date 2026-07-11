@@ -60,6 +60,13 @@ const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
     if (!name.trim()) return toast.error("Sunucu adı boş olamaz");
     if (saving) return;
     setSaving(true);
+
+    console.log("[ServerSettings] Kaydedilen değerler:", {
+      iconUrl: iconUrl.trim(),
+      bannerUrl: bannerUrl.trim(),
+      name: name.trim(),
+    });
+
     const ok = await updateServer(serverData.ServerId, {
       name: name.trim(),
       description: description.trim(),
@@ -70,7 +77,8 @@ const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
     });
     setSaving(false);
     if (ok) {
-      onSaved && onSaved();
+      // Sunucu verisini yeniden yükle, ardından modalı kapat
+      if (onSaved) await onSaved();
       onClose && onClose();
     }
   };
