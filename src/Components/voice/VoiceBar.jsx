@@ -169,6 +169,9 @@ const VoiceBar = () => {
   }, [isDocked, x, y]);
 
   const handlePointerDown = (e) => {
+    // Kenar çubuğuna sabitlenmişken sürükleyerek çıkarmayı engelle
+    if (isDocked) return;
+
     // Tıklanan eleman etkileşimli bir buton, girdi veya katılımcı popover'ı ise sürüklemeyi başlatma
     if (
       e.target.closest("button") ||
@@ -181,13 +184,6 @@ const VoiceBar = () => {
       return;
     }
 
-    if (isDocked) {
-      setIsDetached(true);
-      const dockedX = 192 - window.innerWidth / 2;
-      const dockedY = 16;
-      x.set(dockedX);
-      y.set(dockedY);
-    }
     dragControls.start(e);
   };
 
@@ -395,19 +391,21 @@ const VoiceBar = () => {
   // Kontrol satırı (her iki düzende ortak)
   const controls = (
     <div className="flex items-center gap-3 w-full">
-      {/* Pop-in (Sabitle) butonu */}
-      <button
-        type="button"
-        onClick={() => {
-          setIsDetached(false);
-          x.set(0);
-          y.set(0);
-        }}
-        title="Kenar çubuğuna sabitle"
-        className="p-2 rounded-xl border border-[var(--primary-border)] bg-[var(--secondary-bg)] text-[var(--primary-text)] hover:border-[var(--tertiary-border)] hover:text-[var(--quaternary-text)] transition-colors"
-      >
-        <Minimize2 size={16} />
-      </button>
+      {/* Pop-in (Sabitle) butonu — sadece sunucu sayfasındayken gösterilir */}
+      {onServerPage && (
+        <button
+          type="button"
+          onClick={() => {
+            setIsDetached(false);
+            x.set(0);
+            y.set(0);
+          }}
+          title="Kenar çubuğuna sabitle"
+          className="p-2 rounded-xl border border-[var(--primary-border)] bg-[var(--secondary-bg)] text-[var(--primary-text)] hover:border-[var(--tertiary-border)] hover:text-[var(--quaternary-text)] transition-colors"
+        >
+          <Minimize2 size={16} />
+        </button>
+      )}
 
       {/* Durum + kanal bilgisi */}
       <div className="flex items-center gap-3 pr-3 border-r border-[var(--primary-border)]">
