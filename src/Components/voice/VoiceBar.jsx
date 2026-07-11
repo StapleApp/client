@@ -698,7 +698,7 @@ const VoiceBar = () => {
               }
             }}
             onPointerDown={handlePointerDown}
-            style={{ x, y }}
+            style={isDocked ? {} : { x, y }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
