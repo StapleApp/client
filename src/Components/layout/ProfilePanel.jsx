@@ -119,7 +119,7 @@ const ProfilePanel = ({
           {/* Üst Arkaplan */}
           <div className="row-span-2">
             <img
-              className="rounded-t-md h-32 w-80"
+              className="rounded-t-md h-[107px] w-80"
               src={bannerURL || profileBanner}
             />
           </div>

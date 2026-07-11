@@ -784,7 +784,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
         className="fixed left-16 top-0 h-screen w-64 bg-[var(--primary-bg)] text-[var(--secondary-text)] shadow-2xl border-l border-r border-[var(--primary-border)] flex flex-col z-30"
       >
         <div
-          className="relative h-28 w-full bg-cover bg-center"
+          className="relative h-36 w-full bg-cover bg-center"
           style={{
             backgroundImage: `url(${serverData?.ServerBannerURL || profileBanner})`,
           }}
