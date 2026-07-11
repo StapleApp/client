@@ -15,6 +15,9 @@ import {
 } from "lucide-react";
 import { updateServer, deleteServer } from "../../services/serverService";
 import RolesManager from "./RolesManager";
+import ImagePicker from "../../Components/ImagePicker";
+import { useAuth } from "../../context/AuthContext";
+import { DEFAULT_SERVER_ICONS, DEFAULT_SERVER_BANNERS } from "../../config/defaults";
 import icon from "../../assets/branding/staple-icon.png";
 
 const inputClass =
@@ -28,6 +31,7 @@ const Label = ({ children, hint }) => (
 );
 
 const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
+  const { currentUser } = useAuth();
   const [name, setName] = useState(serverData?.ServerName || "");
   const [description, setDescription] = useState(serverData?.ServerDescription || "");
   const [type, setType] = useState(serverData?.ServerType || "public");
@@ -227,14 +231,28 @@ const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-3">
+            <div className="space-y-4">
               <div>
-                <Label hint="(isteğe bağlı)">İkon URL</Label>
-                <input type="url" value={iconUrl} onChange={(e) => setIconUrl(e.target.value)} placeholder="https://..." className={inputClass} />
+                <Label hint="(isteğe bağlı)">Sunucu İkonu</Label>
+                <ImagePicker
+                  value={iconUrl}
+                  onChange={setIconUrl}
+                  defaults={DEFAULT_SERVER_ICONS}
+                  uid={currentUser?.uid}
+                  bucket="server-icons"
+                  aspect="square"
+                />
               </div>
               <div>
-                <Label hint="(isteğe bağlı)">Banner URL</Label>
-                <input type="url" value={bannerUrl} onChange={(e) => setBannerUrl(e.target.value)} placeholder="https://..." className={inputClass} />
+                <Label hint="(isteğe bağlı)">Sunucu Bannerı</Label>
+                <ImagePicker
+                  value={bannerUrl}
+                  onChange={setBannerUrl}
+                  defaults={DEFAULT_SERVER_BANNERS}
+                  uid={currentUser?.uid}
+                  bucket="server-banners"
+                  aspect="wide"
+                />
               </div>
             </div>
 

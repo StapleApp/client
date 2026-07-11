@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { saveServerToFirestore } from "../../services/serverService";
 import { useAuth } from "../../context/AuthContext";
+import ImagePicker from "../../Components/ImagePicker";
+import { DEFAULT_SERVER_ICONS, DEFAULT_SERVER_BANNERS } from "../../config/defaults";
 import icon from "../../assets/branding/staple-icon.png";
 
 const inputClass =
@@ -217,26 +219,28 @@ const CreateServerPage = () => {
             </div>
           </div>
 
-          {/* İkon & Banner URL */}
-          <div className="grid grid-cols-1 gap-3">
+          {/* İkon & Banner */}
+          <div className="space-y-4">
             <div>
-              <Label hint="(isteğe bağlı)">İkon URL</Label>
-              <input
-                type="url"
+              <Label hint="(isteğe bağlı)">Sunucu İkonu</Label>
+              <ImagePicker
                 value={iconUrl}
-                onChange={(e) => setIconUrl(e.target.value)}
-                placeholder="https://..."
-                className={inputClass}
+                onChange={setIconUrl}
+                defaults={DEFAULT_SERVER_ICONS}
+                uid={currentUser?.uid}
+                bucket="server-icons"
+                aspect="square"
               />
             </div>
             <div>
-              <Label hint="(isteğe bağlı)">Banner URL</Label>
-              <input
-                type="url"
+              <Label hint="(isteğe bağlı)">Sunucu Bannerı</Label>
+              <ImagePicker
                 value={bannerUrl}
-                onChange={(e) => setBannerUrl(e.target.value)}
-                placeholder="https://..."
-                className={inputClass}
+                onChange={setBannerUrl}
+                defaults={DEFAULT_SERVER_BANNERS}
+                uid={currentUser?.uid}
+                bucket="server-banners"
+                aspect="wide"
               />
             </div>
           </div>

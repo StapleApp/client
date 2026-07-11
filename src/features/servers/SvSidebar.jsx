@@ -785,7 +785,9 @@ const SvSidebar = ({ serverData, onRefresh }) => {
       >
         <div
           className="relative h-28 w-full bg-cover bg-center"
-          style={{ backgroundImage: `url(${profileBanner})` }}
+          style={{
+            backgroundImage: `url(${serverData?.ServerBannerURL || profileBanner})`,
+          }}
         >
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
             <h1 className="text-white font-bold text-lg px-3 text-center truncate">

@@ -1,11 +1,17 @@
 import { useRef, useState } from "react";
 import { Upload, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
-import { uploadAvatar } from "../services/userService";
+import { uploadMedia } from "../services/userService";
 
-// Kendi bilgisayarından avatar yükleme butonu.
-// props: uid, onUploaded(url), className?
-const AvatarUpload = ({ uid, onUploaded, className = "" }) => {
+// Kendi bilgisayarından görsel yükleme butonu.
+// props: uid, onUploaded(url), bucket="avatars", label, className?
+const AvatarUpload = ({
+  uid,
+  onUploaded,
+  bucket = "avatars",
+  label = "Fotoğraf Yükle",
+  className = "",
+}) => {
   const inputRef = useRef(null);
   const [busy, setBusy] = useState(false);
 
@@ -20,12 +26,12 @@ const AvatarUpload = ({ uid, onUploaded, className = "" }) => {
 
     setBusy(true);
     try {
-      const url = await uploadAvatar(uid, file);
+      const url = await uploadMedia(bucket, uid, file);
       onUploaded(url);
-      toast.success("Fotoğraf yüklendi");
+      toast.success("Görsel yüklendi");
     } catch (err) {
-      console.error("Avatar upload error:", err);
-      toast.error(err?.message || "Fotoğraf yüklenemedi");
+      console.error("Media upload error:", err);
+      toast.error(err?.message || "Görsel yüklenemedi");
     } finally {
       setBusy(false);
     }
@@ -47,7 +53,7 @@ const AvatarUpload = ({ uid, onUploaded, className = "" }) => {
         className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl border-2 border-dashed border-[var(--primary-border)] text-sm font-semibold text-[var(--secondary-text)] hover:border-[var(--tertiary-border)] hover:text-[var(--quaternary-text)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${className}`}
       >
         {busy ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-        {busy ? "Yükleniyor…" : "Fotoğraf Yükle"}
+        {busy ? "Yükleniyor…" : label}
       </button>
     </>
   );
