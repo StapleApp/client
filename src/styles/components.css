@@ -11,13 +11,13 @@
 }
 
 @layer components {
-  
+
   .background {
     background-image: url("../assets/backgrounds/tile.png");
     background-position: calc(50% + var(--parallax-x, 0px)) calc(50% + var(--parallax-y, 0px));
     background-repeat: repeat;
     background-attachment: scroll;
-    background-size: 7vw 7vw;
+    background-size: 200px 200px;
     height: 100vh;
     width: 100vw;
     transition: background-position 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -27,35 +27,21 @@
     background-image: url("../assets/backgrounds/tile.png");
     background-position: calc(50% + var(--parallax-x, 0px)) calc(50% + var(--parallax-y, 0px));
     background-repeat: repeat;
-    background-size: 7vw 7vw;
+    background-size: 200px 200px;
     transition: background-position 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
-  
+
 
   .icon {
-    @apply relative flex items-center justify-center
-           h-12 w-12 mt-2 mb-2 mx-auto shadow-lg
-           bg-[var(--primary-bg)] text-[var(--primary-text)] border-3 border-[var(--primary-border)]
-           hover:bg-[var(--tertiary-text)] hover:text-[var(--tertiary-bg)] hover:border-3 hover:border-[var(--tertiary-border)]
-           rounded-xl
-           transition-all duration-300 ease-linear
-           cursor-pointer; 
+    @apply relative flex items-center justify-center h-12 w-12 mt-2 mb-2 mx-auto shadow-lg bg-[var(--primary-bg)] text-[var(--primary-text)] border-3 border-[var(--primary-border)] hover:bg-[var(--tertiary-text)] hover:text-[var(--tertiary-bg)] hover:border-3 hover:border-[var(--tertiary-border)] rounded-xl transition-all duration-300 ease-linear cursor-pointer;
   }
 
   .hovered-icon {
-    @apply relative flex items-center justify-center
-           h-12 w-12 mt-2 mb-2 mx-auto shadow-lg
-           bg-[var(--tertiary-text)] text-[var(--tertiary-bg)] border-3 border-[var(--tertiary-border)]
-           rounded-xl
-           transition-all duration-300 ease-linear
-           cursor-pointer;
+    @apply relative flex items-center justify-center h-12 w-12 mt-2 mb-2 mx-auto shadow-lg bg-[var(--tertiary-text)] text-[var(--tertiary-bg)] border-3 border-[var(--tertiary-border)] rounded-xl transition-all duration-300 ease-linear cursor-pointer;
   }
 
   .sidebar-tooltip {
-    @apply absolute w-auto p-2 m-2 min-w-max left-14 rounded-md shadow-md
-    bg-[var(--tertiary-text)] text-[var(--tertiary-bg)]
-    text-xs font-bold
-    transition-all duration-100 scale-0 origin-left;
+    @apply absolute w-auto p-2 m-2 min-w-max left-14 rounded-md shadow-md bg-[var(--tertiary-text)] text-[var(--tertiary-bg)] text-xs font-bold transition-all duration-100 scale-0 origin-left;
   }
 
   .sidebar-expand {
@@ -81,16 +67,20 @@
   display: block !important;
   width: 6px !important;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
   background: var(--primary-bg) !important;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: var(--primary-border) !important;
   border-radius: 4px !important;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--tertiary-border) !important;
 }
+
 .custom-scrollbar {
   scrollbar-width: thin !important;
   scrollbar-color: var(--primary-border) var(--primary-bg) !important;
