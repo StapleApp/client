@@ -65,7 +65,7 @@ const Navigator = () => {
         bannerURL={userData?.profileBannerUrl}
       />
       <div
-        className={`fixed flex flex-col top-0 left-0 h-screen gap-0 z-1
+        className={`fixed flex flex-col top-0 left-0 h-screen gap-0 z-50
               w-16 transition-all duration-145 ease-linear justify-between shadow-xl
               bg-[var(--primary-bg)]`}
       >

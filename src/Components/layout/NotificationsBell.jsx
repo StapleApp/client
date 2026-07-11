@@ -103,7 +103,7 @@ const NotificationsBell = () => {
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: -8, scale: 0.98 }}
             transition={{ duration: 0.14 }}
-            className="absolute left-full top-0 ml-3 w-[320px] max-w-[80vw] z-[60] rounded-xl overflow-hidden bg-[var(--secondary-bg)] border-2 border-[var(--primary-border)] shadow-xl"
+            className="absolute left-full top-0 ml-3 w-[320px] max-w-[80vw] z-[60] rounded-xl overflow-hidden bg-[var(--primary-bg)] border-2 border-[var(--primary-border)] shadow-xl"
           >
             <div className="flex items-center justify-between px-4 py-3 border-b-2 border-[var(--primary-border)]">
               <span className="text-sm font-bold text-[var(--secondary-text)]">Bildirimler</span>
@@ -133,13 +133,13 @@ const NotificationsBell = () => {
                       }
                       setOpen(false);
                     }}
-                    className={`flex items-start gap-3 px-4 py-3 border-b border-[var(--primary-border)] cursor-pointer bg-[var(--primary-bg)] hover:bg-[var(--secondary-bg)] transition-colors relative ${
+                    className={`flex items-start gap-3 px-4 py-3 border-b border-[var(--primary-border)] cursor-pointer bg-[var(--secondary-bg)] hover:bg-[var(--primary-bg)] transition-colors relative ${
                       !item.read ? "border-l-2 border-red-500" : ""
                     }`}
                   >
                     <div className="relative shrink-0 mt-0.5">
                       <img src={item.photo || "/defaults/avatars/1.png"} alt="" className="w-9 h-9 rounded-full object-cover" />
-                      <span className="absolute -bottom-1 -right-1 w-4.5 h-4.5 flex items-center justify-center rounded-full bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] border-2 border-[var(--primary-bg)]">
+                      <span className="absolute -bottom-1 -right-1 w-4.5 h-4.5 flex items-center justify-center rounded-full bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] border-2 border-[var(--secondary-bg)]">
                         {item.type === "friend" ? <UserPlus size={9} /> : <Mail size={9} />}
                       </span>
                     </div>
@@ -194,7 +194,7 @@ const NotificationsBell = () => {
 
                       {item.type === "friend" && item.responded && (
                         <div className="mt-1.5">
-                          <span className="text-[10px] bg-[var(--secondary-bg)] text-[var(--secondary-text)] px-2 py-0.5 rounded-full border border-[var(--primary-border)]">
+                          <span className="text-[10px] bg-[var(--primary-bg)] text-[var(--secondary-text)] px-2 py-0.5 rounded-full border border-[var(--primary-border)]">
                             {item.accepted ? 'Kabul edildi' : 'Reddedildi'}
                           </span>
                         </div>
