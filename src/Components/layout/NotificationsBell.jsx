@@ -79,6 +79,12 @@ const NotificationsBell = () => {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  const sortedNotifications = [...notifications].sort((a, b) => {
+    const aTime = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0;
+    const bTime = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0;
+    return bTime - aTime;
+  });
+
   const getNotificationTime = (item) => {
     if (!item.createdAt?.seconds) return "";
     return relTime(new Date(item.createdAt.seconds * 1000).toISOString());
@@ -115,13 +121,13 @@ const NotificationsBell = () => {
             </div>
 
             <div className="max-h-[360px] overflow-y-auto custom-scrollbar pr-1">
-              {notifications.length === 0 ? (
+              {sortedNotifications.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 py-10 text-[var(--primary-text)]">
                   <Bell size={26} className="opacity-40" />
                   <p className="text-sm">Bildirim bulunmuyor</p>
                 </div>
               ) : (
-                notifications.map((item) => (
+                sortedNotifications.map((item) => (
                   <div
                     key={item.id}
                     onClick={async () => {

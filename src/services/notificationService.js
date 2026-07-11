@@ -8,17 +8,19 @@ export const createNotification = async (targetUid, notification) => {
     // Mesaj bildirimi ise ve gönderen bilgisi varsa, alıcının henüz okumadığı
     // eski bir mesaj bildirimi var mı diye kontrol et.
     if (notification.type === "message" && notification.from_user_id) {
-      const { data: existing, error: fetchError } = await supabase
+      const { data: matching, error: fetchError } = await supabase
         .from("notifications")
         .select("id, data")
         .eq("user_id", targetUid)
         .eq("type", "message")
         .eq("from_user_id", notification.from_user_id)
         .eq("read", false)
-        .maybeSingle();
+        .order("created_at", { ascending: false })
+        .limit(1);
 
-      if (!fetchError && existing) {
-        // Eğer okunmamış bir bildirim varsa, üzerine yaz (güncelle) ve zamanı güncelle (en üste çıksın diye)
+      if (!fetchError && matching && matching.length > 0) {
+        const existing = matching[0];
+        // En sonuncuyu güncelle ve zamanını yenile
         const { error: updateError } = await supabase
           .from("notifications")
           .update({
@@ -31,6 +33,17 @@ export const createNotification = async (targetUid, notification) => {
           .eq("id", existing.id);
 
         if (updateError) throw updateError;
+
+        // Olası eski diğer okunmamış kopyaları arkadan temizle
+        await supabase
+          .from("notifications")
+          .delete()
+          .eq("user_id", targetUid)
+          .eq("type", "message")
+          .eq("from_user_id", notification.from_user_id)
+          .eq("read", false)
+          .neq("id", existing.id);
+
         return;
       }
     }
