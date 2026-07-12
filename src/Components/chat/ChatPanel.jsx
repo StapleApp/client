@@ -246,6 +246,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     const el = e.target;
     el.style.height = "auto";
     el.style.height = Math.min(el.scrollHeight, 160) + "px";
+    el.style.overflowY = el.scrollHeight > 160 ? "auto" : "hidden";
     detectMention(e.target.value, el.selectionStart);
     emitTyping();
   };
@@ -456,7 +457,10 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     const content = newMessage.trim();
     if (!content || !userData) return;
     setNewMessage("");
-    if (inputRef.current) inputRef.current.style.height = "auto";
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+      inputRef.current.style.overflowY = "hidden";
+    }
     // Yazıyor durumunu hemen kapat
     clearTimeout(myStopRef.current);
     if (channelId) {
@@ -1173,7 +1177,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
       {/* Send area */}
       <form
         onSubmit={handleSend}
-        className={`p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-[var(--primary-bg)] flex gap-3 relative items-end ${
+        className={`p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-[var(--primary-bg)] flex gap-3 relative items-center ${
           replyingTo ? "" : "border-t-2 border-[var(--primary-border)]"
         }`}
       >
@@ -1208,10 +1212,10 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
             placeholder="Mesajınızı yazın..."
-            style={{ maxHeight: "160px" }}
-            className="w-full px-4 py-2 pr-20 rounded-xl bg-[var(--secondary-bg)] text-[var(--secondary-text)] border-2 border-[var(--primary-border)] focus:outline-none focus:border-[var(--tertiary-border)] placeholder:text-[var(--primary-text)] transition-colors resize-none overflow-y-auto leading-6 block"
+            style={{ maxHeight: "160px", overflowY: "hidden" }}
+            className="w-full px-4 py-2.5 pr-20 rounded-xl bg-[var(--secondary-bg)] text-[var(--secondary-text)] border-2 border-[var(--primary-border)] focus:outline-none focus:border-[var(--tertiary-border)] placeholder:text-[var(--primary-text)] transition-colors resize-none leading-6 block"
           />
-          <div className="absolute right-3 bottom-2 flex items-center gap-2">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
             <button
               type="button"
               className="text-[var(--secondary-text)] hover:text-[var(--primary-text)] font-bold text-xs px-1.5 py-0.5 rounded bg-[var(--primary-border)] hover:bg-[var(--tertiary-border)] transition-all select-none"
