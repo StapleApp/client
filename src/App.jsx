@@ -94,11 +94,12 @@ function MainLayout() {
 }
 
 function AnimatedSwitch() {
+  const location = useLocation();
   return (
     <>
       <Toaster />
       <AnimatePresence mode="wait">
-        <Routes>
+        <Routes location={location} key={location.pathname}>
           <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
           <Route path="/Home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
           <Route path="/Settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
