@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Send, Hash, Smile, Pencil, Trash2, Check, X, ChevronDown, Reply, Menu, Pin, PinOff, Search, Loader2 } from "lucide-react";
+import { Send, Hash, Smile, Pencil, Trash2, Check, X, ChevronDown, Reply, Menu, Pin, PinOff, Search, Loader2, Users } from "lucide-react";
 import toast from "react-hot-toast";
 import EmojiPicker from "emoji-picker-react";
 import { useAuth } from "../../context/AuthContext";
@@ -73,7 +73,7 @@ const dayLabel = (createdAt) => {
  *   headerUserId - optional user id; makes the header icon/name open the profile card
  *   showHeader   - whether to show the header bar (default true)
  */
-const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader = true, memberColors, canModerate = false, jumpToMessageId = null, serverData }) => {
+const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader = true, memberColors, canModerate = false, jumpToMessageId = null, serverData, showMembers, onToggleMembers }) => {
   const { userData } = useAuth();
   const mobileMenu = useMobileMenu();
   const isMobile = mobileMenu?.isMobile ?? false;
@@ -768,6 +768,21 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
           >
             <Search size={18} />
           </button>
+
+          {isMobile && context?.serverId && onToggleMembers && (
+            <button
+              onClick={onToggleMembers}
+              title="Üyeleri Göster"
+              aria-label="Üyeleri Göster"
+              className={`p-1.5 rounded-lg transition-colors ml-2 ${
+                showMembers
+                  ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] animate-pulse"
+                  : "text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--secondary-bg)]"
+              }`}
+            >
+              <Users size={18} />
+            </button>
+          )}
         </div>
       )}
 

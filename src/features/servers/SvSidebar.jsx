@@ -709,9 +709,8 @@ const SvSidebar = ({ serverData, onRefresh }) => {
 
   const [theaterHeight, setTheaterHeight] = useState(300); // 300px default
   const [isResizing, setIsResizing] = useState(false);
-  const [showMembers, setShowMembers] = useState(true);
-
   const { isMobile, isOpen, setIsOpen } = useMobileMenu();
+  const [showMembers, setShowMembers] = useState(!isMobile);
 
   const isDocked = voice.active && !isDetached;
 
@@ -1255,6 +1254,37 @@ const SvSidebar = ({ serverData, onRefresh }) => {
         />
       )}
 
+      {isMobile && (
+        <AnimatePresence>
+          {showMembers && (
+            <>
+              {/* Backdrop for mobile right-side members drawer */}
+              <div
+                className="fixed inset-0 bg-black/60 z-40 transition-opacity duration-200"
+                onClick={() => setShowMembers(false)}
+              />
+              {/* Drawer Container (Right-sliding) */}
+              <motion.div
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="fixed top-0 bottom-0 right-0 z-50 flex w-[280px] bg-[var(--primary-bg)] shadow-2xl overflow-hidden text-left"
+              >
+                <div className="w-full h-full relative z-10">
+                  <ServerMembers
+                    serverData={serverData}
+                    onRefresh={onRefresh}
+                    showMembers={true}
+                    onToggleCollapse={() => setShowMembers(false)}
+                  />
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      )}
+
       {!showMembers && !isMobile && (
         <button
           onClick={() => setShowMembers(true)}
@@ -1379,6 +1409,8 @@ const SvSidebar = ({ serverData, onRefresh }) => {
                       ? jumpTarget.messageId
                       : null
                   }
+                  showMembers={showMembers}
+                  onToggleMembers={() => setShowMembers(!showMembers)}
                 />
               </motion.div>
             ) : (
@@ -1390,14 +1422,28 @@ const SvSidebar = ({ serverData, onRefresh }) => {
                 className="w-full h-full flex flex-col bg-[var(--secondary-bg)]"
               >
                 {isMobile && (
-                  <div className="flex items-center h-[60px] px-5 py-4 bg-[var(--primary-bg)] border-b-2 border-[var(--primary-border)] text-[var(--secondary-text)] shrink-0">
+                  <div className="flex items-center justify-between h-[60px] px-5 py-4 bg-[var(--primary-bg)] border-b border-[var(--primary-border)]/30 text-[var(--secondary-text)] shrink-0">
+                    <div className="flex items-center min-w-0">
+                      <button
+                        onClick={() => setIsOpen(true)}
+                        className="p-1.5 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors mr-3 text-[var(--secondary-text)]"
+                      >
+                        <Menu size={20} />
+                      </button>
+                      <span className="font-bold truncate text-lg text-[var(--secondary-text)]">{serverData?.ServerName}</span>
+                    </div>
+
                     <button
-                      onClick={() => setIsOpen(true)}
-                      className="p-1.5 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors mr-3"
+                      onClick={() => setShowMembers(!showMembers)}
+                      title="Üyeleri Göster"
+                      className={`p-1.5 rounded-lg transition-colors shrink-0 ${
+                        showMembers
+                          ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] animate-pulse"
+                          : "text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--secondary-bg)]"
+                      }`}
                     >
-                      <Menu size={20} />
+                      <Users size={18} />
                     </button>
-                    <span className="font-bold truncate text-lg">{serverData?.ServerName}</span>
                   </div>
                 )}
                 <div className="parallax-bg flex-1 flex flex-col items-center justify-center gap-4 text-[var(--primary-text)]">

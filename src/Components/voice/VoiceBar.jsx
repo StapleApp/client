@@ -18,6 +18,7 @@ import {
   Settings2,
   Maximize2,
   Minimize2,
+  GripVertical,
 } from "lucide-react";
 import { useVoice } from "../../context/VoiceContext";
 import { useAuth } from "../../context/AuthContext";
@@ -394,9 +395,21 @@ const VoiceBar = () => {
 
   // Kontrol satırı (her iki düzende ortak)
   const controls = (
-    <div className="flex items-center gap-3 w-full">
-      {/* Pop-in (Sabitle) butonu — sadece sunucu sayfasındayken VE sunucu kenar çubuğu açıkken gösterilir */}
-      {onServerPage && showSidebar && (
+    <div className={`flex items-center w-full ${isMobile ? "gap-1.5" : "gap-3"}`}>
+      {/* Sürükleme grip butonu (yalnızca serbestken ve mobilde gösterilir) */}
+      {!isDocked && isMobile && (
+        <div
+          onPointerDown={handlePointerDown}
+          title="Sürükle"
+          className="cursor-grab active:cursor-grabbing hover:bg-[var(--secondary-bg)] rounded-lg text-[var(--primary-text)] flex items-center justify-center shrink-0 p-1"
+          style={{ touchAction: "none" }}
+        >
+          <GripVertical size={14} />
+        </div>
+      )}
+
+      {/* Pop-in (Sabitle) butonu — sadece masaüstünde, sunucu sayfasındayken VE sunucu kenar çubuğu açıkken gösterilir */}
+      {!isMobile && onServerPage && showSidebar && (
         <button
           type="button"
           onClick={() => {
@@ -405,25 +418,27 @@ const VoiceBar = () => {
             y.set(0);
           }}
           title="Kenar çubuğuna sabitle"
-          className="p-2 rounded-xl border border-[var(--primary-border)] bg-[var(--secondary-bg)] text-[var(--primary-text)] hover:border-[var(--tertiary-border)] hover:text-[var(--quaternary-text)] transition-colors"
+          className="rounded-xl border border-[var(--primary-border)] bg-[var(--secondary-bg)] text-[var(--primary-text)] hover:border-[var(--tertiary-border)] hover:text-[var(--quaternary-text)] transition-colors shrink-0 p-2"
         >
           <Minimize2 size={16} />
         </button>
       )}
 
       {/* Durum + kanal bilgisi */}
-      <div className="flex items-center gap-3 pr-3 border-r border-[var(--primary-border)]">
+      <div className={`flex items-center border-r border-[var(--primary-border)] shrink-0 ${isMobile ? "gap-1.5 pr-1.5" : "gap-3 pr-3"}`}>
         {/* Konuşurken yeşile döner (kendi mikrofonun) */}
         <div
-          className={`w-9 h-9 rounded-full bg-[var(--secondary-bg)] border-2 flex items-center justify-center shrink-0 transition-colors ${
+          className={`rounded-full bg-[var(--secondary-bg)] border-2 flex items-center justify-center shrink-0 transition-colors ${
+            isMobile ? "w-7 h-7" : "w-9 h-9"
+          } ${
             speaking.self ? "border-green-500" : "border-gray-500"
           }`}
         >
           {connecting ? (
-            <Loader2 size={18} className="animate-spin text-[var(--quaternary-text)]" />
+            <Loader2 size={isMobile ? 14 : 18} className="animate-spin text-[var(--quaternary-text)]" />
           ) : (
             <Volume2
-              size={18}
+              size={isMobile ? 14 : 18}
               className={`transition-colors ${
                 speaking.self ? "text-green-500" : "text-[var(--quaternary-text)]"
               }`}
@@ -431,30 +446,53 @@ const VoiceBar = () => {
           )}
         </div>
         <div className="leading-tight">
-          <div className="flex items-center gap-1.5 text-sm font-semibold">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                connecting ? "bg-yellow-400" : "bg-green-500 animate-pulse"
-              }`}
-            />
-            {connecting ? "Bağlanıyor..." : "Sesli Bağlı"}
-          </div>
-          {active ? (
-            <button
-              onClick={() => navigate(`/server/${active.serverId}`)}
-              title="Sunucuya git"
-              className="text-xs text-[var(--primary-text)] max-w-[160px] truncate hover:text-[var(--quaternary-text)] hover:underline transition-colors text-left"
-            >
-              {active.serverName} · {active.channelName}
-            </button>
+          {!isMobile ? (
+            <>
+              <div className="flex items-center gap-1.5 text-sm font-semibold">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    connecting ? "bg-yellow-400" : "bg-green-500 animate-pulse"
+                  }`}
+                />
+                {connecting ? "Bağlanıyor..." : "Sesli Bağlı"}
+              </div>
+              {active ? (
+                <button
+                  onClick={() => navigate(`/server/${active.serverId}`)}
+                  title="Sunucuya git"
+                  className="text-xs text-[var(--primary-text)] max-w-[160px] truncate hover:text-[var(--quaternary-text)] hover:underline transition-colors text-left"
+                >
+                  {active.serverName} · {active.channelName}
+                </button>
+              ) : (
+                <div className="text-xs text-[var(--primary-text)]" />
+              )}
+            </>
           ) : (
-            <div className="text-xs text-[var(--primary-text)]" />
+            <div className="flex flex-col justify-center select-none">
+              <div className="flex items-center gap-1 text-[10px] font-bold text-[var(--secondary-text)]">
+                <span
+                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                    connecting ? "bg-yellow-400" : "bg-green-500 animate-pulse"
+                  }`}
+                />
+                <span>{connecting ? "Bağlanıyor" : "Sesli"}</span>
+              </div>
+              {active && (
+                <button
+                  onClick={() => navigate(`/server/${active.serverId}`)}
+                  className="text-[9px] text-[var(--primary-text)] max-w-[80px] truncate hover:text-[var(--quaternary-text)] text-left"
+                >
+                  {active.channelName}
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
 
       {/* Katılımcı sayısı — tıklayınca liste. Paylaşım göstergesi. */}
-      <div className="relative" ref={listWrapRef}>
+      <div className="relative shrink-0" ref={listWrapRef}>
         <button
           onClick={() => setShowList((v) => !v)}
           title="Katılımcılar"
@@ -464,11 +502,11 @@ const VoiceBar = () => {
               : "text-[var(--primary-text)] hover:bg-[var(--secondary-bg)] hover:text-[var(--secondary-text)]"
           }`}
         >
-          <Users size={14} />
-          {total}
+          <Users size={isMobile ? 12 : 14} />
+          <span className={isMobile ? "text-[10px]" : "text-xs"}>{total}</span>
           {anyoneSharing && (
             <ScreenShare
-              size={13}
+              size={isMobile ? 11 : 13}
               className="text-[var(--quaternary-text)] animate-pulse ml-0.5"
             />
           )}
@@ -477,19 +515,21 @@ const VoiceBar = () => {
       </div>
 
       {/* Kontroller */}
-      <div className="flex items-center gap-2 ml-auto">
+      <div className={`flex items-center ml-auto shrink-0 ${isMobile ? "gap-1" : "gap-2"}`}>
         {/* Ekran paylaş / durdur */}
         <button
           onClick={isScreenSharing ? stopScreenShare : startScreenShare}
           title={isScreenSharing ? "Paylaşımı durdur" : "Ekran paylaş"}
           disabled={!active}
-          className={`p-2.5 rounded-xl border-2 transition-all disabled:opacity-40 ${
+          className={`rounded-xl border-2 transition-all disabled:opacity-40 ${
+            isMobile ? "p-1.5" : "p-2.5"
+          } ${
             isScreenSharing
               ? "bg-[var(--tertiary-bg)] border-[var(--tertiary-border)] text-[var(--tertiary-text)]"
               : "bg-[var(--secondary-bg)] border-[var(--primary-border)] text-[var(--secondary-text)] hover:border-[var(--tertiary-border)] hover:text-[var(--quaternary-text)]"
           }`}
         >
-          {isScreenSharing ? <ScreenShareOff size={18} /> : <ScreenShare size={18} />}
+          {isScreenSharing ? <ScreenShareOff size={isMobile ? 14 : 18} /> : <ScreenShare size={isMobile ? 14 : 18} />}
         </button>
 
         {/* Kendi ekranını önizle/gizle (yalnızca paylaşırken ve uzak ekran izlemezken) */}
@@ -497,13 +537,15 @@ const VoiceBar = () => {
           <button
             onClick={toggleSelfPreview}
             title={showSelfPreview ? "Önizlemeyi gizle" : "Önizlemeyi göster"}
-            className={`p-2.5 rounded-xl border-2 transition-all ${
+            className={`rounded-xl border-2 transition-all ${
+              isMobile ? "p-1.5" : "p-2.5"
+            } ${
               showSelfPreview
                 ? "bg-[var(--secondary-bg)] border-[var(--tertiary-border)] text-[var(--quaternary-text)]"
                 : "bg-[var(--secondary-bg)] border-[var(--primary-border)] text-[var(--secondary-text)] hover:border-[var(--tertiary-border)]"
             }`}
           >
-            {showSelfPreview ? <Eye size={18} /> : <EyeOff size={18} />}
+            {showSelfPreview ? <Eye size={isMobile ? 14 : 18} /> : <EyeOff size={isMobile ? 14 : 18} />}
           </button>
         )}
 
@@ -512,9 +554,11 @@ const VoiceBar = () => {
           <button
             onClick={stopWatching}
             title="İzlemeyi durdur"
-            className="p-2.5 rounded-xl border-2 bg-[var(--secondary-bg)] border-[var(--primary-border)] text-[var(--secondary-text)] hover:border-red-500 hover:text-red-400 transition-all"
+            className={`rounded-xl border-2 bg-[var(--secondary-bg)] border-[var(--primary-border)] text-[var(--secondary-text)] hover:border-red-500 hover:text-red-400 transition-all ${
+              isMobile ? "p-1.5" : "p-2.5"
+            }`}
           >
-            <MonitorX size={18} />
+            <MonitorX size={isMobile ? 14 : 18} />
           </button>
         )}
 
@@ -523,22 +567,26 @@ const VoiceBar = () => {
           onClick={toggleMute}
           title={muted ? "Sesi aç" : "Sustur"}
           disabled={!active}
-          className={`p-2.5 rounded-xl border-2 transition-all disabled:opacity-40 ${
+          className={`rounded-xl border-2 transition-all disabled:opacity-40 ${
+            isMobile ? "p-1.5" : "p-2.5"
+          } ${
             muted
               ? "bg-red-500/20 border-red-500 text-red-400"
               : "bg-[var(--secondary-bg)] border-[var(--primary-border)] text-[var(--secondary-text)] hover:border-[var(--tertiary-border)] hover:text-[var(--quaternary-text)]"
           }`}
         >
-          {muted ? <MicOff size={18} /> : <Mic size={18} />}
+          {muted ? <MicOff size={isMobile ? 14 : 18} /> : <Mic size={isMobile ? 14 : 18} />}
         </button>
 
         {/* Sesten ayrıl */}
         <button
           onClick={leaveVoice}
           title="Ayrıl"
-          className="p-2.5 rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors"
+          className={`rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors ${
+            isMobile ? "p-1.5" : "p-2.5"
+          }`}
         >
-          <PhoneOff size={18} />
+          <PhoneOff size={isMobile ? 14 : 18} />
         </button>
       </div>
     </div>
@@ -674,7 +722,7 @@ const VoiceBar = () => {
     // Sürükleme sınırı = tüm ekran. pointer-events-none → sayfayı engellemez.
     <div
       ref={boundsRef}
-      className={isDocked ? "fixed left-16 bottom-0 w-64 z-[99] pointer-events-auto" : "fixed inset-0 z-[100] flex items-end justify-center pb-4 pointer-events-none"}
+      className={isDocked ? "fixed left-16 bottom-0 w-64 z-[99] pointer-events-auto" : `fixed inset-0 z-[100] flex items-end justify-center pb-4 pointer-events-none ${isMobile ? "px-3" : ""}`}
     >
       <AnimatePresence>
         {show && (
@@ -707,7 +755,7 @@ const VoiceBar = () => {
             transition={{ duration: 0.2 }}
             className={isDocked
               ? "pointer-events-auto flex flex-col bg-[var(--primary-bg)] border-t border-[var(--primary-border)] text-[var(--secondary-text)] w-full select-none"
-              : "pointer-events-auto flex flex-col rounded-2xl bg-[var(--primary-bg)] border-2 border-[var(--primary-border)] shadow-2xl text-[var(--secondary-text)] select-none"
+              : "pointer-events-auto flex flex-col rounded-2xl bg-[var(--primary-bg)] border-2 border-[var(--primary-border)] shadow-2xl text-[var(--secondary-text)] select-none w-[calc(100vw-24px)] max-w-[480px] sm:w-auto sm:max-w-none"
             }
           >
             {/* Ekran alanı (izleme veya kendi önizleme) — sol üstten boyutlandırılabilir */}
@@ -748,7 +796,7 @@ const VoiceBar = () => {
             )}
 
             {/* Kontrol satırı */}
-            <div className={isDocked ? "" : "p-3"}>
+            <div className={isDocked ? "" : isMobile ? "p-1.5 py-2" : "p-3"}>
               {isDocked ? dockedControls : controls}
             </div>
           </motion.div>

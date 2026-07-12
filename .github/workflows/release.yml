@@ -84,3 +84,126 @@ jobs:
           fi
           cp "$dmg_file" "Staple.dmg"
           gh release upload ${{ github.ref_name }} "Staple.dmg" --clobber
+
+  build-android:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup NDK
+        run: |
+          sdkmanager --install "ndk;25.2.9519653"
+          echo "ANDROID_NDK_HOME=${ANDROID_SDK_ROOT}/ndk/25.2.9519653" >> $GITHUB_ENV
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Initialize Android project if not already present
+      - name: Initialize Tauri Android
+        run: |
+          if [ ! -d "src-tauri/gen/android" ]; then
+            npx tauri android init --non-interactive
+          fi
+
+      - name: Build Android (APK)
+        run: npx tauri android build --apk
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SITE_URL: ${{ secrets.VITE_SITE_URL }}
+          VITE_KLIPY_API_KEY: ${{ secrets.VITE_KLIPY_API_KEY }}
+
+      # Upload Android APK to the Release
+      - name: Upload Android APK
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          apk_file=$(find src-tauri/gen/android -name "*.apk" | grep -v "unaligned" | head -n 1)
+          if [ -z "$apk_file" ]; then
+            echo "APK dosyası bulunamadı"
+            exit 1
+          fi
+          cp "$apk_file" "Staple.apk"
+          gh release upload ${{ github.ref_name }} "Staple.apk" --clobber
+
+  build-ios:
+    needs: release
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Initialize iOS project if not already present
+      - name: Initialize Tauri iOS
+        run: |
+          if [ ! -d "src-tauri/gen/apple" ]; then
+            npx tauri ios init --non-interactive
+          fi
+
+      # iOS builds on CI/CD can be built as simulator builds (.app) or unsigned IPA
+      - name: Build iOS App (Simulator / Unsigned)
+        run: npx tauri ios build --no-bundle
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SITE_URL: ${{ secrets.VITE_SITE_URL }}
+          VITE_KLIPY_API_KEY: ${{ secrets.VITE_KLIPY_API_KEY }}
+
+      # Compress and Upload iOS App
+      - name: Compress and Upload iOS App
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ios_dir=$(find src-tauri/gen/apple -name "*.app" -o -name "*.ipa" | head -n 1)
+          if [ -z "$ios_dir" ]; then
+            echo "iOS build output (.app or .ipa) bulunamadı"
+            exit 1
+          fi
+          zip -r "Staple-iOS.zip" "$ios_dir"
+          gh release upload ${{ github.ref_name }} "Staple-iOS.zip" --clobber
