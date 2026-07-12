@@ -1,11 +1,203 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 import { FaPowerOff } from "react-icons/fa6";
-import { Loader2, Trash2, AlertTriangle, Pencil, Menu } from "lucide-react";
+import { Loader2, Trash2, AlertTriangle, Pencil, Menu, Mic, Volume2, ChevronDown, Check } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useMobileMenu } from "../../context/MobileMenuContext";
+import { useVoice } from "../../context/VoiceContext";
+
+// ===== Uygulama stiline uygun özel dropdown =====
+const DeviceSelect = ({ value, options, onChange, disabled, icon }) => {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  const selected = options.find((o) => o.value === value) || options[0];
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((v) => !v)}
+        className={`w-full flex items-center gap-2 pl-3 pr-2.5 py-2.5 rounded-xl bg-[var(--secondary-bg)] text-[var(--secondary-text)] border-2 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+          open ? "border-[var(--tertiary-border)]" : "border-[var(--primary-border)] hover:border-[var(--tertiary-border)]"
+        }`}
+      >
+        {icon && <span className="shrink-0 text-[var(--primary-text)]">{icon}</span>}
+        <span className="truncate flex-1 text-left">{selected?.label}</span>
+        <ChevronDown
+          size={16}
+          className={`shrink-0 text-[var(--primary-text)] transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.ul
+            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            transition={{ duration: 0.12 }}
+            className="custom-scrollbar absolute z-50 mt-1.5 w-full max-h-56 overflow-y-auto list-none m-0 p-1 rounded-xl border-2 border-[var(--primary-border)] bg-[var(--secondary-bg)] shadow-2xl"
+          >
+            {options.map((o) => {
+              const active = o.value === value;
+              return (
+                <li key={o.value || "__default__"}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange(o.value);
+                      setOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-left transition-colors ${
+                      active
+                        ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
+                        : "text-[var(--secondary-text)] hover:bg-[var(--primary-bg)]"
+                    }`}
+                  >
+                    <span className="truncate flex-1">{o.label}</span>
+                    {active && <Check size={15} className="shrink-0" />}
+                  </button>
+                </li>
+              );
+            })}
+          </motion.ul>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// ===== Ses cihazı seçimi bölümü =====
+const AudioDeviceSettings = () => {
+  const { audioDevices, setAudioInputDevice, setAudioOutputDevice } = useVoice();
+  const [inputs, setInputs] = useState([]);
+  const [outputs, setOutputs] = useState([]);
+  const [needsPermission, setNeedsPermission] = useState(false);
+  const outputSupported =
+    typeof window !== "undefined" &&
+    (typeof AudioContext !== "undefined") &&
+    "setSinkId" in (AudioContext.prototype || {});
+
+  const refresh = useCallback(async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const ins = devices.filter((d) => d.kind === "audioinput");
+      const outs = devices.filter((d) => d.kind === "audiooutput");
+      setInputs(ins);
+      setOutputs(outs);
+      // Etiketler boşsa mikrofon izni verilmemiş demektir
+      setNeedsPermission(ins.some((d) => !d.label));
+    } catch (e) {
+      console.error("enumerateDevices error:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+    navigator.mediaDevices?.addEventListener?.("devicechange", refresh);
+    return () =>
+      navigator.mediaDevices?.removeEventListener?.("devicechange", refresh);
+  }, [refresh]);
+
+  const grantPermission = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((t) => t.stop());
+      await refresh();
+    } catch (e) {
+      console.error("Mic permission error:", e);
+      toast.error("Mikrofon izni alınamadı.");
+    }
+  };
+
+  const inputOptions = [
+    { value: "", label: "Varsayılan (sistem)" },
+    ...inputs.map((d, i) => ({
+      value: d.deviceId,
+      label: d.label || `Mikrofon ${i + 1}`,
+    })),
+  ];
+  const outputOptions = [
+    { value: "", label: "Varsayılan (sistem)" },
+    ...outputs.map((d, i) => ({
+      value: d.deviceId,
+      label: d.label || `Hoparlör ${i + 1}`,
+    })),
+  ];
+
+  return (
+    <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)] mb-6">
+      <h2 className="text-lg font-semibold mb-4 text-[var(--quaternary-text)]">
+        Ses ve Görüntü
+      </h2>
+
+      {needsPermission && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-[var(--secondary-bg)] border border-[var(--primary-border)]">
+          <p className="text-xs text-[var(--primary-text)]">
+            Cihaz adlarını görebilmek için mikrofon izni gerekli.
+          </p>
+          <button
+            onClick={grantPermission}
+            className="px-3 py-1.5 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] text-xs font-semibold hover:bg-[var(--quaternary-bg)] transition-colors"
+          >
+            İzin Ver
+          </button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Giriş cihazı (mikrofon) */}
+        <div>
+          <label className="flex items-center gap-1.5 mb-1.5 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
+            <Mic size={13} /> Giriş Cihazı
+          </label>
+          <DeviceSelect
+            value={audioDevices.input}
+            options={inputOptions}
+            onChange={setAudioInputDevice}
+            icon={<Mic size={15} />}
+          />
+        </div>
+
+        {/* Çıkış cihazı (hoparlör/kulaklık) */}
+        <div>
+          <label className="flex items-center gap-1.5 mb-1.5 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
+            <Volume2 size={13} /> Çıkış Cihazı
+          </label>
+          <DeviceSelect
+            value={audioDevices.output}
+            options={outputOptions}
+            onChange={setAudioOutputDevice}
+            disabled={!outputSupported}
+            icon={<Volume2 size={15} />}
+          />
+          {!outputSupported && (
+            <p className="mt-1 text-[11px] text-[var(--primary-text)]">
+              Bu ortam çıkış cihazı seçimini desteklemiyor.
+            </p>
+          )}
+        </div>
+      </div>
+
+      <p className="mt-3 text-[11px] text-[var(--primary-text)]">
+        Giriş cihazı değişikliği bir sonraki ses kanalına katılımında geçerli olur.
+      </p>
+    </section>
+  );
+};
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -97,6 +289,9 @@ const SettingsPage = () => {
             </button>
           </div>
         </section>
+
+        {/* Ses ve görüntü cihazları */}
+        <AudioDeviceSettings />
 
         {/* Hesap işlemleri */}
         <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)]">

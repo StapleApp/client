@@ -21,6 +21,7 @@ const ICE = {
 // ===== Konuşma algılama (VAD) ve kişi bazlı ses seviyesi ayarları =====
 const VOL_KEY = "staple-voice-volumes";
 const VAD_KEY = "staple-vad-settings";
+const DEVICE_KEY = "staple-audio-devices"; // { input, output } deviceId'leri
 const SPEAK_HANGOVER_MS = 300; // eşiğin altına inince bu kadar süre "konuşuyor" kalsın
 const LEVEL_INTERVAL_MS = 50;
 
@@ -48,6 +49,15 @@ const loadVolumes = () => {
     return JSON.parse(localStorage.getItem(VOL_KEY)) || {};
   } catch {
     return {};
+  }
+};
+
+const loadDevices = () => {
+  try {
+    const s = JSON.parse(localStorage.getItem(DEVICE_KEY));
+    return { input: s?.input || "", output: s?.output || "" };
+  } catch {
+    return { input: "", output: "" };
   }
 };
 
@@ -110,6 +120,8 @@ export const VoiceProvider = ({ children }) => {
   const [vad, setVad] = useState(loadVadSettings);
   // Kişi bazlı ses seviyesi: userId -> 0..2 (1 = normal, >1 = boost)
   const [volumes, setVolumes] = useState(loadVolumes);
+  // Seçili ses cihazları: { input, output } deviceId ("" = sistem varsayılanı)
+  const [audioDevices, setAudioDevices] = useState(loadDevices);
 
   const localStreamRef = useRef(null); // ham mikrofon akışı (mute buradan)
   const outStreamRef = useRef(null); // peer'lara gönderilen işlenmiş akış
@@ -125,6 +137,7 @@ export const VoiceProvider = ({ children }) => {
   const lastAboveRef = useRef({}); // id -> son eşik üstü zaman damgası
   const speakingRef = useRef({});
   const volumesRef = useRef(volumes);
+  const audioDevicesRef = useRef(audioDevices);
   const mutedRef = useRef(false);
   const vadRef = useRef(vad);
   const activeRef = useRef(null); // beforeunload handler'ı güncel active'i görsün
@@ -217,6 +230,9 @@ export const VoiceProvider = ({ children }) => {
     volumesRef.current = volumes;
   }, [volumes]);
   useEffect(() => {
+    audioDevicesRef.current = audioDevices;
+  }, [audioDevices]);
+  useEffect(() => {
     mutedRef.current = muted;
   }, [muted]);
   useEffect(() => {
@@ -238,10 +254,59 @@ export const VoiceProvider = ({ children }) => {
       aggressiveness: Math.min(Math.max(aggressiveness, 0), 100),
     }));
 
+  // Seçili çıkış (hoparlör/kulaklık) cihazını uygula. Uzak sesler WebAudio
+  // ctx.destination'a gittiğinden asıl yönlendirme AudioContext.setSinkId ile
+  // olur; WebAudio kurulamamış (el.muted=false) ögeler için el.setSinkId fallback.
+  const applyOutputSink = async (deviceId) => {
+    const ctx = audioCtxRef.current;
+    try {
+      if (ctx && typeof ctx.setSinkId === "function") {
+        await ctx.setSinkId(deviceId || "");
+      }
+    } catch (e) {
+      console.warn("AudioContext.setSinkId başarısız:", e);
+    }
+    document.querySelectorAll('audio[id^="voice-audio-"]').forEach((el) => {
+      if (typeof el.setSinkId === "function") {
+        el.setSinkId(deviceId || "").catch(() => {});
+      }
+    });
+  };
+
+  const setAudioInputDevice = (deviceId) => {
+    setAudioDevices((prev) => {
+      const next = { ...prev, input: deviceId || "" };
+      try {
+        localStorage.setItem(DEVICE_KEY, JSON.stringify(next));
+      } catch {
+        /* kota dolu / gizli mod */
+      }
+      return next;
+    });
+    // Giriş değişikliği bir sonraki katılımda (getUserMedia) geçerli olur.
+  };
+
+  const setAudioOutputDevice = (deviceId) => {
+    setAudioDevices((prev) => {
+      const next = { ...prev, output: deviceId || "" };
+      try {
+        localStorage.setItem(DEVICE_KEY, JSON.stringify(next));
+      } catch {
+        /* kota dolu / gizli mod */
+      }
+      return next;
+    });
+    applyOutputSink(deviceId || ""); // çıkışı anında uygula
+  };
+
   const getAudioCtx = () => {
     if (!audioCtxRef.current) {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       audioCtxRef.current = new Ctx();
+      // Seçili çıkış cihazını yeni context'e uygula
+      if (audioDevicesRef.current.output) {
+        applyOutputSink(audioDevicesRef.current.output);
+      }
     }
     // Otomatik oynatma politikası: kullanıcı hareketiyle (kanala tıklama) açılır
     if (audioCtxRef.current.state === "suspended") {
@@ -805,6 +870,7 @@ export const VoiceProvider = ({ children }) => {
     setIsTheaterExpanded(true);
     setConnecting(true);
     try {
+      const inputId = audioDevicesRef.current.input;
       localStreamRef.current = await navigator.mediaDevices.getUserMedia({
         // Tarayıcının kendi işleme zinciri. Chrome bunları varsayılan açar ama
         // garanti değil; açıkça isteyerek Firefox/Safari'de de tutarlı olur.
@@ -812,6 +878,8 @@ export const VoiceProvider = ({ children }) => {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
+          // Seçili mikrofon (yoksa sistem varsayılanı)
+          ...(inputId ? { deviceId: { exact: inputId } } : {}),
         },
         video: false,
       });
@@ -956,6 +1024,10 @@ export const VoiceProvider = ({ children }) => {
         setVadAggressiveness,
         getUserVolume,
         setUserVolume,
+        // ses cihazı seçimi
+        audioDevices,
+        setAudioInputDevice,
+        setAudioOutputDevice,
         // ekran paylaşımı
         isScreenSharing,
         localScreenStream,
