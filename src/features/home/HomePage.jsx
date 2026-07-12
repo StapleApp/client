@@ -199,6 +199,12 @@ const HomePage = () => {
   const [dmList, setDmList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [myStatus, setMyStatus] = useState("online");
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Aktif ses kanalları
   const [serverVoice, setServerVoice] = useState({}); // serverId -> { channelId: [users] }
@@ -365,17 +371,38 @@ const HomePage = () => {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`p-5 rounded-2xl ${GLASS}`}
+                className={`p-5 rounded-2xl ${GLASS} flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4`}
               >
-                <p className="text-xs font-medium text-[var(--primary-text)]">{greetingForHour()},</p>
-                <h1 className="text-2xl font-bold text-[var(--secondary-text)]">
-                  {userData?.nickName || "gezgin"} 👋
-                </h1>
-                <div className="flex flex-wrap gap-2 mt-4">
-                  <StatChip value={servers.length} label="Sunucu" />
-                  <StatChip value={friends.length} label="Arkadaş" />
-                  <StatChip value={onlineFriends.length} label="Çevrimiçi" />
-                  {totalUnread > 0 && <StatChip value={totalUnread} label="Okunmamış" />}
+                <div>
+                  <p className="text-xs font-medium text-[var(--primary-text)]">{greetingForHour()},</p>
+                  <h1 className="text-2xl font-bold text-[var(--secondary-text)]">
+                    {userData?.nickName || "gezgin"} 👋
+                  </h1>
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    <StatChip value={servers.length} label="Sunucu" />
+                    <StatChip value={friends.length} label="Arkadaş" />
+                    <StatChip value={onlineFriends.length} label="Çevrimiçi" />
+                    {totalUnread > 0 && <StatChip value={totalUnread} label="Okunmamış" />}
+                  </div>
+                </div>
+
+                {/* Saat & Tarih Widget'ı */}
+                <div className="relative flex flex-col items-start sm:items-end justify-center bg-gradient-to-br from-[var(--primary-bg)]/60 to-[var(--secondary-bg)]/25 border border-[var(--primary-border)]/40 border-l-4 border-l-[var(--tertiary-bg)] rounded-r-2xl rounded-l-sm px-6 py-4.5 shadow-lg select-none shrink-0">
+                  <div className="flex items-center gap-1.5 font-bold tracking-tight text-3xl sm:text-4xl text-[var(--secondary-text)] tabular-nums font-mono leading-none">
+                    <span>
+                      {time.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                    <span className="text-xl font-medium text-[var(--tertiary-bg)] animate-pulse">:</span>
+                    <span className="text-xl font-medium text-[var(--primary-text)]/70">
+                      {time.toLocaleTimeString("tr-TR", { second: "2-digit" })}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-[var(--primary-text)] font-extrabold mt-3 leading-none">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--tertiary-bg)]" />
+                    <span>
+                      {time.toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long" })}
+                    </span>
+                  </div>
                 </div>
               </motion.div>
 
