@@ -84,7 +84,7 @@ const ServerNavIcon = ({ server, badge, index }) => {
         className="w-full h-full object-cover rounded-[9px]"
       />
       {badge > 0 && (
-        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none border-2 border-[var(--primary-bg)] z-10">
+        <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none border-2 border-[var(--primary-bg)] z-10">
           {badge > 9 ? "9+" : badge}
         </span>
       )}
@@ -176,7 +176,7 @@ const Navigator = () => {
             üstündeki çizgi ARASINDA kalır. Taşarsa yalnızca bu alan dikey scroll
             olur; üst ikonlar ve ayarlar sabit kalır. Ana sayfada gizlidir ve
             aşağıdan yukarıya animasyonla belirir. */}
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-scrollbar flex flex-col">
           <AnimatePresence>
             {showServers && (
               <motion.div

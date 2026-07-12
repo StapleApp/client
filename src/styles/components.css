@@ -105,3 +105,15 @@
   scrollbar-color: var(--primary-border) var(--primary-bg) !important;
   scrollbar-gutter: stable !important;
 }
+
+/* Scroll edilebilir ama scrollbar'ı hiç yer kaplamayan alan (ör. Navigator'daki
+   sunucu listesi). Böylece gutter ayrılmaz, içerik tam genişlikte ortalı kalır;
+   kaydırma tekerlek/touchpad ile yapılır (Discord sunucu çubuğu gibi). */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none; /* Firefox */
+}
