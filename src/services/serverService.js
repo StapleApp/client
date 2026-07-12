@@ -218,6 +218,9 @@ export const getServerById = async (serverID) => {
       .select("tag")
       .eq("server_id", serverID);
 
+    const baseRoleObj = (roles || []).find((r) => r.role_kind === "member");
+    const baseRoleId = baseRoleObj ? baseRoleObj.id : null;
+
     // Firebase uyumlu format
     return {
       ServerId: server.id,
@@ -242,7 +245,7 @@ export const getServerById = async (serverID) => {
       })),
       Users: (members || []).map((m) => ({
         UserID: m.user_id,
-        RoleID: m.role_id || "member",
+        RoleID: m.role_id || baseRoleId || "member",
         JoinDate: m.joined_at,
       })),
       Roles: (roles || []).map((r) => ({
