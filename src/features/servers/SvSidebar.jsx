@@ -1373,6 +1373,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
                   channelName={activeChannel.name}
                   memberColors={memberColors}
                   canModerate={canManageMessages}
+                  serverData={serverData}
                   jumpToMessageId={
                     jumpTarget?.channelId === activeChannel.id
                       ? jumpTarget.messageId

@@ -309,6 +309,8 @@ const ServerMembers = ({ serverData, onRefresh, showMembers, onToggleCollapse })
             UID={selectedUser.userID}
             about={selectedUser.about}
             bannerURL={selectedUser.profileBannerUrl}
+            roleName={selectedUser.roleName}
+            roleColor={selectedUser.roleColor}
           />,
           document.body
         )}

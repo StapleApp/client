@@ -73,7 +73,7 @@ const dayLabel = (createdAt) => {
  *   headerUserId - optional user id; makes the header icon/name open the profile card
  *   showHeader   - whether to show the header bar (default true)
  */
-const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader = true, memberColors, canModerate = false, jumpToMessageId = null }) => {
+const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader = true, memberColors, canModerate = false, jumpToMessageId = null, serverData }) => {
   const { userData } = useAuth();
   const mobileMenu = useMobileMenu();
   const isMobile = mobileMenu?.isMobile ?? false;
@@ -1242,19 +1242,29 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
       </form>
 
       {selectedUser && createPortal(
-        <ProfilePanel
-          check={isProfileCardExpanded}
-          setCheck={setIsProfileCardExpanded}
-          posX={profileCardPosition.left + 188}
-          posY={profileCardPosition.top}
-          userName={selectedUser.nickName}
-          photoURL={selectedUser.photoURL}
-          userID={selectedUser.friendshipID}
-          memberDate={selectedUser.createdDate}
-          UID={selectedUser.userID}
-          about={selectedUser.about}
-          bannerURL={selectedUser.profileBannerUrl}
-        />,
+        (() => {
+          const userMember = serverData?.Users?.find((u) => u.UserID === selectedUser?.userID);
+          const userRole = userMember && serverData?.Roles?.find((r) => r.RoleID === userMember.RoleID);
+          const roleName = userRole ? userRole.RoleName : null;
+          const roleColor = userRole ? userRole.RoleColor : null;
+          return (
+            <ProfilePanel
+              check={isProfileCardExpanded}
+              setCheck={setIsProfileCardExpanded}
+              posX={profileCardPosition.left + 188}
+              posY={profileCardPosition.top}
+              userName={selectedUser.nickName}
+              photoURL={selectedUser.photoURL}
+              userID={selectedUser.friendshipID}
+              memberDate={selectedUser.createdDate}
+              UID={selectedUser.userID}
+              about={selectedUser.about}
+              bannerURL={selectedUser.profileBannerUrl}
+              roleName={roleName}
+              roleColor={roleColor}
+            />
+          );
+        })(),
         document.body
       )}
 

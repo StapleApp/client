@@ -3,11 +3,26 @@ import { IoPersonAdd } from "react-icons/io5";
 import { CgProfile } from "react-icons/cg";
 import { FaTelegramPlane } from "react-icons/fa";
 import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import profileBanner from "../../assets/backgrounds/profile-banner.png";
 import { findDMGroup, createGroup } from "../../services/groupService";
 import { getUser } from "../../services/userService";
 import { getFriendsList } from "../../services/friendService";
 import { useAuth } from "../../context/AuthContext";
+
+const getOpacityColor = (hex, opacityHex = "26") => {
+  if (!hex) return "rgba(255, 255, 255, 0.1)";
+  if (hex.startsWith("#")) {
+    if (hex.length === 4) {
+      const r = hex[1];
+      const g = hex[2];
+      const b = hex[3];
+      return `#${r}${r}${g}${g}${b}${b}${opacityHex}`;
+    }
+    return hex.slice(0, 7) + opacityHex;
+  }
+  return hex;
+};
 
 const ProfilePanel = ({
   check,
@@ -21,12 +36,13 @@ const ProfilePanel = ({
   UID,
   about,
   bannerURL,
+  roleColor,
+  roleName,
 }) => {
   const formattedUID = `${userID}`.padStart(6, "0");
   const panelRef = useRef(null);
   const { userData } = useAuth();
 
-  // Gösterilen kişi zaten arkadaş mı? (Ekle butonunu gizlemek için)
   const [isFriend, setIsFriend] = useState(false);
   useEffect(() => {
     let cancelled = false;
@@ -47,8 +63,10 @@ const ProfilePanel = ({
     return { clampedX, clampedY };
   };
 
-  const panelWidth = 340;
-  const panelHeight = 304;
+  const panelWidth = 330;
+  // Dinamik olarak yüksekliği rollerin varlığına göre ayarla
+  const panelHeight = roleName ? 356 : 304;
+
   const { clampedX, clampedY } = clampPosition(
     posX,
     posY,
@@ -56,8 +74,7 @@ const ProfilePanel = ({
     panelHeight
   );
 
-  // Database'den gelen Timestamp/String verisini Date nesnesine dönüştürme
-  let creadetDateText = "Üyelik tarihi mevcut değil";
+  let creadetDateText = "Üyelik tarihi yok";
 
   if (memberDate) {
     let createdDate = null;
@@ -73,11 +90,10 @@ const ProfilePanel = ({
         month: "2-digit",
         year: "numeric",
       });
-      creadetDateText = "Şu tarihten beri üye : " + formattedDate;
+      creadetDateText = formattedDate + " Katıldı";
     }
   }
 
-  // Panel açılınca, panel dışı her yeri dinleyen listener ekledim
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -99,53 +115,102 @@ const ProfilePanel = ({
   }, [check, setCheck]);
 
   return (
-    <div
+    <motion.div
       ref={panelRef}
-      className={`fixed z-[9999] h-76 w-80 ml-1 rounded-md
-              bg-[var(--primary-bg)] shadow-xl
-              transition-all duration-300 ease-in-out
-              flex flex-col justify-between
-              ${
-                check
-                  ? `opacity-100 scale-100 translate-y-0`
-                  : "opacity-0 scale-95 translate-y-2 pointer-events-none"
-              }`}
-      style={{ top: `${clampedY - 32}px`, left: `${clampedX - 180}px` }}
+      initial={{ opacity: 0, scale: 0.95, y: 15 }}
+      animate={
+        check
+          ? { opacity: 1, scale: 1, y: 0 }
+          : { opacity: 0, scale: 0.95, y: 15 }
+      }
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      className="fixed z-[9999] ml-1 p-[1.2px] bg-gradient-to-b from-white/10 to-white/5 rounded-2xl shadow-2xl overflow-hidden"
+      style={{
+        top: `${clampedY - 32}px`,
+        left: `${clampedX - 180}px`,
+        width: `${panelWidth}px`,
+        height: `${panelHeight}px`,
+        pointerEvents: check ? "auto" : "none",
+      }}
     >
-      {/* Üst Menü Öğeleri */}
-      <div className="flex flex-col h-auto">
-        <div className="grid grid-rows-3">
-          {/* Üst Arkaplan */}
-          <div className="row-span-2">
-            <img
-              className="rounded-t-md h-[107px] w-80"
-              src={bannerURL || profileBanner}
-            />
-          </div>
+      <div className="w-full h-full bg-[var(--primary-bg)] rounded-[15px] flex flex-col overflow-hidden">
+        {/* Üst Banner */}
+        <div className="relative h-20 w-full shrink-0">
+          <img
+            className="w-full h-full object-cover select-none"
+            src={bannerURL || profileBanner}
+            alt="Profile Banner"
+          />
+        </div>
 
-          {/* Ortada Duracak İkon */}
-          <div className="absolute top-1/12 grid grid-cols-3 w-76">
-            <ProfilePicture
-              src={photoURL || "/defaults/avatars/1.png"}
-              isMe={userData && userData.friendshipID === userID}
-            />
-            <div className="grid col-span-2 expanded-text bg-[var(--primary-bg)] h-6 my-auto rounded-md mr-3 p-0">
-              <div className="flex text-sm justify-between">
-                <span className="ml-2">{userName}</span>
-                <span className="mr-2">{"#" + formattedUID}</span>
+        {/* Profil Detayları */}
+        <div className="flex-1 p-3 flex flex-col justify-between min-h-0">
+          <div className="space-y-2.5">
+            {/* Avatar & İsim Satırı */}
+            <div className="flex items-center gap-2.5">
+              <ProfilePicture
+                src={photoURL || "/defaults/avatars/1.png"}
+                isMe={userData && userData.friendshipID === userID}
+                roleColor={roleColor}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="font-extrabold text-white text-[15px] truncate leading-snug">
+                  {userName}
+                </div>
+                <div className="text-[11px] text-[var(--primary-text)] font-mono mt-0.5 opacity-70">
+                  {"#" + formattedUID}
+                </div>
               </div>
             </div>
+
+            {/* Hakkında */}
+            <div className="space-y-1">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--primary-text)] px-0.5">
+                Hakkında
+              </div>
+              <div className="text-xs bg-[#1a1f26] text-[var(--secondary-text)] p-2.5 rounded-xl min-h-[50px] max-h-[60px] overflow-y-auto select-text text-left border border-white/5 leading-normal">
+                {about || "Kullanıcı hakkında bilgi girmemiş."}
+              </div>
+            </div>
+
+            {/* Rol Etiketi */}
+            {roleName && (
+              <div className="space-y-1">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--primary-text)] px-0.5">
+                  Roller
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-0.5">
+                  <span
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold"
+                    style={{
+                      backgroundColor: getOpacityColor(roleColor, "26"),
+                      color: roleColor || "#B9BBBE",
+                    }}
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: roleColor || "#B9BBBE" }}
+                    />
+                    {roleName}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Alt Arkaplan */}
-          <div className="flex my-auto">
+          {/* Alt Bilgi & Butonlar */}
+          <div className="pt-2 border-t border-[var(--primary-border)]/30 flex items-center justify-between">
+            <div className="text-[10px] text-[var(--primary-text)] font-semibold opacity-90 select-none">
+              {creadetDateText}
+            </div>
+
             {userData && userData.friendshipID === userID ? (
-              <div className="flex gap-3 pl-1">
+              <div className="flex gap-2">
                 <ProfileButton />
               </div>
             ) : (
               userData && (
-                <div className="flex gap-3 pl-1">
+                <div className="flex gap-2">
                   {!isFriend && <AddFriendButton friendshipCode={userID} />}
                   <DMButton userID={UID} userData={userData} />
                 </div>
@@ -153,80 +218,54 @@ const ProfilePanel = ({
             )}
           </div>
         </div>
-        <div
-          className="expanded-text text-sm bg-[var(--secondary-bg)] text-[var(--secondary-text)]
-                  col-span-2 m-1 pl-2 pr-2 py-1.5 rounded-md h-14 overflow-y-auto select-text text-left"
-        >
-          {about || "Kullanıcı hakkında bilgi girmemiş."}
-        </div>
       </div>
-
-      {/* Alt Menü Öğeleri */}
-      <div className="flex flex-col h-16">
-        <hr className="border-[var(--primary-border)] border" />
-        <div className="expanded-text h-6 rounded-md mr-3 p-0 flex my-auto">
-          <span className="ml-2 text-sm expanded-text h-12">
-            {creadetDateText}
-          </span>
-        </div>
-      </div>
-    </div>
+    </motion.div>
   );
 };
 
 const ProfileButton = () => {
   const navigate = useNavigate();
   return (
-    <>
-      <div
-        className="flex icon group cursor-pointer hover:scale-105 h-7 w-20 mt-1 mb-0 mx-auto"
-        onClick={() => navigate("/Profile")}
-      >
-        <span className="bg-[var(--primary-bg)] text-[var(--primary-text)] text-sm font-bold mr-1">
-          Profil
-        </span>
-        <CgProfile size="15" />
-      </div>
-    </>
+    <button
+      type="button"
+      onClick={() => navigate("/Profile")}
+      className="px-3 py-1.5 rounded-xl bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] hover:bg-[var(--quaternary-bg)] text-xs font-bold transition-all hover:scale-[1.03] flex items-center gap-1.5 shadow-md shrink-0"
+    >
+      <span>Profil</span>
+      <CgProfile size="14" />
+    </button>
   );
 };
 
 const AddFriendButton = ({ friendshipCode }) => {
   const navigate = useNavigate();
   return (
-    <>
-      <div
-        className="flex icon group cursor-pointer hover:scale-105 h-7 w-20 mt-1 mb-0 mx-auto"
-        onClick={() =>
-          navigate("/AddFriends", {
-            state: friendshipCode ? { friendshipID: friendshipCode } : undefined,
-          })
-        }
-      >
-        <span
-          className="bg-[var(--primary-bg)]
-                text-[var(--primary-text)] text-sm font-bold mr-1"
-        >
-          Ekle
-        </span>
-        <IoPersonAdd size="15" />
-      </div>
-    </>
+    <button
+      type="button"
+      onClick={() =>
+        navigate("/AddFriends", {
+          state: friendshipCode ? { friendshipID: friendshipCode } : undefined,
+        })
+      }
+      className="px-3 py-1.5 rounded-xl bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] hover:bg-[var(--quaternary-bg)] text-xs font-bold transition-all hover:scale-[1.03] flex items-center gap-1.5 shadow-md shrink-0"
+    >
+      <span>Ekle</span>
+      <IoPersonAdd size="14" />
+    </button>
   );
 };
 
 const DMButton = ({ userID, userData }) => {
   const navigate = useNavigate();
   return (
-    <div
-      className="flex icon group cursor-pointer hover:scale-105 h-7 w-20 mt-1 mb-0 mx-auto"
+    <button
+      type="button"
       onClick={async () => {
         const group = await findDMGroup(userData.userID, userID);
         if (group) {
           navigate(`/DirectMessaging`, { state: { userID } });
           return;
         }
-        // Hiçbiri yoksa yeni grup oluştur
         const friendData = await getUser(userID);
         const groupID = await createGroup(
           (friendData?.nickName || "Arkadaş") + " & " + userData.nickName,
@@ -236,34 +275,31 @@ const DMButton = ({ userID, userData }) => {
           navigate(`/DirectMessaging`, { state: { userID } });
         }
       }}
+      className="px-3 py-1.5 rounded-xl bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] hover:bg-[var(--quaternary-bg)] text-xs font-bold transition-all hover:scale-[1.03] flex items-center gap-1.5 shadow-md shrink-0"
     >
-      <span className="bg-[var(--primary-bg)] text-[var(--primary-text)] text-sm font-bold mr-1">
-        DM
-      </span>
-      <FaTelegramPlane size="15" />
-    </div>
+      <span>DM</span>
+      <FaTelegramPlane size="14" />
+    </button>
   );
 };
 
-
-
-const ProfilePicture = ({ src, isMe }) => {
+const ProfilePicture = ({ src, isMe, roleColor }) => {
   const navigate = useNavigate();
-  if (isMe) {
-    return (
-      <div
-        className="icon group cursor-pointer hover:scale-105 w-15 h-15 my-auto ml-3 mr-2 rounded-full"
-        onClick={() => navigate("/Profile")}
-      >
-        <img src={src} className="rounded-full h-14 w-14" />
-      </div>
-    );
-  }
+  const ringColor = roleColor || "var(--primary-border)";
+  const style = {
+    borderColor: ringColor,
+    boxShadow: roleColor ? `0 0 10px ${ringColor}60` : "none",
+  };
+  
   return (
     <div
-      className="relative flex items-center justify-center w-15 h-15 my-auto ml-3 mr-2 shadow-lg bg-[var(--primary-bg)] border-3 border-[var(--primary-border)] rounded-full select-none"
+      onClick={isMe ? () => navigate("/Profile") : undefined}
+      className={`relative flex items-center justify-center w-14 h-14 my-auto ml-1 mr-1.5 shadow-lg rounded-full border-2 select-none shrink-0 ${
+        isMe ? "cursor-pointer hover:scale-105 transition-transform" : ""
+      }`}
+      style={style}
     >
-      <img src={src} className="rounded-full h-14 w-14" />
+      <img src={src} className="rounded-full h-[50px] w-[50px] object-cover" />
     </div>
   );
 };
