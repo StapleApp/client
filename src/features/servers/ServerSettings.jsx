@@ -12,8 +12,9 @@ import {
   Trash2,
   Shield,
   SlidersHorizontal,
+  LogOut,
 } from "lucide-react";
-import { updateServer, deleteServer } from "../../services/serverService";
+import { updateServer, deleteServer, leaveServer } from "../../services/serverService";
 import RolesManager from "./RolesManager";
 import ImagePicker from "../../Components/ImagePicker";
 import { useAuth } from "../../context/AuthContext";
@@ -47,7 +48,12 @@ const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [tab, setTab] = useState(canManageServer ? "general" : "roles"); // general | roles
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  // İlk erişilebilir sekme (yönetim yetkisi olmayan üye için "none")
+  const [tab, setTab] = useState(
+    canManageServer ? "general" : canManageRoles ? "roles" : "none"
+  );
 
   const addTag = () => {
     const t = tagInput.trim().toLowerCase();
@@ -96,6 +102,15 @@ const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
     if (ok) onDeleted && onDeleted();
   };
 
+  const handleLeave = async () => {
+    if (leaving) return;
+    setLeaving(true);
+    const ok = await leaveServer(serverData.ServerId, myId);
+    setLeaving(false);
+    // Ayrıldıysa sunucu artık erişilemez → onDeleted ile ana sayfaya dön.
+    if (ok) onDeleted && onDeleted();
+  };
+
   return createPortal(
     <AnimatePresence>
       <motion.div
@@ -135,30 +150,32 @@ const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
           </div>
 
           <div className="px-6 pt-10 pb-6">
-            {/* Sekmeler */}
-            <div className="flex gap-1 mb-4 p-1 rounded-xl bg-[var(--secondary-bg)] border border-[var(--primary-border)]">
-              {[
-                canManageServer && { id: "general", label: "Genel", icon: <SlidersHorizontal size={15} /> },
-                canManageRoles && { id: "roles", label: "Roller", icon: <Shield size={15} /> },
-              ].filter(Boolean).map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setTab(t.id)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                    tab === t.id
-                      ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
-                      : "text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
-                  }`}
-                >
-                  {t.icon} {t.label}
-                </button>
-              ))}
-            </div>
+            {/* Sekmeler — yalnızca yetkili olduğun bölümler görünür */}
+            {(canManageServer || canManageRoles) && (
+              <div className="flex gap-1 mb-4 p-1 rounded-xl bg-[var(--secondary-bg)] border border-[var(--primary-border)]">
+                {[
+                  canManageServer && { id: "general", label: "Genel", icon: <SlidersHorizontal size={15} /> },
+                  canManageRoles && { id: "roles", label: "Roller", icon: <Shield size={15} /> },
+                ].filter(Boolean).map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTab(t.id)}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                      tab === t.id
+                        ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
+                        : "text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
+                    }`}
+                  >
+                    {t.icon} {t.label}
+                  </button>
+                ))}
+              </div>
+            )}
 
-            {tab === "roles" ? (
+            {tab === "roles" && canManageRoles ? (
               <RolesManager serverData={serverData} onChanged={onSaved} />
-            ) : (
+            ) : tab === "general" && canManageServer ? (
           <form onSubmit={handleSave} className="space-y-4">
             <h1 className="text-xl font-bold text-[var(--secondary-text)] flex items-center gap-2">
               <Server size={20} className="text-[var(--tertiary-border)]" />
@@ -278,14 +295,45 @@ const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
               </div>
             </div>
 
-            {/* Alt İşlem Çubuğu: İptal, Kaydet ve Sil (Tehlikeli Bölge) yan yana */}
-            <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[var(--primary-border)]">
-              {/* Tehlikeli Bölge — yalnızca sunucu sahibi silebilir */}
-              <div className="flex-1 min-w-[200px]">
-                {!isOwner ? null : confirmDelete ? (
+            {/* Kaydet / İptal */}
+            <div className="flex items-center justify-end gap-2 pt-4 border-t border-[var(--primary-border)]">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 rounded-lg bg-[var(--secondary-bg)] text-[var(--secondary-text)] font-semibold text-xs hover:text-[var(--quaternary-text)] transition-colors"
+              >
+                İptal
+              </button>
+              <button
+                type="submit"
+                disabled={saving || !name.trim()}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] font-bold text-xs hover:bg-[var(--quaternary-bg)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {saving ? <Loader2 size={13} className="animate-spin" /> : <Server size={13} />}
+                {saving ? "Kaydediliyor..." : "Kaydet"}
+              </button>
+            </div>
+          </form>
+            ) : (
+              /* Yönetim yetkisi olmayan üye görünümü */
+              <div className="py-8 text-center">
+                <Server size={28} className="mx-auto mb-2 text-[var(--tertiary-border)]" />
+                <p className="text-sm text-[var(--secondary-text)] font-semibold">
+                  {serverData?.ServerName}
+                </p>
+                <p className="text-xs text-[var(--primary-text)] mt-1">
+                  Bu sunucuda yönetim yetkin yok. Aşağıdan sunucudan ayrılabilirsin.
+                </p>
+              </div>
+            )}
+
+            {/* Kalıcı Tehlikeli Bölge: sahip → sil, diğer üyeler → ayrıl */}
+            <div className="mt-4 pt-4 border-t border-[var(--primary-border)]">
+              {isOwner ? (
+                confirmDelete ? (
                   <div className="flex items-center gap-2 p-1.5 rounded-lg border border-red-500/40 bg-red-500/5">
                     <span className="text-[11px] text-[var(--secondary-text)] leading-tight flex-1">
-                      Kalıcı silinecek. Emin misin?
+                      Sunucu kalıcı silinecek. Emin misin?
                     </span>
                     <button
                       type="button"
@@ -311,30 +359,38 @@ const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
                   >
                     <Trash2 size={13} /> Sunucuyu Sil
                   </button>
-                )}
-              </div>
-
-              {/* Kaydet / İptal */}
-              <div className="flex items-center gap-2">
+                )
+              ) : confirmLeave ? (
+                <div className="flex items-center gap-2 p-1.5 rounded-lg border border-red-500/40 bg-red-500/5">
+                  <span className="text-[11px] text-[var(--secondary-text)] leading-tight flex-1">
+                    Sunucudan ayrılmak istediğine emin misin?
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleLeave}
+                    disabled={leaving}
+                    className="px-2.5 py-1.5 rounded bg-red-500 text-white text-xs font-semibold hover:bg-red-600 disabled:opacity-50 transition-colors"
+                  >
+                    {leaving ? <Loader2 size={12} className="animate-spin" /> : "Ayrıl"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmLeave(false)}
+                    className="px-2.5 py-1.5 rounded bg-[var(--secondary-bg)] text-[var(--secondary-text)] text-xs font-semibold hover:text-[var(--quaternary-text)] transition-colors"
+                  >
+                    İptal
+                  </button>
+                </div>
+              ) : (
                 <button
                   type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 rounded-lg bg-[var(--secondary-bg)] text-[var(--secondary-text)] font-semibold text-xs hover:text-[var(--quaternary-text)] transition-colors"
+                  onClick={() => setConfirmLeave(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-red-500/40 text-red-400 text-xs font-semibold hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors"
                 >
-                  İptal
+                  <LogOut size={13} /> Sunucudan Ayrıl
                 </button>
-                <button
-                  type="submit"
-                  disabled={saving || !name.trim()}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] font-bold text-xs hover:bg-[var(--quaternary-bg)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  {saving ? <Loader2 size={13} className="animate-spin" /> : <Server size={13} />}
-                  {saving ? "Kaydediliyor..." : "Kaydet"}
-                </button>
-              </div>
+              )}
             </div>
-          </form>
-            )}
           </div>
         </motion.div>
       </motion.div>

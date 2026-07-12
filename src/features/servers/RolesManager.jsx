@@ -19,6 +19,7 @@ const toLocal = (roles) =>
       color: r.RoleColor || "#B9BBBE",
       permissions: r.Permissions || [],
       position: r.Position ?? 0,
+      kind: r.RoleKind || null, // 'admin' | 'member' | null
     }))
     .sort((a, b) => b.position - a.position);
 
@@ -69,6 +70,7 @@ const RolesManager = ({ serverData, onChanged }) => {
           color: row.color,
           permissions: row.permissions || [],
           position: row.position ?? maxPos + 1,
+          kind: row.role_kind || null,
         },
         ...prev,
       ].sort((a, b) => b.position - a.position)
@@ -95,6 +97,7 @@ const RolesManager = ({ serverData, onChanged }) => {
   };
 
   const togglePerm = async (role, perm) => {
+    if (role.kind === "admin") return; // admin izinleri kilitli
     const has = role.permissions.includes(perm);
     const next = has
       ? role.permissions.filter((p) => p !== perm)
@@ -138,7 +141,9 @@ const RolesManager = ({ serverData, onChanged }) => {
       <div className="flex flex-col gap-1.5">
         {roles.map((role) => {
           const open = openId === role.id;
-          const isBase = role.id === baseRoleId;
+          const isAdmin = role.kind === "admin";
+          const isBase = role.kind === "member" || role.id === baseRoleId;
+          const isProtected = isAdmin || isBase; // silinemez sistem rolleri
           return (
             <div
               key={role.id}
@@ -164,9 +169,9 @@ const RolesManager = ({ serverData, onChanged }) => {
                 >
                   {role.name}
                 </span>
-                {isBase && (
+                {isProtected && (
                   <span className="ml-auto text-[10px] text-[var(--primary-text)] uppercase tracking-wide">
-                    taban
+                    {isAdmin ? "yönetici" : "taban"}
                   </span>
                 )}
               </button>
@@ -222,20 +227,33 @@ const RolesManager = ({ serverData, onChanged }) => {
                     <label className="block mb-1 text-[11px] font-bold uppercase tracking-wide text-[var(--primary-text)]">
                       İzinler
                     </label>
+                    {isAdmin && (
+                      <p className="mb-1.5 text-[11px] text-[var(--tertiary-text)] leading-tight">
+                        Yönetici rolü her zaman tüm izinlere sahiptir ve değiştirilemez.
+                      </p>
+                    )}
                     <div className="flex flex-col gap-1">
                       {PERMISSION_ORDER.map((key) => {
                         const perm = PERMISSIONS[key];
-                        const checked = role.permissions.includes(key);
+                        // Admin daima tüm izinlere sahip görünür ve kilitlidir.
+                        const checked = isAdmin || role.permissions.includes(key);
                         return (
                           <label
                             key={key}
-                            className="flex items-start gap-2 p-2 rounded-lg hover:bg-[var(--primary-bg)]/40 cursor-pointer"
+                            className={`flex items-start gap-2 p-2 rounded-lg ${
+                              isAdmin
+                                ? "opacity-60 cursor-not-allowed"
+                                : "hover:bg-[var(--primary-bg)]/40 cursor-pointer"
+                            }`}
                           >
                             <input
                               type="checkbox"
                               checked={checked}
+                              disabled={isAdmin}
                               onChange={() => togglePerm(role, key)}
-                              className="mt-0.5 w-4 h-4 shrink-0 cursor-pointer"
+                              className={`mt-0.5 w-4 h-4 shrink-0 ${
+                                isAdmin ? "cursor-not-allowed" : "cursor-pointer"
+                              }`}
                               style={{ accentColor: "var(--quaternary-text)" }}
                             />
                             <span className="min-w-0">
@@ -252,8 +270,8 @@ const RolesManager = ({ serverData, onChanged }) => {
                     </div>
                   </div>
 
-                  {/* Sil (taban rol hariç) */}
-                  {!isBase && (
+                  {/* Sil (sistem rolleri hariç: admin + taban) */}
+                  {!isProtected && (
                     <div className="pt-1">
                       {confirmDeleteId === role.id ? (
                         <div className="flex items-center gap-2">

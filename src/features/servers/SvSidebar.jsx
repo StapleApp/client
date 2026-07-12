@@ -681,8 +681,6 @@ const SvSidebar = ({ serverData, onRefresh }) => {
   const { currentUser } = useAuth();
   const serverId = serverData?.ServerId;
   const canManageChannels = hasPermission(serverData, currentUser?.uid, "MANAGE_CHANNELS");
-  const canManageServer = hasPermission(serverData, currentUser?.uid, "MANAGE_SERVER");
-  const canManageRoles = hasPermission(serverData, currentUser?.uid, "MANAGE_ROLES");
   const canManageMessages = hasPermission(serverData, currentUser?.uid, "MANAGE_MESSAGES");
 
   const {
@@ -1023,16 +1021,16 @@ const SvSidebar = ({ serverData, onRefresh }) => {
           >
             <PanelLeftClose size={18} />
           </button>
-          {(canManageServer || canManageRoles) && (
-            <button
-              onClick={() => setShowSettings(true)}
-              title="Sunucu ayarları"
-              aria-label="Sunucu ayarları"
-              className="absolute top-2 right-2 p-1.5 rounded-lg bg-[var(--primary-bg)]/80 text-[var(--secondary-text)] hover:text-[var(--quaternary-text)] hover:scale-105 transition-all duration-200"
-            >
-              <Settings size={18} />
-            </button>
-          )}
+          {/* Ayarlar herkese açık: normal üyeler de sunucudan ayrılabilsin
+              (içerik role göre gate'lenir). */}
+          <button
+            onClick={() => setShowSettings(true)}
+            title="Sunucu ayarları"
+            aria-label="Sunucu ayarları"
+            className="absolute top-2 right-2 p-1.5 rounded-lg bg-[var(--primary-bg)]/80 text-[var(--secondary-text)] hover:text-[var(--quaternary-text)] hover:scale-105 transition-all duration-200"
+          >
+            <Settings size={18} />
+          </button>
         </div>
 
         {/* Banner altı içerik grubu */}

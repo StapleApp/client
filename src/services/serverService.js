@@ -44,6 +44,7 @@ async function writeServerData(serverInfo, ownerID) {
         color: "#FF5733",
         permissions: DEFAULT_ADMIN_PERMISSIONS,
         position: 1,
+        role_kind: "admin",
       },
       {
         server_id: server.id,
@@ -51,6 +52,7 @@ async function writeServerData(serverInfo, ownerID) {
         color: "#B9BBBE",
         permissions: DEFAULT_MEMBER_PERMISSIONS,
         position: 0,
+        role_kind: "member",
       },
     ])
     .select();
@@ -249,6 +251,7 @@ export const getServerById = async (serverID) => {
         RoleColor: r.color,
         Permissions: r.permissions || [],
         Position: r.position ?? 0,
+        RoleKind: r.role_kind || null, // 'admin' | 'member' | null (custom)
       })),
       ServerTags: (tags || []).map((t) => t.tag),
     };
@@ -337,6 +340,40 @@ export const deleteServer = async (serverID) => {
   } catch (error) {
     console.error("Error deleting server:", error);
     toast.error(error?.message || "Sunucu silinemedi");
+    return false;
+  }
+};
+
+// ** Sunucudan ayrıl (herhangi bir üye) — sahibi ayrılamaz, silmeli **
+export const leaveServer = async (serverID, uid) => {
+  try {
+    // Sahip kontrolü: sahip ayrılamaz (sunucuyu silmeli).
+    const { data: srv } = await supabase
+      .from("servers")
+      .select("owner_id")
+      .eq("id", serverID)
+      .maybeSingle();
+    if (srv?.owner_id === uid) {
+      toast.error("Sunucu sahibi ayrılamaz — önce sunucuyu silmelisin");
+      return false;
+    }
+
+    const { data, error } = await supabase
+      .from("server_members")
+      .delete()
+      .eq("server_id", serverID)
+      .eq("user_id", uid)
+      .select();
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      toast.error("Sunucudan ayrılınamadı");
+      return false;
+    }
+    toast.success("Sunucudan ayrıldın");
+    return true;
+  } catch (error) {
+    console.error("Error leaving server:", error);
+    toast.error(error?.message || "Sunucudan ayrılınamadı");
     return false;
   }
 };
