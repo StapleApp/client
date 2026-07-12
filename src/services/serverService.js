@@ -346,7 +346,7 @@ export const getPublicServers = async () => {
   try {
     const { data, error } = await supabase
       .from("servers")
-      .select("*, server_members(count)")
+      .select("*, server_members(count), server_tags(tag)")
       .eq("type", "public");
 
     if (error) throw error;
@@ -355,7 +355,7 @@ export const getPublicServers = async () => {
       serverID: server.id,
       name: server.name,
       description: server.description || "",
-      tags: [], // Etiketler ayrı tablo, gerekirse join edilir
+      tags: (server.server_tags || []).map((t) => t.tag),
       photo: server.icon_url || "",
       ownerID: server.owner_id,
       memberCount: server.server_members?.[0]?.count || 0,

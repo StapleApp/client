@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
 import { useState, useEffect, useMemo } from "react";
-import { IoIosSearch, IoMdPersonAdd } from "react-icons/io";
+import { IoIosSearch, IoMdPersonAdd, IoMdCheckmarkCircle } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
-import { Menu } from "lucide-react";
+import { Menu, Compass, Tag as TagIcon, Users, X, RefreshCw } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useMobileMenu } from "../../context/MobileMenuContext";
-import { getPublicServers, joinServer } from "../../services/serverService";
+import { getPublicServers, joinServer, getServersList } from "../../services/serverService";
+import fallbackIcon from "../../assets/branding/staple-icon.png";
 
 const SearchServerPage = () => {
   const { currentUser } = useAuth();
@@ -16,27 +17,51 @@ const SearchServerPage = () => {
   const [servers, setServers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [joiningId, setJoiningId] = useState(null);
+  const [memberIds, setMemberIds] = useState(() => new Set()); // üye olunan sunucu id'leri
+  const [selectedTags, setSelectedTags] = useState([]); // seçili filtre etiketleri
 
   const loadServers = async () => {
     setIsLoading(true);
-    const list = await getPublicServers();
+    const [list, mine] = await Promise.all([
+      getPublicServers(),
+      currentUser ? getServersList(currentUser.uid) : Promise.resolve([]),
+    ]);
     setServers(list);
+    setMemberIds(new Set((mine || []).map((s) => s.ServerId)));
     setIsLoading(false);
   };
 
   useEffect(() => {
     loadServers();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.uid]);
+
+  // Tüm sunuculardaki benzersiz etiketler (sunucu sayısına göre azalan sırada)
+  const allTags = useMemo(() => {
+    const counts = new Map();
+    servers.forEach((s) =>
+      (s.tags || []).forEach((t) => counts.set(t, (counts.get(t) || 0) + 1))
+    );
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "tr"))
+      .map(([tag, count]) => ({ tag, count }));
+  }, [servers]);
+
+  const toggleTag = (tag) =>
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
 
   const filteredServers = useMemo(() => {
     const term = searchInput.trim().toLowerCase();
-    if (!term) return servers;
-    return servers.filter(
-      (s) =>
-        s.name?.toLowerCase().includes(term) ||
-        s.serverID?.toLowerCase().includes(term)
-    );
-  }, [searchInput, servers]);
+    return servers.filter((s) => {
+      const matchesName = !term || s.name?.toLowerCase().includes(term);
+      const matchesTags =
+        selectedTags.length === 0 ||
+        selectedTags.some((t) => (s.tags || []).includes(t));
+      return matchesName && matchesTags;
+    });
+  }, [searchInput, servers, selectedTags]);
 
   const handleJoinServer = async (serverID) => {
     if (!currentUser) return;
@@ -47,6 +72,8 @@ const SearchServerPage = () => {
       navigate(`/server/${serverID}`);
     }
   };
+
+  const hasFilters = !!searchInput.trim() || selectedTags.length > 0;
 
   return (
     <motion.div
@@ -69,37 +96,106 @@ const SearchServerPage = () => {
           <span className="font-bold truncate text-lg">Sunucu Keşfet</span>
         </div>
       )}
-      <div className="flex-1 overflow-y-auto">
-        <div className="container mx-auto px-4 py-8">
-          <h1 className="text-2xl font-bold mb-6 text-center">Sunucu Keşfet</h1>
 
-        {/* Arama Çubuğu */}
-        <div className="flex items-center justify-center relative w-full max-w-xl mx-auto mb-8">
-          <input
-            type="text"
-            placeholder="Sunucu adı veya ID ile ara..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full p-3 rounded-lg border-2 border-[var(--secondary-border)] focus:outline-none focus:border-[var(--tertiary-border)] bg-[var(--primary-bg)] text-[var(--secondary-text)]"
-          />
-          <button
-            onClick={loadServers}
-            className="ml-2 p-3 text-[var(--tertiary-text)] rounded-lg border-2 border-[var(--tertiary-border)] hover:bg-[var(--quaternary-bg)] bg-[var(--tertiary-bg)]"
-            title="Yenile"
-          >
-            <IoIosSearch size={20} />
-          </button>
+      <div className="flex-1 overflow-y-auto">
+        {/* Başlık şeridi */}
+        <div className="relative overflow-hidden border-b-2 border-[var(--primary-border)] bg-[var(--primary-bg)]">
+          <div className="container mx-auto px-6 py-10 text-left">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="grid place-items-center w-11 h-11 rounded-xl bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] shrink-0">
+                <Compass size={24} />
+              </span>
+              <div>
+                <h1 className="text-2xl font-bold leading-tight">Sunucu Keşfet</h1>
+                <p className="text-sm text-[var(--primary-text)]">
+                  İlgi alanına göre topluluklara katıl.
+                </p>
+              </div>
+            </div>
+
+            {/* Arama Çubuğu */}
+            <div className="flex items-center gap-2 w-full max-w-xl mt-5">
+              <div className="relative flex-1">
+                <IoIosSearch
+                  size={20}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--primary-text)]"
+                />
+                <input
+                  type="text"
+                  placeholder="Sunucu adıyla ara..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="w-full pl-10 pr-9 py-3 rounded-xl border-2 border-[var(--secondary-border)] focus:outline-none focus:border-[var(--tertiary-border)] bg-[var(--secondary-bg)] text-[var(--secondary-text)] placeholder:text-[var(--primary-text)] transition-colors"
+                />
+                {searchInput && (
+                  <button
+                    onClick={() => setSearchInput("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-[var(--primary-text)] hover:text-[var(--secondary-text)] transition-colors"
+                    aria-label="Aramayı temizle"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={loadServers}
+                className="p-3 text-[var(--tertiary-text)] rounded-xl border-2 border-[var(--tertiary-border)] hover:bg-[var(--quaternary-bg)] bg-[var(--tertiary-bg)] transition-colors"
+                title="Yenile"
+                aria-label="Yenile"
+              >
+                <RefreshCw size={18} />
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Sonuçlar */}
-        <div className="mt-4">
-          <h2 className="text-xl mb-4 font-semibold">
+        <div className="container mx-auto px-6 py-6">
+          {/* Etiket filtresi */}
+          {allTags.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-2 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
+                <TagIcon size={13} /> Etiketlere göre filtrele
+                {selectedTags.length > 0 && (
+                  <button
+                    onClick={() => setSelectedTags([])}
+                    className="ml-1 normal-case font-normal text-[var(--tertiary-text)] hover:underline"
+                  >
+                    temizle
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {allTags.map(({ tag, count }) => {
+                  const active = selectedTags.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      onClick={() => toggleTag(tag)}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                        active
+                          ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] border-[var(--tertiary-border)]"
+                          : "bg-[var(--primary-bg)] text-[var(--secondary-text)] border-[var(--secondary-border)] hover:border-[var(--tertiary-border)]"
+                      }`}
+                    >
+                      #{tag}
+                      <span className={active ? "opacity-80" : "text-[var(--primary-text)]"}>
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Sonuç başlığı */}
+          <h2 className="text-lg mb-4 font-semibold flex items-center gap-2">
             {isLoading
               ? "Yükleniyor..."
               : filteredServers.length > 0
-              ? "Herkese açık sunucular"
-              : searchInput
-              ? "Sunucu bulunamadı"
+              ? `${filteredServers.length} sunucu`
+              : hasFilters
+              ? "Eşleşen sunucu yok"
               : "Henüz herkese açık sunucu yok"}
           </h2>
 
@@ -110,51 +206,110 @@ const SearchServerPage = () => {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             </div>
+          ) : filteredServers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center text-[var(--primary-text)]">
+              <Compass size={40} className="mb-3 opacity-50" />
+              <p className="text-sm">
+                {hasFilters
+                  ? "Arama veya filtrelerine uyan sunucu bulunamadı."
+                  : "Şu an keşfedilecek herkese açık sunucu yok."}
+              </p>
+              {hasFilters && (
+                <button
+                  onClick={() => {
+                    setSearchInput("");
+                    setSelectedTags([]);
+                  }}
+                  className="mt-3 px-3 py-1.5 rounded-lg bg-[var(--primary-bg)] border border-[var(--secondary-border)] text-[var(--secondary-text)] text-sm hover:border-[var(--tertiary-border)] transition-colors"
+                >
+                  Filtreleri temizle
+                </button>
+              )}
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredServers.map((server) => (
-                <motion.div
-                  key={server.serverID}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-[var(--primary-bg)] p-4 rounded-lg border-2 border-[var(--secondary-border)] hover:border-[var(--tertiary-border)] flex flex-col"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-lg break-all">{server.name}</h3>
-                    <span className="text-sm bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] px-2 py-1 rounded-full whitespace-nowrap">
-                      {server.memberCount} üye
-                    </span>
-                  </div>
-                  <p className="text-sm mb-3 text-[var(--primary-text)] min-h-[1.25rem]">
-                    {server.description || "Açıklama yok."}
-                  </p>
-                  {server.tags && server.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {server.tags.map((tag) => (
-                        <span key={tag} className="text-xs px-2 py-1 bg-[var(--secondary-bg)] rounded-full">
-                          #{tag}
-                        </span>
-                      ))}
+              {filteredServers.map((server) => {
+                const isMember = memberIds.has(server.serverID);
+                return (
+                  <motion.div
+                    key={server.serverID}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="group bg-[var(--primary-bg)] rounded-2xl border-2 border-[var(--secondary-border)] hover:border-[var(--tertiary-border)] flex flex-col overflow-hidden transition-colors"
+                  >
+                    <div className="p-4 flex flex-col flex-1">
+                      {/* Üst: ikon + ad + üye sayısı */}
+                      <div className="flex items-center gap-3 mb-3">
+                        <img
+                          src={server.photo || fallbackIcon}
+                          alt=""
+                          onError={(e) => (e.currentTarget.src = fallbackIcon)}
+                          className="w-12 h-12 rounded-xl object-cover bg-[var(--secondary-bg)] border border-[var(--secondary-border)] shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-bold text-base truncate">{server.name}</h3>
+                          <span className="inline-flex items-center gap-1 text-xs text-[var(--primary-text)]">
+                            <Users size={12} /> {server.memberCount} üye
+                          </span>
+                        </div>
+                      </div>
+
+                      <p className="text-sm mb-3 text-[var(--primary-text)] line-clamp-2 min-h-[2.5rem]">
+                        {server.description || "Açıklama yok."}
+                      </p>
+
+                      {server.tags && server.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-4">
+                          {server.tags.map((tag) => {
+                            const active = selectedTags.includes(tag);
+                            return (
+                              <button
+                                key={tag}
+                                onClick={() => toggleTag(tag)}
+                                className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
+                                  active
+                                    ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
+                                    : "bg-[var(--secondary-bg)] text-[var(--secondary-text)] hover:text-[var(--tertiary-text)]"
+                                }`}
+                                title={`#${tag} ile filtrele`}
+                              >
+                                #{tag}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Alt: katıl / üyesin */}
+                      <div className="mt-auto">
+                        {isMember ? (
+                          <button
+                            onClick={() => navigate(`/server/${server.serverID}`)}
+                            className="w-full flex items-center justify-center gap-1.5 bg-[var(--secondary-bg)] text-[var(--secondary-text)] px-3 py-2 rounded-xl whitespace-nowrap hover:text-[var(--tertiary-text)] transition-colors font-semibold text-sm"
+                            title="Zaten bu sunucudasınız — aç"
+                          >
+                            <IoMdCheckmarkCircle size={17} />
+                            Üyesin
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleJoinServer(server.serverID)}
+                            disabled={joiningId === server.serverID}
+                            className="w-full flex items-center justify-center gap-1.5 bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] px-3 py-2 rounded-xl hover:bg-[var(--quaternary-bg)] disabled:opacity-50 whitespace-nowrap font-semibold text-sm transition-colors"
+                          >
+                            <IoMdPersonAdd size={17} />
+                            {joiningId === server.serverID ? "Katılınıyor..." : "Katıl"}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  <div className="flex justify-between items-center mt-auto pt-2">
-                    <span className="text-xs text-[var(--primary-text)] break-all">ID: {server.serverID}</span>
-                    <button
-                      onClick={() => handleJoinServer(server.serverID)}
-                      disabled={joiningId === server.serverID}
-                      className="flex items-center bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] px-3 py-1 rounded-lg hover:bg-[var(--quaternary-bg)] disabled:opacity-50 whitespace-nowrap"
-                    >
-                      <IoMdPersonAdd size={16} className="mr-1" />
-                      {joiningId === server.serverID ? "Katılınıyor..." : "Katıl"}
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </div>
-      </div>
       </div>
     </motion.div>
   );
