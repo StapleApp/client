@@ -114,6 +114,15 @@ const ProfilePanel = ({
     };
   }, [check, setCheck]);
 
+  const borderStyle = {
+    background: roleColor
+      ? `linear-gradient(to bottom, ${roleColor}, ${roleColor}33)`
+      : "linear-gradient(to bottom, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.08))",
+    boxShadow: roleColor
+      ? `0 10px 30px -10px ${roleColor}40, 0 1px 20px -5px ${roleColor}20`
+      : "0 10px 25px -5px rgba(0, 0, 0, 0.5)",
+  };
+
   return (
     <motion.div
       ref={panelRef}
@@ -124,28 +133,33 @@ const ProfilePanel = ({
           : { opacity: 0, scale: 0.95, y: 15 }
       }
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      className="fixed z-[9999] ml-1 p-[1.2px] bg-gradient-to-b from-white/10 to-white/5 rounded-2xl shadow-2xl overflow-hidden"
+      className="fixed z-[9999] ml-1 p-[2px] rounded-2xl overflow-hidden"
       style={{
         top: `${clampedY - 32}px`,
         left: `${clampedX - 180}px`,
         width: `${panelWidth}px`,
         height: `${panelHeight}px`,
         pointerEvents: check ? "auto" : "none",
+        ...borderStyle,
       }}
     >
       <div className="w-full h-full bg-[var(--primary-bg)] rounded-[15px] flex flex-col overflow-hidden">
         {/* Üst Banner */}
-        <div className="relative h-20 w-full shrink-0">
+        <div className="relative h-20 w-full shrink-0 overflow-hidden">
           <img
             className="w-full h-full object-cover select-none"
             src={bannerURL || profileBanner}
             alt="Profile Banner"
           />
+          {/* İnce parlayan sarı şerit */}
+          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--tertiary-bg)] to-transparent opacity-80 shadow-[0_0_8px_var(--tertiary-bg)] pointer-events-none" />
         </div>
 
         {/* Profil Detayları */}
-        <div className="flex-1 p-3 flex flex-col justify-between min-h-0">
-          <div className="space-y-2.5">
+        <div className="flex-1 p-3 flex flex-col justify-between min-h-0 relative">
+          {/* Aşağı doğru süzülen sarı degrade (kartın yaklaşık yarısına kadar gidiyor) */}
+          <div className="absolute top-0 left-0 right-0 h-36 bg-gradient-to-b from-[var(--tertiary-bg)]/18 to-transparent pointer-events-none" />
+          <div className="space-y-2.5 relative">
             {/* Avatar & İsim Satırı */}
             <div className="flex items-center gap-2.5">
               <ProfilePicture
