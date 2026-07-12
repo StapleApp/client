@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import toast from "react-hot-toast";
@@ -13,8 +13,18 @@ import {
   Shield,
   SlidersHorizontal,
   LogOut,
+  Link2,
+  Copy,
+  Plus,
 } from "lucide-react";
-import { updateServer, deleteServer, leaveServer } from "../../services/serverService";
+import {
+  updateServer,
+  deleteServer,
+  leaveServer,
+  createServerInvite,
+  getServerInvites,
+  revokeInvite,
+} from "../../services/serverService";
 import RolesManager from "./RolesManager";
 import ImagePicker from "../../Components/ImagePicker";
 import { useAuth } from "../../context/AuthContext";
@@ -50,6 +60,46 @@ const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
   const [deleting, setDeleting] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [invites, setInvites] = useState([]);
+  const [creatingInvite, setCreatingInvite] = useState(false);
+
+  const inviteLink = (code) => `${window.location.origin}/invite/${code}`;
+
+  const loadInvites = useCallback(async () => {
+    if (!serverData?.ServerId) return;
+    const list = await getServerInvites(serverData.ServerId);
+    setInvites(list);
+  }, [serverData?.ServerId]);
+
+  // Davet listesini yalnızca yönetim yetkisi olanlar için yükle
+  useEffect(() => {
+    if (canManageServer) loadInvites();
+  }, [canManageServer, loadInvites]);
+
+  const handleCreateInvite = async () => {
+    if (creatingInvite) return;
+    setCreatingInvite(true);
+    const code = await createServerInvite(serverData.ServerId);
+    setCreatingInvite(false);
+    if (code) {
+      await navigator.clipboard?.writeText(inviteLink(code)).catch(() => {});
+      toast.success("Davet bağlantısı oluşturuldu ve kopyalandı");
+      loadInvites();
+    }
+  };
+
+  const handleCopyInvite = (code) => {
+    navigator.clipboard?.writeText(inviteLink(code));
+    toast.success("Davet bağlantısı kopyalandı");
+  };
+
+  const handleRevokeInvite = async (code) => {
+    const ok = await revokeInvite(code);
+    if (ok) {
+      setInvites((prev) => prev.filter((i) => i.code !== code));
+      toast.success("Davet iptal edildi");
+    }
+  };
   // İlk erişilebilir sekme (yönetim yetkisi olmayan üye için "none")
   const [tab, setTab] = useState(
     canManageServer ? "general" : canManageRoles ? "roles" : "none"
@@ -293,6 +343,72 @@ const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
                   className={`${inputClass} pl-9`}
                 />
               </div>
+            </div>
+
+            {/* Davet Bağlantıları */}
+            <div className="border-t border-[var(--primary-border)] pt-4">
+              <div className="flex items-center justify-between mb-2">
+                <Label>
+                  Davet Bağlantıları
+                  {type === "private" && (
+                    <span className="ml-1 normal-case font-normal opacity-70">
+                      (özel sunucuya tek katılım yolu)
+                    </span>
+                  )}
+                </Label>
+                <button
+                  type="button"
+                  onClick={handleCreateInvite}
+                  disabled={creatingInvite}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] text-xs font-bold hover:bg-[var(--quaternary-bg)] disabled:opacity-50 transition-colors"
+                >
+                  {creatingInvite ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <Plus size={13} />
+                  )}
+                  Davet Oluştur
+                </button>
+              </div>
+
+              {invites.length === 0 ? (
+                <p className="text-xs text-[var(--primary-text)] py-1">
+                  Henüz davet yok. "Davet Oluştur" ile paylaşılabilir bir bağlantı üret.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+                  {invites.map((inv) => (
+                    <div
+                      key={inv.code}
+                      className="flex items-center gap-2 p-2 rounded-lg bg-[var(--secondary-bg)] border border-[var(--primary-border)]"
+                    >
+                      <Link2 size={14} className="shrink-0 text-[var(--tertiary-border)]" />
+                      <code className="flex-1 min-w-0 truncate text-xs text-[var(--secondary-text)]">
+                        /invite/{inv.code}
+                      </code>
+                      <span className="text-[10px] text-[var(--primary-text)] shrink-0">
+                        {inv.uses} kullanım
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyInvite(inv.code)}
+                        title="Bağlantıyı kopyala"
+                        className="p-1 rounded text-[var(--primary-text)] hover:text-[var(--quaternary-text)] transition-colors shrink-0"
+                      >
+                        <Copy size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRevokeInvite(inv.code)}
+                        title="Daveti iptal et"
+                        className="p-1 rounded text-[var(--primary-text)] hover:text-red-400 transition-colors shrink-0"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Kaydet / İptal */}

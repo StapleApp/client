@@ -2,10 +2,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useMemo } from "react";
 import { IoIosSearch, IoMdPersonAdd, IoMdCheckmarkCircle } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
-import { Menu, Compass, Tag as TagIcon, Users, X, RefreshCw, Home, UserPlus, Settings, User } from "lucide-react";
+import { Menu, Compass, Tag as TagIcon, Users, X, RefreshCw, Home, UserPlus, Settings, User, Link2, ArrowRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useMobileMenu } from "../../context/MobileMenuContext";
-import { getPublicServers, joinServer, getServersList } from "../../services/serverService";
+import { getPublicServers, joinServer, getServersList, parseInviteCode } from "../../services/serverService";
 import fallbackIcon from "../../assets/branding/staple-icon.png";
 import Navigator from "../../Components/layout/Navigator";
 
@@ -20,6 +20,14 @@ const SearchServerPage = () => {
   const [joiningId, setJoiningId] = useState(null);
   const [memberIds, setMemberIds] = useState(() => new Set()); // üye olunan sunucu id'leri
   const [selectedTags, setSelectedTags] = useState([]); // seçili filtre etiketleri
+  const [inviteInput, setInviteInput] = useState(""); // davet kodu/bağlantısı
+
+  // Davet kodu ya da bağlantısıyla davet önizleme sayfasına git.
+  const goToInvite = () => {
+    const code = parseInviteCode(inviteInput);
+    if (!code) return;
+    navigate(`/invite/${code}`);
+  };
 
   const loadServers = async () => {
     setIsLoading(true);
@@ -145,6 +153,32 @@ const SearchServerPage = () => {
                 aria-label="Yenile"
               >
                 <RefreshCw size={18} />
+              </button>
+            </div>
+
+            {/* Davet koduyla katıl — özel sunuculara giriş yolu */}
+            <div className="flex items-center gap-2 w-full max-w-xl mt-3">
+              <div className="relative flex-1">
+                <Link2
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--primary-text)]"
+                />
+                <input
+                  type="text"
+                  placeholder="Davet kodu veya bağlantısı ile katıl…"
+                  value={inviteInput}
+                  onChange={(e) => setInviteInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && goToInvite()}
+                  className="w-full pl-10 pr-3 py-2.5 rounded-xl border-2 border-[var(--secondary-border)] focus:outline-none focus:border-[var(--tertiary-border)] bg-[var(--secondary-bg)] text-[var(--secondary-text)] placeholder:text-[var(--primary-text)] text-sm transition-colors"
+                />
+              </div>
+              <button
+                onClick={goToInvite}
+                disabled={!inviteInput.trim()}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[var(--primary-bg)] border-2 border-[var(--secondary-border)] text-[var(--secondary-text)] font-semibold text-sm hover:border-[var(--tertiary-border)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                title="Davetle katıl"
+              >
+                Katıl <ArrowRight size={15} />
               </button>
             </div>
           </div>

@@ -473,6 +473,112 @@ export const joinServer = async (serverID, uid) => {
   }
 };
 
+// ** Davet sistemi (özel/genel sunucular) — supabase_fixes.sql bölüm 27 **
+
+// Davet oluştur → benzersiz kod döndürür (MANAGE_SERVER gerekli).
+export const createServerInvite = async (
+  serverID,
+  { expiresAt = null, maxUses = null } = {}
+) => {
+  try {
+    const { data, error } = await supabase.rpc("create_server_invite", {
+      _server_id: serverID,
+      _expires_at: expiresAt,
+      _max_uses: maxUses,
+    });
+    if (error) throw error;
+    return data; // kod (string)
+  } catch (error) {
+    console.error("Error creating invite:", error);
+    if (error?.code === "PGRST202" || /function.*does not exist/i.test(error?.message || "")) {
+      toast.error("Davet fonksiyonu DB'de yok — supabase_fixes.sql'i çalıştırın");
+    } else {
+      toast.error(error?.message || "Davet oluşturulamadı");
+    }
+    return null;
+  }
+};
+
+// Bir sunucunun aktif davetlerini listele (yönetim UI'si).
+export const getServerInvites = async (serverID) => {
+  try {
+    const { data, error } = await supabase
+      .from("server_invites")
+      .select("code, created_by, created_at, expires_at, max_uses, uses")
+      .eq("server_id", serverID)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error("Error fetching invites:", error);
+    return [];
+  }
+};
+
+// Daveti iptal et (oluşturan ya da MANAGE_SERVER).
+export const revokeInvite = async (code) => {
+  try {
+    const { data, error } = await supabase
+      .from("server_invites")
+      .delete()
+      .eq("code", code)
+      .select();
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      toast.error("Davet silinemedi — yetkiniz yok");
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error("Error revoking invite:", error);
+    toast.error("Davet silinemedi");
+    return false;
+  }
+};
+
+// Davet kodu önizlemesi — üye olmadan da çalışır (davet sayfası için).
+export const getInviteInfo = async (code) => {
+  try {
+    const { data, error } = await supabase.rpc("get_invite_info", { _code: code });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return null;
+    return {
+      serverId: row.server_id,
+      name: row.server_name,
+      photo: row.icon_url || "",
+      description: row.description || "",
+      memberCount: Number(row.member_count) || 0,
+      valid: !!row.valid,
+      alreadyMember: !!row.already_member,
+    };
+  } catch (error) {
+    console.error("Error fetching invite info:", error);
+    return null;
+  }
+};
+
+// Davet ile katıl → katılınan sunucunun id'sini döndürür (yoksa null).
+export const joinServerWithInvite = async (code) => {
+  try {
+    const { data, error } = await supabase.rpc("join_server_with_invite", { _code: code });
+    if (error) throw error;
+    return data; // server id
+  } catch (error) {
+    console.error("Error joining with invite:", error);
+    toast.error(error?.message || "Davet ile katılınamadı");
+    return null;
+  }
+};
+
+// Yapıştırılan bağlantı ya da düz koddan davet kodunu çıkar.
+export const parseInviteCode = (input) => {
+  if (!input) return "";
+  const s = String(input).trim();
+  const m = s.match(/\/invite\/([A-Za-z0-9_-]+)/i);
+  return (m ? m[1] : s).trim();
+};
+
 // ** Kanal işlemleri — granüler (her biri DB'ye tek işlem yazar) **
 
 // Yeni kanal oluştur → DB'nin ürettiği gerçek UUID'li satırı döndürür

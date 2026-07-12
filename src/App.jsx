@@ -10,6 +10,7 @@ import HomePage from "./features/home/HomePage";
 import DirectMessagingPage from "./features/messaging/DirectMessagingPage";
 import CreateServerPage from "./features/servers/CreateServerPage";
 import ServerPage from "./features/servers/ServerPage";
+import InvitePage from "./features/servers/InvitePage";
 
 import { AnimatePresence } from "framer-motion";
 import { Toaster } from "react-hot-toast";
@@ -84,7 +85,8 @@ function MainLayout() {
 
   return (
     <div className="flex">
-      {!hideNavigatorRoutes.includes(location.pathname) && (
+      {!hideNavigatorRoutes.includes(location.pathname) &&
+        !location.pathname.startsWith("/invite/") && (
         <div className="hidden md:block shrink-0">
           <Navigator />
         </div>
@@ -113,6 +115,7 @@ function AnimatedSwitch() {
           <Route path="/DirectMessaging" element={<ProtectedRoute><DirectMessagingPage /></ProtectedRoute>} />
           <Route path="/create-server" element={<ProtectedRoute><CreateServerPage /></ProtectedRoute>} />
           <Route path="/server/:serverId/*" element={<ProtectedRoute><ServerPage /></ProtectedRoute>} />
+          <Route path="/invite/:code" element={<ProtectedRoute><InvitePage /></ProtectedRoute>} />
 
           {/* Auth Routes */}
           <Route path="/login" element={<LoginPage />} />
