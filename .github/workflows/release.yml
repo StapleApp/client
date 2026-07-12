@@ -129,7 +129,7 @@ jobs:
       - name: Initialize Tauri Android
         run: |
           if [ ! -d "src-tauri/gen/android" ]; then
-            npx tauri android init --non-interactive
+            npx tauri android init
           fi
 
       - name: Build Android (APK)
@@ -183,7 +183,7 @@ jobs:
       - name: Initialize Tauri iOS
         run: |
           if [ ! -d "src-tauri/gen/apple" ]; then
-            npx tauri ios init --non-interactive
+            npx tauri ios init
           fi
 
       # iOS builds on CI/CD can be built as simulator builds (.app) or unsigned IPA
