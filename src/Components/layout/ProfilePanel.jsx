@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { IoPersonAdd } from "react-icons/io5";
-import { IoMdClose } from "react-icons/io";
 import { CgProfile } from "react-icons/cg";
 import { FaTelegramPlane } from "react-icons/fa";
 import { useEffect, useRef, useState } from "react";
@@ -143,14 +142,12 @@ const ProfilePanel = ({
             {userData && userData.friendshipID === userID ? (
               <div className="flex gap-3 pl-1">
                 <ProfileButton />
-                <SideBarIconClose toggleExpand={() => setCheck(false)} />
               </div>
             ) : (
               userData && (
                 <div className="flex gap-3 pl-1">
                   {!isFriend && <AddFriendButton friendshipCode={userID} />}
                   <DMButton userID={UID} userData={userData} />
-                  <SideBarIconClose toggleExpand={() => setCheck(false)} />
                 </div>
               )
             )}
@@ -248,19 +245,7 @@ const DMButton = ({ userID, userData }) => {
   );
 };
 
-const SideBarIconClose = ({ toggleExpand }) => {
-  return (
-    <>
-      <div
-        className="flex icon group cursor-pointer hover:scale-105 
-        h-7 w-7 mt-1 mb-0 mx-auto rounded-full border-red-700 hover:border-red-500 text-red-700 hover:text-red-500"
-        onClick={toggleExpand}
-      >
-        <IoMdClose size="20" />
-      </div>
-    </>
-  );
-};
+
 
 const ProfilePicture = ({ src, isMe }) => {
   const navigate = useNavigate();
