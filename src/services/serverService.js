@@ -321,8 +321,17 @@ export const updateServer = async (serverID, info) => {
 // ** Sunucuyu sil (sahibi) — cascade ile kanallar/üyeler/roller gider **
 export const deleteServer = async (serverID) => {
   try {
-    const { error } = await supabase.from("servers").delete().eq("id", serverID);
+    const { data, error } = await supabase
+      .from("servers")
+      .delete()
+      .eq("id", serverID)
+      .select();
     if (error) throw error;
+    // RLS 0 satır silerse hata fırlatmaz; sessiz başarıya düşme.
+    if (!data || data.length === 0) {
+      toast.error("Sunucu silinemedi — yalnızca sahibi silebilir");
+      return false;
+    }
     toast.success("Sunucu silindi");
     return true;
   } catch (error) {

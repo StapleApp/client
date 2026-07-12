@@ -17,6 +17,7 @@ import { updateServer, deleteServer } from "../../services/serverService";
 import RolesManager from "./RolesManager";
 import ImagePicker from "../../Components/ImagePicker";
 import { useAuth } from "../../context/AuthContext";
+import { hasPermission, isServerOwner } from "../../config/permissions";
 import { DEFAULT_SERVER_ICONS, DEFAULT_SERVER_BANNERS } from "../../config/defaults";
 import icon from "../../assets/branding/staple-icon.png";
 
@@ -32,6 +33,10 @@ const Label = ({ children, hint }) => (
 
 const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
   const { currentUser } = useAuth();
+  const myId = currentUser?.uid;
+  const isOwner = isServerOwner(serverData, myId);
+  const canManageServer = hasPermission(serverData, myId, "MANAGE_SERVER");
+  const canManageRoles = hasPermission(serverData, myId, "MANAGE_ROLES");
   const [name, setName] = useState(serverData?.ServerName || "");
   const [description, setDescription] = useState(serverData?.ServerDescription || "");
   const [type, setType] = useState(serverData?.ServerType || "public");
@@ -42,7 +47,7 @@ const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [tab, setTab] = useState("general"); // general | roles
+  const [tab, setTab] = useState(canManageServer ? "general" : "roles"); // general | roles
 
   const addTag = () => {
     const t = tagInput.trim().toLowerCase();
@@ -133,9 +138,9 @@ const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
             {/* Sekmeler */}
             <div className="flex gap-1 mb-4 p-1 rounded-xl bg-[var(--secondary-bg)] border border-[var(--primary-border)]">
               {[
-                { id: "general", label: "Genel", icon: <SlidersHorizontal size={15} /> },
-                { id: "roles", label: "Roller", icon: <Shield size={15} /> },
-              ].map((t) => (
+                canManageServer && { id: "general", label: "Genel", icon: <SlidersHorizontal size={15} /> },
+                canManageRoles && { id: "roles", label: "Roller", icon: <Shield size={15} /> },
+              ].filter(Boolean).map((t) => (
                 <button
                   key={t.id}
                   type="button"
@@ -275,9 +280,9 @@ const ServerSettings = ({ serverData, onClose, onSaved, onDeleted }) => {
 
             {/* Alt İşlem Çubuğu: İptal, Kaydet ve Sil (Tehlikeli Bölge) yan yana */}
             <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[var(--primary-border)]">
-              {/* Tehlikeli Bölge */}
+              {/* Tehlikeli Bölge — yalnızca sunucu sahibi silebilir */}
               <div className="flex-1 min-w-[200px]">
-                {confirmDelete ? (
+                {!isOwner ? null : confirmDelete ? (
                   <div className="flex items-center gap-2 p-1.5 rounded-lg border border-red-500/40 bg-red-500/5">
                     <span className="text-[11px] text-[var(--secondary-text)] leading-tight flex-1">
                       Kalıcı silinecek. Emin misin?

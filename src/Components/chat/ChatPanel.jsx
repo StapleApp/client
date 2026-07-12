@@ -66,7 +66,7 @@ const dayLabel = (createdAt) => {
  *   headerUserId - optional user id; makes the header icon/name open the profile card
  *   showHeader   - whether to show the header bar (default true)
  */
-const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader = true, memberColors }) => {
+const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader = true, memberColors, canModerate = false }) => {
   const { userData } = useAuth();
   const mobileMenu = useMobileMenu();
   const isMobile = mobileMenu?.isMobile ?? false;
@@ -440,7 +440,8 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
 
   const confirmDelete = async (message) => {
     setConfirmDeleteId(null);
-    await deleteMessage(message.id, userData.userID);
+    const isOwnMsg = message.senderId === userData?.userID;
+    await deleteMessage(message.id, userData.userID, { moderate: !isOwnMsg });
   };
 
   return (
@@ -665,7 +666,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
                               <Pencil size={13} />
                             </button>
                           )}
-                          {isOwn && (
+                          {(isOwn || canModerate) && (
                             <button
                               onClick={() => {
                                 setEditingId(null);

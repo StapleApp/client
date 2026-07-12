@@ -682,6 +682,8 @@ const SvSidebar = ({ serverData, onRefresh }) => {
   const serverId = serverData?.ServerId;
   const canManageChannels = hasPermission(serverData, currentUser?.uid, "MANAGE_CHANNELS");
   const canManageServer = hasPermission(serverData, currentUser?.uid, "MANAGE_SERVER");
+  const canManageRoles = hasPermission(serverData, currentUser?.uid, "MANAGE_ROLES");
+  const canManageMessages = hasPermission(serverData, currentUser?.uid, "MANAGE_MESSAGES");
 
   const {
     isScreenSharing,
@@ -1021,7 +1023,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
           >
             <PanelLeftClose size={18} />
           </button>
-          {canManageServer && (
+          {(canManageServer || canManageRoles) && (
             <button
               onClick={() => setShowSettings(true)}
               title="Sunucu ayarları"
@@ -1322,6 +1324,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
                   context={{ serverId, channelId: activeChannel.id }}
                   channelName={activeChannel.name}
                   memberColors={memberColors}
+                  canModerate={canManageMessages}
                 />
               </motion.div>
             ) : (

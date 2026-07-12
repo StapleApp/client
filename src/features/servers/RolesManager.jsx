@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Plus, Trash2, ChevronDown, ChevronRight, Loader2, Shield } from "lucide-react";
 import toast from "react-hot-toast";
-import { PERMISSIONS, PERMISSION_ORDER } from "../../config/permissions";
+import { PERMISSIONS, PERMISSION_ORDER, isServerOwner } from "../../config/permissions";
 import { createRole, updateRole, deleteRole } from "../../services/roleService";
+import { useAuth } from "../../context/AuthContext";
 
 const COLOR_PRESETS = [
   "#FF5733", "#F1C40F", "#2ECC71", "#3498DB", "#9B59B6",
@@ -27,11 +28,21 @@ const RolesManager = ({ serverData, onChanged }) => {
   const [creating, setCreating] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
+  const { currentUser } = useAuth();
   const serverId = serverData?.ServerId;
   // Taban rol = en düşük position (varsayılan "Üye") — silinemez.
   const baseRoleId = roles.length
     ? roles.reduce((min, r) => (r.position < min.position ? r : min), roles[0]).id
     : null;
+
+  // Kullanıcının rütbesi: sahip = sonsuz; aksi halde kendi rolünün position'ı.
+  // Yeni rol bu rütbenin ALTINDA oluşturulmalı (RLS hiyerarşisiyle uyumlu).
+  const myRank = (() => {
+    if (isServerOwner(serverData, currentUser?.uid)) return Infinity;
+    const me = (serverData?.Users || []).find((u) => u.UserID === currentUser?.uid);
+    const myRole = (serverData?.Roles || []).find((r) => r.RoleID === me?.RoleID);
+    return myRole?.Position ?? -1;
+  })();
 
   const patchLocal = (id, patch) =>
     setRoles((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
@@ -40,11 +51,13 @@ const RolesManager = ({ serverData, onChanged }) => {
     if (creating) return;
     setCreating(true);
     const maxPos = roles.reduce((m, r) => Math.max(m, r.position), 0);
+    // Sahip en üste ekler; diğerleri kendi rütbesinin hemen altına (RLS gereği).
+    const newPos = Math.min(maxPos + 1, myRank - 1);
     const row = await createRole(serverId, {
       name: "Yeni Rol",
       color: "#B9BBBE",
       permissions: [],
-      position: maxPos + 1,
+      position: newPos,
     });
     setCreating(false);
     if (!row) return;

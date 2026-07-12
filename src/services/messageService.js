@@ -73,15 +73,15 @@ export async function editMessage(messageId, senderId, content) {
 }
 
 /**
- * Delete a message (own messages only — enforced by RLS).
+ * Delete a message. Kendi mesajı ise senderId ile; MANAGE_MESSAGES yetkisiyle
+ * başkasının mesajını silerken { moderate: true } geç → sender filtresi kalkar,
+ * izin RLS'te (has_server_permission) doğrulanır.
  */
-export async function deleteMessage(messageId, senderId) {
+export async function deleteMessage(messageId, senderId, { moderate = false } = {}) {
   try {
-    const { error } = await supabase
-      .from("messages")
-      .delete()
-      .eq("id", messageId)
-      .eq("sender_id", senderId);
+    let query = supabase.from("messages").delete().eq("id", messageId);
+    if (!moderate) query = query.eq("sender_id", senderId);
+    const { error } = await query;
 
     if (error) throw error;
     return true;
