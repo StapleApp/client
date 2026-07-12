@@ -41,10 +41,15 @@ export async function sendMessage(context, message) {
     // mesajlaşma çalışmaya devam eder — sadece yanıt özelliği devre dışı kalır.
     if (message.replyTo) row.reply_to = message.replyTo;
 
-    const { error } = await supabase.from("messages").insert(row);
+    const { data, error } = await supabase
+      .from("messages")
+      .insert(row)
+      .select("id")
+      .single();
 
     if (error) throw error;
-    return true;
+    // Yeni mesajın id'si (yanıt bildirimi mesaja link verebilsin); truthy.
+    return data?.id || true;
   } catch (error) {
     console.error("Error sending message:", error);
     toast.error("Mesaj gönderilemedi");

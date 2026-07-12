@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { IoMdNotifications } from "react-icons/io";
-import { UserPlus, Mail, Bell, Trash2, Check, X } from "lucide-react";
+import { UserPlus, Mail, Bell, Trash2, Check, X, Reply } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { acceptFriendRequest } from "../../services/friendService";
@@ -136,6 +136,11 @@ const NotificationsBell = () => {
                         navigate("/AddFriends");
                       } else if (item.type === "message" && item.fromUid) {
                         navigate("/DirectMessaging", { state: { userID: item.fromUid } });
+                      } else if (item.type === "reply" && item.serverId) {
+                        // Sunucudaki yanıta git: kanal + mesaj hedefi state ile taşınır
+                        navigate(`/server/${item.serverId}`, {
+                          state: { channelId: item.channelId, messageId: item.messageId },
+                        });
                       }
                       setOpen(false);
                     }}
@@ -146,7 +151,13 @@ const NotificationsBell = () => {
                     <div className="relative shrink-0 mt-0.5">
                       <img src={item.photo || "/defaults/avatars/1.png"} alt="" className="w-9 h-9 rounded-full object-cover" />
                       <span className="absolute -bottom-1 -right-1 w-4.5 h-4.5 flex items-center justify-center rounded-full bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] border-2 border-[var(--secondary-bg)]">
-                        {item.type === "friend" ? <UserPlus size={9} /> : <Mail size={9} />}
+                        {item.type === "friend" ? (
+                          <UserPlus size={9} />
+                        ) : item.type === "reply" ? (
+                          <Reply size={9} />
+                        ) : (
+                          <Mail size={9} />
+                        )}
                       </span>
                     </div>
 
@@ -176,6 +187,13 @@ const NotificationsBell = () => {
                       <p className="text-xs text-[var(--primary-text)] break-words mt-0.5">
                         {item.type === "friend" ? (
                           item.message || "Size arkadaşlık isteği gönderdi"
+                        ) : item.type === "reply" ? (
+                          <>
+                            <span className="font-semibold text-[var(--quaternary-text)]">
+                              Mesajına yanıt verdi:{" "}
+                            </span>
+                            {item.message || ""}
+                          </>
                         ) : (
                           <>
                             {/* Gruplanmış mesaj bildirimi: sayaç + son önizleme */}

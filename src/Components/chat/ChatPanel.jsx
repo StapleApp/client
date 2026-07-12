@@ -68,7 +68,7 @@ const dayLabel = (createdAt) => {
  *   headerUserId - optional user id; makes the header icon/name open the profile card
  *   showHeader   - whether to show the header bar (default true)
  */
-const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader = true, memberColors, canModerate = false }) => {
+const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader = true, memberColors, canModerate = false, jumpToMessageId = null }) => {
   const { userData } = useAuth();
   const mobileMenu = useMobileMenu();
   const isMobile = mobileMenu?.isMobile ?? false;
@@ -183,6 +183,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     setConfirmDeleteId(null);
     setReplyingTo({
       id: message.id,
+      senderId: message.senderId, // yanıt bildirimi için
       senderName: message.senderName,
       content: message.content,
       type: message.type,
@@ -375,18 +376,44 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     });
   };
 
+  // Sunucu kanalında mesajıma yanıt geldiyse orijinal yazara bildirim gönder.
+  // (DM'lerde notifyDMRecipient zaten bildiriyor; kendine yanıtta bildirim yok.)
+  const notifyReplyTarget = (reply, newMessageId, content, type) => {
+    if (!context?.serverId || !reply?.senderId || !userData) return;
+    if (reply.senderId === userData.userID) return;
+    const preview =
+      type === "gif" ? "GIF ile yanıtladı"
+      : content.length > 40 ? content.slice(0, 40) + "…" : content;
+    createNotification(reply.senderId, {
+      type: "reply",
+      from_user_id: userData.userID,
+      data: {
+        type: "reply",
+        user: userData.nickName || "Kullanıcı",
+        fromUid: userData.userID,
+        photo: userData.photoURL || "",
+        message: preview,
+        serverId: context.serverId,
+        channelId: context.channelId,
+        messageId: typeof newMessageId === "string" ? newMessageId : null,
+      },
+    });
+  };
+
   const handleGifSelect = async (gif) => {
     const formats = gif.media_formats || gif.media || {};
     const gifUrl = formats.gif?.url || formats.tinygif?.url || formats.mediumgif?.url || gif.url;
     if (!gifUrl || !userData) return;
 
-    await sendMessage(context, {
+    const reply = replyingTo;
+    const newId = await sendMessage(context, {
       senderId: userData.userID,
       content: gifUrl,
       type: "gif",
-      replyTo: replyingTo?.id || null,
+      replyTo: reply?.id || null,
     });
     notifyDMRecipient(gifUrl, "gif");
+    if (newId) notifyReplyTarget(reply, newId, gifUrl, "gif");
     setReplyingTo(null);
     setShowGifPicker(false);
   };
@@ -407,12 +434,14 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
         isTyping: false,
       });
     }
-    await sendMessage(context, {
+    const reply = replyingTo;
+    const newId = await sendMessage(context, {
       senderId: userData.userID,
       content,
-      replyTo: replyingTo?.id || null,
+      replyTo: reply?.id || null,
     });
     notifyDMRecipient(content, "text");
+    if (newId) notifyReplyTarget(reply, newId, content, "text");
     setReplyingTo(null);
     scrollToBottom();
   };
@@ -484,6 +513,17 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
       window.removeEventListener("keydown", onKey);
     };
   }, [contextMenu]);
+
+  // Bildirimden gelindiyse hedef mesaja bir kez atla (mesajlar yüklendikten sonra)
+  const jumpDoneRef = useRef(null);
+  useEffect(() => {
+    if (!jumpToMessageId || messages.length === 0) return;
+    if (jumpDoneRef.current === jumpToMessageId) return;
+    jumpDoneRef.current = jumpToMessageId;
+    // scroll-to-bottom ilk yerleşimini bekle, sonra hedefe git
+    const t = setTimeout(() => scrollToMessage(jumpToMessageId), 300);
+    return () => clearTimeout(t);
+  }, [jumpToMessageId, messages.length]);
 
   // Sabitli mesajlar: kanal değişince ve yüklü mesajların pin durumu değişince yenile
   const pinnedSig = messages

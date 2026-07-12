@@ -32,7 +32,7 @@ import {
   PanelLeftOpen,
   Menu,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import profileBanner from "../../assets/backgrounds/profile-banner.png";
 import ChatPanel from "../../Components/chat/ChatPanel";
 import ServerMembers from "./ServerMembers";
@@ -681,6 +681,7 @@ const SidebarTheater = ({ stream, showingSelf, stopWatching, label, height, setH
 
 const SvSidebar = ({ serverData, onRefresh }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const voice = useVoice();
   const { currentUser } = useAuth();
   const serverId = serverData?.ServerId;
@@ -753,6 +754,26 @@ const SvSidebar = ({ serverData, onRefresh }) => {
   useEffect(() => {
     categoriesRef.current = categories;
   }, [categories]);
+
+  // Yanıt bildiriminden gelindiyse: hedef kanalı aç + mesaja atla
+  const [jumpTarget, setJumpTarget] = useState(null); // { channelId, messageId }
+  useEffect(() => {
+    const st = location.state;
+    if (st?.channelId) {
+      setJumpTarget({ channelId: st.channelId, messageId: st.messageId || null });
+      // State'i temizle ki yenilemede tekrar tetiklenmesin
+      navigate(location.pathname, { replace: true, state: null });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
+
+  useEffect(() => {
+    if (!jumpTarget || channels.length === 0) return;
+    const target = channels.find(
+      (c) => c.id === jumpTarget.channelId && c.type === "text"
+    );
+    if (target) setActiveChannel(target);
+  }, [jumpTarget, channels]);
 
   const [showAddDropdown, setShowAddDropdown] = useState(false);
   const [channelOptions, setChannelOptions] = useState(null);
@@ -1352,6 +1373,11 @@ const SvSidebar = ({ serverData, onRefresh }) => {
                   channelName={activeChannel.name}
                   memberColors={memberColors}
                   canModerate={canManageMessages}
+                  jumpToMessageId={
+                    jumpTarget?.channelId === activeChannel.id
+                      ? jumpTarget.messageId
+                      : null
+                  }
                 />
               </motion.div>
             ) : (
