@@ -93,6 +93,66 @@ export async function deleteMessage(messageId, senderId, { moderate = false } = 
 }
 
 /**
+ * Mesajı sabitle / sabiti kaldır. Yetki RPC içinde doğrulanır
+ * (sunucu kanalında MANAGE_MESSAGES, DM/grupta kanal üyeliği).
+ */
+export async function setMessagePinned(messageId, pinned) {
+  try {
+    const { error } = await supabase.rpc("set_message_pinned", {
+      _message_id: messageId,
+      _pinned: pinned,
+    });
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Error pinning message:", error);
+    toast.error(error?.message || "Mesaj sabitlenemedi");
+    return false;
+  }
+}
+
+/**
+ * Bir kanaldaki sabitlenmiş mesajları getir (en yeni → en eski).
+ * Üst sabit-mesaj çubuğu için; yüklü olmayan mesajları da kapsar.
+ */
+export async function getPinnedMessages(channelId) {
+  if (!channelId) return [];
+  try {
+    const { data, error } = await supabase
+      .from("messages")
+      .select("id, content, type, sender_id, created_at")
+      .eq("channel_id", channelId)
+      .eq("pinned", true)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+
+    const rows = data || [];
+    // Gönderen adlarını tek seferde çöz
+    const ids = [...new Set(rows.map((r) => r.sender_id))];
+    const nameMap = {};
+    if (ids.length) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, nickname")
+        .in("id", ids);
+      (profs || []).forEach((p) => (nameMap[p.id] = p.nickname || "Bilinmeyen"));
+    }
+
+    return rows.map((r) => ({
+      id: r.id,
+      content: r.content,
+      type: r.type,
+      senderId: r.sender_id,
+      senderName: nameMap[r.sender_id] || "Bilinmeyen",
+      rawCreatedAt: r.created_at,
+    }));
+  } catch (error) {
+    console.error("Error fetching pinned messages:", error);
+    return [];
+  }
+}
+
+/**
  * Listen to messages in real time. Works for both DMs and server channels.
  *
  * Supabase Realtime ile yeni mesajları dinler.
@@ -185,6 +245,7 @@ export function listenMessages(context, callback) {
         : null,
       rawCreatedAt: msg.created_at,
       editedAt: msg.edited_at,
+      pinned: msg.pinned || false,
     };
   }
 

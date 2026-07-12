@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Send, Hash, Smile, Pencil, Trash2, Check, X, ChevronDown, Reply, Menu } from "lucide-react";
+import { Send, Hash, Smile, Pencil, Trash2, Check, X, ChevronDown, Reply, Menu, Pin, PinOff } from "lucide-react";
 import toast from "react-hot-toast";
 import EmojiPicker from "emoji-picker-react";
 import { useAuth } from "../../context/AuthContext";
@@ -10,6 +10,8 @@ import {
   listenMessages,
   editMessage,
   deleteMessage,
+  setMessagePinned,
+  getPinnedMessages,
 } from "../../services/messageService";
 import MessageContent from "./MessageContent";
 import GifPicker from "./GifPicker";
@@ -79,6 +81,9 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null); // { x, y, message }
+  const [pinnedMessages, setPinnedMessages] = useState([]); // en yeni → en eski
+  const [pinIndex, setPinIndex] = useState(0); // üst çubukta sıradaki sabit mesaj
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null); // { id, senderName, content, type }
   const [highlightId, setHighlightId] = useState(null); // kısa vurgu için
@@ -444,6 +449,71 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     await deleteMessage(message.id, userData.userID, { moderate: !isOwnMsg });
   };
 
+  // Sunucu kanalında sabitleme MANAGE_MESSAGES ister; DM/grupta herkes yapabilir.
+  const isServerChannel = !!context?.serverId;
+  const canPin = canModerate || !isServerChannel;
+
+  const openContextMenu = (e, message) => {
+    e.preventDefault();
+    e.stopPropagation(); // aynı sağ-tık'ın window kapatıcısını tetiklemesini önle
+    // Menü genişlik/yüksekliğini ekran dışına taşmayacak şekilde konumla
+    const MENU_W = 190;
+    const MENU_H = 210;
+    const x = Math.min(e.clientX, window.innerWidth - MENU_W - 8);
+    const y = Math.min(e.clientY, window.innerHeight - MENU_H - 8);
+    setEditingId(null);
+    setContextMenu({ x, y, message });
+  };
+
+  const handleTogglePin = async (message) => {
+    setContextMenu(null);
+    await setMessagePinned(message.id, !message.pinned);
+  };
+
+  // Context menü açıkken: dışarı tıkla / Escape / kaydırma → kapat
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    const onKey = (e) => e.key === "Escape" && close();
+    window.addEventListener("click", close);
+    window.addEventListener("contextmenu", close);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("contextmenu", close);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [contextMenu]);
+
+  // Sabitli mesajlar: kanal değişince ve yüklü mesajların pin durumu değişince yenile
+  const pinnedSig = messages
+    .filter((m) => m.pinned)
+    .map((m) => m.id)
+    .sort()
+    .join(",");
+  useEffect(() => {
+    let cancelled = false;
+    getPinnedMessages(channelId).then((list) => {
+      if (cancelled) return;
+      setPinnedMessages(list);
+      setPinIndex(0);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [channelId, pinnedSig]);
+
+  const currentPin = pinnedMessages.length
+    ? pinnedMessages[pinIndex % pinnedMessages.length]
+    : null;
+
+  const handlePinBarClick = () => {
+    if (!currentPin) return;
+    scrollToMessage(currentPin.id);
+    // Sonraki sabit mesaja geç (en yeni → en eski, döngüsel)
+    setPinIndex((i) => (i + 1) % pinnedMessages.length);
+  };
+
   return (
     <div className="relative flex flex-col h-full bg-[var(--secondary-bg)] text-[var(--secondary-text)]">
       {/* Header */}
@@ -483,6 +553,38 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
         </div>
       )}
 
+      {/* Sabitli mesaj çubuğu (WhatsApp tarzı) — header altında */}
+      {currentPin && (
+        <button
+          onClick={handlePinBarClick}
+          className="flex items-center gap-2.5 w-full px-4 py-2 bg-[var(--primary-bg)] border-b-2 border-[var(--primary-border)] hover:bg-[var(--primary-bg)]/70 transition-colors text-left"
+          title="Sabitlenen mesaja git"
+        >
+          <Pin size={15} className="shrink-0 text-[var(--secondary-text)]" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-wide text-[var(--secondary-text)]">
+                Sabitlenen mesaj
+              </span>
+              {pinnedMessages.length > 1 && (
+                <span className="text-[10px] text-[var(--primary-text)]">
+                  {(pinIndex % pinnedMessages.length) + 1}/{pinnedMessages.length}
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-[var(--primary-text)] truncate">
+              <span className="font-semibold text-[var(--secondary-text)]">
+                {currentPin.senderName}:
+              </span>{" "}
+              {previewText(currentPin)}
+            </div>
+          </div>
+          {pinnedMessages.length > 1 && (
+            <ChevronDown size={15} className="shrink-0 text-[var(--primary-text)] -rotate-90" />
+          )}
+        </button>
+      )}
+
       {/* Messages — Discord tarzı: sola hizalı, baloncuksuz, gruplanmış */}
       <div className="flex-1 overflow-y-auto py-4 relative" ref={scrollRef} onScroll={handleScroll}>
         {loadingOlder && (
@@ -518,8 +620,11 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
 
                 <div
                   id={`msg-${message.id}`}
+                  onContextMenu={(e) => openContextMenu(e, message)}
                   className={`group relative flex items-start gap-3 px-4 transition-colors ${
-                    highlightId === message.id
+                    message.pinned
+                      ? "bg-[var(--tertiary-bg)]/10 border-l-2 border-[var(--tertiary-border)]"
+                      : highlightId === message.id
                       ? "bg-[var(--tertiary-bg)]/30"
                       : "hover:bg-[var(--primary-bg)]/40"
                   } ${grouped ? "mt-0.5 py-0.5" : "mt-4 py-0.5"}`}
@@ -542,6 +647,11 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
 
                   {/* İçerik */}
                   <div className="min-w-0 flex-1 text-left">
+                    {message.pinned && (
+                      <div className="flex items-center gap-1 mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--secondary-text)]">
+                        <Pin size={10} className="shrink-0" /> Sabitlendi
+                      </div>
+                    )}
                     {/* Yanıtlanan mesaj alıntısı */}
                     {message.replyPreview !== null &&
                       message.replyPreview !== undefined && (
@@ -809,6 +919,71 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
         />,
         document.body
       )}
+
+      {/* Sağ tık (context) menüsü */}
+      {contextMenu &&
+        createPortal(
+          (() => {
+            const m = contextMenu.message;
+            const isOwnMsg = m.senderId === userData?.userID;
+            const canEdit = isOwnMsg && m.type !== "gif";
+            const canDelete = isOwnMsg || canModerate;
+            return (
+              <div
+                style={{ position: "fixed", top: contextMenu.y, left: contextMenu.x }}
+                onClick={(e) => e.stopPropagation()}
+                onContextMenu={(e) => e.preventDefault()}
+                className="z-[9999] w-[190px] py-1 rounded-xl overflow-hidden border-2 border-[var(--primary-border)] bg-[var(--secondary-bg)] shadow-2xl"
+              >
+                <button
+                  onClick={() => {
+                    startReply(m);
+                    setContextMenu(null);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[var(--secondary-text)] hover:bg-[var(--primary-bg)] transition-colors"
+                >
+                  <Reply size={15} /> Yanıtla
+                </button>
+
+                {canEdit && (
+                  <button
+                    onClick={() => {
+                      startEdit(m);
+                      setContextMenu(null);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[var(--secondary-text)] hover:bg-[var(--primary-bg)] transition-colors"
+                  >
+                    <Pencil size={15} /> Düzenle
+                  </button>
+                )}
+
+                {canPin && (
+                  <button
+                    onClick={() => handleTogglePin(m)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[var(--secondary-text)] hover:bg-[var(--primary-bg)] transition-colors"
+                  >
+                    {m.pinned ? <PinOff size={15} /> : <Pin size={15} />}
+                    {m.pinned ? "Sabiti Kaldır" : "Sabitle"}
+                  </button>
+                )}
+
+                {canDelete && (
+                  <button
+                    onClick={() => {
+                      setContextMenu(null);
+                      setEditingId(null);
+                      setConfirmDeleteId(m.id);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:bg-red-500 hover:text-white transition-colors border-t border-[var(--primary-border)] mt-1"
+                  >
+                    <Trash2 size={15} /> Sil
+                  </button>
+                )}
+              </div>
+            );
+          })(),
+          document.body
+        )}
     </div>
   );
 };
