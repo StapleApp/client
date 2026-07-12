@@ -8,47 +8,18 @@ let notificationQueue = Promise.resolve();
 export const createNotification = async (targetUid, notification) => {
   const run = async () => {
     try {
-      // Mesaj bildirimi ise ve gönderen bilgisi varsa, alıcının henüz okumadığı
-      // eski bir mesaj bildirimi var mı diye kontrol et.
+      // Mesaj bildirimi: aynı gönderenden okunmamış varsa TEK satırda topla.
+      // NOT: Bu client tarafında yapılamaz — bildirimi gönderen taraf, alıcının
+      // satırlarını RLS gereği göremez/güncelleyemez. SECURITY DEFINER RPC
+      // sunucu tarafında upsert eder ve data.count sayacını artırır.
       if (notification.type === "message" && notification.from_user_id) {
-        const { data: matching, error: fetchError } = await supabase
-          .from("notifications")
-          .select("id, data")
-          .eq("user_id", targetUid)
-          .eq("type", "message")
-          .eq("from_user_id", notification.from_user_id)
-          .eq("read", false)
-          .order("created_at", { ascending: false })
-          .limit(1);
-
-        if (!fetchError && matching && matching.length > 0) {
-          const existing = matching[0];
-          // En sonuncuyu güncelle ve zamanını yenile
-          const { error: updateError } = await supabase
-            .from("notifications")
-            .update({
-              data: {
-                ...existing.data,
-                ...notification.data,
-              },
-              created_at: new Date().toISOString(),
-            })
-            .eq("id", existing.id);
-
-          if (updateError) throw updateError;
-
-          // Olası eski diğer okunmamış kopyaları arkadan temizle
-          await supabase
-            .from("notifications")
-            .delete()
-            .eq("user_id", targetUid)
-            .eq("type", "message")
-            .eq("from_user_id", notification.from_user_id)
-            .eq("read", false)
-            .neq("id", existing.id);
-
-          return;
-        }
+        const { error } = await supabase.rpc("upsert_message_notification", {
+          _target_uid: targetUid,
+          _data: notification.data || {},
+        });
+        if (!error) return;
+        // RPC henüz kurulmamışsa (migration çalıştırılmadı) düz insert'e düş
+        console.warn("upsert_message_notification yok, düz insert:", error?.message);
       }
 
       const { error } = await supabase.from("notifications").insert({

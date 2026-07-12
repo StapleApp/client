@@ -174,10 +174,19 @@ const NotificationsBell = () => {
                       </div>
 
                       <p className="text-xs text-[var(--primary-text)] break-words mt-0.5">
-                        {item.type === "friend"
-                          ? (item.message || "Size arkadaşlık isteği gönderdi")
-                          : (item.message || "Yeni bir mesaj gönderdi")
-                        }
+                        {item.type === "friend" ? (
+                          item.message || "Size arkadaşlık isteği gönderdi"
+                        ) : (
+                          <>
+                            {/* Gruplanmış mesaj bildirimi: sayaç + son önizleme */}
+                            {item.count > 1 && (
+                              <span className="font-semibold text-[var(--quaternary-text)]">
+                                {item.count} yeni mesaj ·{" "}
+                              </span>
+                            )}
+                            {item.message || "Yeni bir mesaj gönderdi"}
+                          </>
+                        )}
                       </p>
 
                       {/* Friend request accept/reject actions inside the notification panel */}
