@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import ProfilePanel from './ProfilePanel'
 import NotificationsBell from './NotificationsBell'
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../../styles/components.css";
 
@@ -50,20 +51,32 @@ const NavItem = ({ path, label, icon, badge = 0 }) => {
 
 // Alt kısımda listelenen sunucu ikonu — tıklayınca sunucuya gider, sağ üstte
 // okunmamış bildirim rozeti taşır. Aşağıdan yukarıya sırayla belirir (stagger).
+// NOT: Liste scroll konteynerinin içinde olduğundan (overflow gizli), isim
+// balonu portalla body'ye render edilir; böylece kırpılmadan sağda görünür.
 const ServerNavIcon = ({ server, badge, index }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const ref = useRef(null);
+  const [tip, setTip] = useState(null); // { top } — hover'da hesaplanır
   const active = location.pathname.startsWith(`/server/${server.id}`);
+
+  const showTip = () => {
+    const r = ref.current?.getBoundingClientRect();
+    if (r) setTip({ top: r.top + r.height / 2 });
+  };
+
   return (
     <motion.div
+      ref={ref}
       layout
       initial={{ opacity: 0, y: 16, scale: 0.5 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 16, scale: 0.5 }}
-      transition={{ type: "spring", stiffness: 500, damping: 30, delay: index * 0.05 }}
+      transition={{ type: "spring", stiffness: 500, damping: 30, delay: index * 0.04 }}
       onClick={() => navigate(`/server/${server.id}`)}
-      className={`${active ? "hovered-icon" : "icon"} group overflow-visible`}
-      title={server.name}
+      onMouseEnter={showTip}
+      onMouseLeave={() => setTip(null)}
+      className={`${active ? "hovered-icon" : "icon"} group relative shrink-0`}
     >
       <img
         src={server.photo}
@@ -71,11 +84,20 @@ const ServerNavIcon = ({ server, badge, index }) => {
         className="w-full h-full object-cover rounded-[9px]"
       />
       {badge > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none border-2 border-[var(--primary-bg)] z-10">
+        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none border-2 border-[var(--primary-bg)] z-10">
           {badge > 9 ? "9+" : badge}
         </span>
       )}
-      <span className="sidebar-tooltip group-hover:scale-100">{server.name}</span>
+      {tip &&
+        createPortal(
+          <div
+            style={{ position: "fixed", left: 64, top: tip.top, transform: "translateY(-50%)" }}
+            className="z-[70] ml-2 p-2 rounded-md shadow-md bg-[var(--tertiary-text)] text-[var(--tertiary-bg)] text-xs font-bold whitespace-nowrap pointer-events-none"
+          >
+            {server.name}
+          </div>,
+          document.body
+        )}
     </motion.div>
   );
 };
@@ -106,10 +128,10 @@ const Navigator = () => {
       />
       <div
         className={`fixed flex flex-col top-0 left-0 h-screen gap-0 z-50
-              w-16 transition-all duration-145 ease-linear justify-between shadow-xl
+              w-16 transition-all duration-145 ease-linear shadow-xl
               bg-[var(--primary-bg)]/85 backdrop-blur-md border-r border-[var(--primary-border)]/20`}
       >
-        <div className="flex flex-col h-64">
+        <div className="flex flex-col shrink-0">
           {/* Profil avatarı — paneli açar/kapar */}
           <div
             className={`transition-all duration-350 ease-in-out
@@ -150,10 +172,11 @@ const Navigator = () => {
           ))}
         </div>
 
-        {/* Alt grup: sunucu ikonları + Ayarlar (ayraçla ayrılır) */}
-        <div className="flex flex-col min-h-0">
-          {/* Katıldığın sunucular — ana sayfa dışında, ayarların üstündeki
-              çizgiden aşağıdan yukarıya animasyonla belirir. */}
+        {/* Katıldığın sunucular — üst ikonların altındaki çizgi ile ayarların
+            üstündeki çizgi ARASINDA kalır. Taşarsa yalnızca bu alan dikey scroll
+            olur; üst ikonlar ve ayarlar sabit kalır. Ana sayfada gizlidir ve
+            aşağıdan yukarıya animasyonla belirir. */}
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col">
           <AnimatePresence>
             {showServers && (
               <motion.div
@@ -162,7 +185,7 @@ const Navigator = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 24 }}
                 transition={{ duration: 0.25, ease: "easeInOut" }}
-                className="flex flex-col-reverse items-center pt-1"
+                className="mt-auto flex flex-col-reverse items-center py-1"
               >
                 {servers.map((s, i) => (
                   <ServerNavIcon
@@ -175,18 +198,19 @@ const Navigator = () => {
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
 
-          <div
-            className={`flex flex-col h-16 transition-all duration-250 ease-in-out delay-300
-                       ${isExpanded ? '-translate-y-0' : 'translate-y-0'}`}
-          >
-            <hr className="border-[var(--primary-border)] border" />
-            <NavItem
-              path="/Settings"
-              label="Ayarlar"
-              icon={<BsGearFill size="22" />}
-            />
-          </div>
+        {/* Ayarlar (altta sabit, ayraçla ayrılır) */}
+        <div
+          className={`flex flex-col shrink-0 transition-all duration-250 ease-in-out delay-300
+                     ${isExpanded ? '-translate-y-0' : 'translate-y-0'}`}
+        >
+          <hr className="border-[var(--primary-border)] border" />
+          <NavItem
+            path="/Settings"
+            label="Ayarlar"
+            icon={<BsGearFill size="22" />}
+          />
         </div>
       </div>
     </>
