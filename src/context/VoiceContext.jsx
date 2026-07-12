@@ -10,6 +10,12 @@ import toast from "react-hot-toast";
 import { socket } from "../config/socket";
 import { useAuth } from "./AuthContext";
 import { getUser } from "../services/userService";
+// RNNoise (wasm + AudioWorklet) — derin öğrenme tabanlı gürültü bastırma.
+// Vite ?url importları: dosyalar bundle'a asset olarak girer.
+import { loadRnnoise, RnnoiseWorkletNode } from "@sapphi-red/web-noise-suppressor";
+import rnnoiseWasmPath from "@sapphi-red/web-noise-suppressor/rnnoise.wasm?url";
+import rnnoiseWasmSimdPath from "@sapphi-red/web-noise-suppressor/rnnoise_simd.wasm?url";
+import rnnoiseWorkletPath from "@sapphi-red/web-noise-suppressor/rnnoiseWorklet.js?url";
 
 const ICE = {
   iceServers: [
@@ -59,6 +65,31 @@ const loadDevices = () => {
   } catch {
     return { input: "", output: "" };
   }
+};
+
+// RNNoise gürültü bastırma tercihi (default KAPALI — küçük gecikme ekler)
+const NS_KEY = "staple-noise-suppression";
+const loadNoiseSuppression = () => {
+  try {
+    return !!JSON.parse(localStorage.getItem(NS_KEY));
+  } catch {
+    return false;
+  }
+};
+
+// Wasm binary'si bir kez indirilir/derlenir, sonraki açmalarda cache'ten gelir
+let rnnoiseWasmPromise = null;
+const getRnnoiseWasm = () => {
+  if (!rnnoiseWasmPromise) {
+    rnnoiseWasmPromise = loadRnnoise({
+      url: rnnoiseWasmPath,
+      simdUrl: rnnoiseWasmSimdPath,
+    }).catch((e) => {
+      rnnoiseWasmPromise = null; // sonraki denemede yeniden yükle
+      throw e;
+    });
+  }
+  return rnnoiseWasmPromise;
 };
 
 const loadVadSettings = () => {
@@ -122,6 +153,8 @@ export const VoiceProvider = ({ children }) => {
   const [volumes, setVolumes] = useState(loadVolumes);
   // Seçili ses cihazları: { input, output } deviceId ("" = sistem varsayılanı)
   const [audioDevices, setAudioDevices] = useState(loadDevices);
+  // RNNoise gürültü bastırma (default kapalı; gecikme eklediği için opsiyonel)
+  const [noiseSuppression, setNoiseSuppressionState] = useState(loadNoiseSuppression);
 
   const localStreamRef = useRef(null); // ham mikrofon akışı (mute buradan)
   const outStreamRef = useRef(null); // peer'lara gönderilen işlenmiş akış
@@ -138,6 +171,7 @@ export const VoiceProvider = ({ children }) => {
   const speakingRef = useRef({});
   const volumesRef = useRef(volumes);
   const audioDevicesRef = useRef(audioDevices);
+  const noiseSuppressionRef = useRef(noiseSuppression);
   const mutedRef = useRef(false);
   const vadRef = useRef(vad);
   const activeRef = useRef(null); // beforeunload handler'ı güncel active'i görsün
@@ -480,9 +514,32 @@ export const VoiceProvider = ({ children }) => {
   const getUserVolume = (userId) =>
     typeof volumes[userId] === "number" ? volumes[userId] : 1;
 
-  // Giden ses işleme zinciri: ham mikrofon → highpass → noise gate → çıkış akışı.
-  // Analyser highpass sonrasını ölçer (düşük frekans uğultusu RMS'i şişirmesin).
-  const buildOutputChain = () => {
+  // Giden zinciri sök (mikrofon akışına dokunmadan) — cleanup ve
+  // RNNoise aç/kapa sırasında kullanılır.
+  const teardownOutputChain = () => {
+    if (!localNodeRef.current) return;
+    const { source, highpass, rnnoise, gate, dest, analyser } = localNodeRef.current;
+    [source, highpass, rnnoise, gate, dest, analyser].forEach((n) => {
+      if (!n) return;
+      try {
+        n.disconnect();
+      } catch {
+        /* zaten kopmuş */
+      }
+    });
+    try {
+      rnnoise?.destroy?.();
+    } catch {
+      /* worklet zaten kapalı */
+    }
+    localNodeRef.current = null;
+    outStreamRef.current = null;
+  };
+
+  // Giden ses işleme zinciri: ham mikrofon → highpass → [RNNoise] → noise gate → çıkış.
+  // Analyser, RNNoise varsa onun SONRASINI ölçer → VAD klavye sesine değil
+  // bastırılmış (temiz) sinyale bakar.
+  const buildOutputChain = async () => {
     try {
       const ctx = getAudioCtx();
       const source = ctx.createMediaStreamSource(localStreamRef.current);
@@ -491,7 +548,20 @@ export const VoiceProvider = ({ children }) => {
       highpass.type = "highpass";
       highpass.frequency.value = HIGHPASS_HZ;
 
-      const { analyser, buf } = makeAnalyser(ctx, highpass);
+      // RNNoise (opsiyonel): wasm + worklet yüklenemezse zincir onsuz kurulur
+      let rnnoise = null;
+      if (noiseSuppressionRef.current) {
+        try {
+          const wasmBinary = await getRnnoiseWasm();
+          await ctx.audioWorklet.addModule(rnnoiseWorkletPath);
+          rnnoise = new RnnoiseWorkletNode(ctx, { wasmBinary, maxChannels: 1 });
+        } catch (e) {
+          console.error("RNNoise yüklenemedi, onsuz devam:", e);
+          rnnoise = null;
+        }
+      }
+
+      const { analyser, buf } = makeAnalyser(ctx, rnnoise || highpass);
 
       const gate = ctx.createGain();
       gate.gain.value = 1; // gate mantığı VAD açıkken tickLevels'ta sürülür
@@ -500,10 +570,15 @@ export const VoiceProvider = ({ children }) => {
       const dest = ctx.createMediaStreamDestination();
 
       source.connect(highpass);
-      highpass.connect(gate);
+      let tail = highpass;
+      if (rnnoise) {
+        highpass.connect(rnnoise);
+        tail = rnnoise;
+      }
+      tail.connect(gate);
       gate.connect(dest);
 
-      localNodeRef.current = { source, highpass, gate, dest, analyser, buf };
+      localNodeRef.current = { source, highpass, rnnoise, gate, dest, analyser, buf };
       outStreamRef.current = dest.stream;
     } catch (err) {
       // Zincir kurulamazsa sesi kaybetme — peer'lara ham akış gider, gate/VAD yok
@@ -511,6 +586,30 @@ export const VoiceProvider = ({ children }) => {
       localNodeRef.current = null;
       outStreamRef.current = null;
     }
+  };
+
+  // RNNoise'u aç/kapat. Kanaldaysak zinciri yeniden kurup peer'lardaki
+  // ses track'ini yenisiyle değiştirir (yeniden bağlanma gerekmez).
+  const setNoiseSuppression = async (enabled) => {
+    noiseSuppressionRef.current = enabled;
+    setNoiseSuppressionState(enabled);
+    try {
+      localStorage.setItem(NS_KEY, JSON.stringify(enabled));
+    } catch {
+      /* kota dolu / gizli mod */
+    }
+    if (!localStreamRef.current) return; // kanalda değiliz → sonraki katılımda
+
+    teardownOutputChain();
+    await buildOutputChain();
+    const newTrack = outboundTracks()[0] || null;
+    if (!newTrack) return;
+    Object.values(peersRef.current).forEach(({ pc }) => {
+      const sender = pc
+        .getSenders?.()
+        .find((s) => s.track?.kind === "audio" || !s.track);
+      if (sender) sender.replaceTrack(newTrack).catch(() => {});
+    });
   };
 
   // Peer'lara gönderilecek ses track'i (işlenmiş varsa o, yoksa ham)
@@ -817,20 +916,9 @@ export const VoiceProvider = ({ children }) => {
     }
     watchingRef.current = null;
 
-    // Seviye ölçümü + giden zincir teardown
+    // Seviye ölçümü + giden zincir teardown (RNNoise dahil)
     stopLevelLoop();
-    if (localNodeRef.current) {
-      const { source, highpass, gate, dest, analyser } = localNodeRef.current;
-      [source, highpass, gate, dest, analyser].forEach((n) => {
-        try {
-          n.disconnect();
-        } catch {
-          /* zaten kopmuş */
-        }
-      });
-      localNodeRef.current = null;
-    }
-    outStreamRef.current = null;
+    teardownOutputChain();
     gateOpenRef.current = false;
 
     // Ses mesh teardown
@@ -890,9 +978,9 @@ export const VoiceProvider = ({ children }) => {
       return;
     }
 
-    // Giden ses işleme zinciri kur (highpass + noise gate). Peer'lara ham mikrofon
-    // yerine bu zincirin çıkışı gönderilir. Kurulamazsa outStream ham akışa düşer.
-    buildOutputChain();
+    // Giden ses işleme zinciri kur (highpass + opsiyonel RNNoise + noise gate).
+    // Peer'lara ham mikrofon yerine bu zincirin çıkışı gönderilir.
+    await buildOutputChain();
     startLevelLoop();
 
     registerSocketHandlers();
@@ -1028,6 +1116,9 @@ export const VoiceProvider = ({ children }) => {
         audioDevices,
         setAudioInputDevice,
         setAudioOutputDevice,
+        // RNNoise gürültü bastırma
+        noiseSuppression,
+        setNoiseSuppression,
         // ekran paylaşımı
         isScreenSharing,
         localScreenStream,

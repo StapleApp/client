@@ -47,6 +47,8 @@ const VoiceBar = () => {
     vad,
     setVadEnabled,
     setVadAggressiveness,
+    noiseSuppression,
+    setNoiseSuppression,
     getUserVolume,
     setUserVolume,
     isDetached,
@@ -278,6 +280,26 @@ const VoiceBar = () => {
                     <p className="text-[10px] leading-tight text-[var(--primary-text)] mt-1">
                       Yüksek değer arka plan gürültüsünü eler, alçak sesle
                       konuşmayı da kaçırabilir.
+                    </p>
+                  </div>
+
+                  {/* RNNoise gürültü bastırma (default kapalı) */}
+                  <div className="mt-2 pt-2 border-t border-[var(--primary-border)]">
+                    <label className="flex items-center justify-between gap-2 cursor-pointer">
+                      <span className="text-xs text-[var(--secondary-text)]">
+                        Gürültü bastırma (RNNoise)
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={noiseSuppression}
+                        onChange={(e) => setNoiseSuppression(e.target.checked)}
+                        className="w-4 h-4 cursor-pointer"
+                        style={{ accentColor: "var(--quaternary-text)" }}
+                      />
+                    </label>
+                    <p className="text-[10px] leading-tight text-[var(--primary-text)] mt-1">
+                      Klavye/fan gibi gürültüleri yapay zekâ ile bastırır.
+                      Küçük bir gecikme ekler — gerekiyorsa aç.
                     </p>
                   </div>
                 </div>
