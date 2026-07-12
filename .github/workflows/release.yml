@@ -13,7 +13,14 @@ permissions:
 
 jobs:
   release:
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "windows-latest"
+          - platform: "macos-latest"
+
+    runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,13 +54,14 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Staple ${{ github.ref_name }}"
-          releaseBody: "Windows kurulumu için aşağıdaki **Staple-Setup.exe** dosyasını indir."
+          releaseBody: "İlgili işletim sistemi kurulum dosyasını (.exe veya .dmg) aşağıdaki listeden indirin."
           releaseDraft: false
           prerelease: false
 
       # Sürüm numarasından bağımsız, KALICI bir indirme linki için installer'ı
       # sabit adla da yükle → .../releases/latest/download/Staple-Setup.exe
       - name: Upload fixed-name installer (stable latest link)
+        if: matrix.platform == 'windows-latest'
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -62,3 +70,17 @@ jobs:
           if (-not $exe) { throw "NSIS installer bulunamadı" }
           Copy-Item $exe.FullName "Staple-Setup.exe"
           gh release upload ${{ github.ref_name }} "Staple-Setup.exe" --clobber
+
+      # macOS için de sabit isimli bir indirme linki oluştur → .../releases/latest/download/Staple.dmg
+      - name: Upload fixed-name macOS installer (stable latest link)
+        if: matrix.platform == 'macos-latest'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          dmg_file=$(find src-tauri/target/release/bundle/dmg -name "*.dmg" | head -n 1)
+          if [ -z "$dmg_file" ]; then
+            echo "DMG installer bulunamadı"
+            exit 1
+          fi
+          cp "$dmg_file" "Staple.dmg"
+          gh release upload ${{ github.ref_name }} "Staple.dmg" --clobber
