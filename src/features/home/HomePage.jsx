@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import {
   Plus,
@@ -13,6 +13,7 @@ import {
   Volume2,
   Copy,
   Menu,
+  X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -192,7 +193,7 @@ const HomePage = () => {
   const navigate = useNavigate();
   const { userData, currentUser, refreshUserData } = useAuth();
   const { liveStatus, presenceActive, onlineMap, announceStatus } = usePresence();
-  const { isMobile, setIsOpen } = useMobileMenu();
+  const { isMobile, isOpen, setIsOpen } = useMobileMenu();
 
   const [servers, setServers] = useState([]);
   const [friends, setFriends] = useState([]);
@@ -344,6 +345,126 @@ const HomePage = () => {
       });
     });
   });
+
+  // Sağ Bar İçeriğini Ortaklaştırma
+  const renderRightRail = () => (
+    <>
+      {/* Mini profil */}
+      <motion.div
+        initial={{ opacity: 0, x: 10 }}
+        animate={{ opacity: 1, x: 0 }}
+        className={`relative z-30 p-4 rounded-2xl ${GLASS}`}
+      >
+        <div className="flex items-center gap-3">
+          <div className="relative shrink-0">
+            <img src={avatar} alt="" className="w-12 h-12 rounded-2xl object-cover border-2 border-[var(--tertiary-border)]" />
+            <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[var(--secondary-bg)] ${statusColor(myStatus)}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-[var(--secondary-text)] truncate">{userData?.nickName || "gezgin"}</p>
+            {userData?.friendshipID && (
+              <button
+                onClick={copyFriendshipID}
+                className="flex items-center gap-1 text-[11px] text-[var(--primary-text)] hover:text-[var(--tertiary-bg)] transition-colors"
+                title="Arkadaşlık kodunu kopyala"
+              >
+                <Hash size={11} />
+                <span className="truncate">{userData.friendshipID}</span>
+                <Copy size={11} />
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="mt-3">
+          <StatusSelector status={myStatus} onChange={handleStatusChange} />
+        </div>
+      </motion.div>
+
+      {/* Aktif ses kanalları */}
+      {activeVoice.length > 0 && (
+        <div className={`p-3 rounded-2xl ${GLASS}`}>
+          <RailTitle>
+            <Volume2 size={13} className="text-green-400" /> Aktif Ses Kanalları
+          </RailTitle>
+          <div className="flex flex-col gap-2">
+            {activeVoice.map((vc) => (
+              <div
+                key={vc.channelId}
+                onClick={() => {
+                  navigate(`/server/${vc.serverId}`);
+                  setIsOpen(false);
+                }}
+                className="flex items-center gap-2 p-2 rounded-xl bg-[var(--secondary-bg)] border border-[var(--primary-border)] hover:border-green-400/40 hover:bg-[var(--primary-bg)] transition-all cursor-pointer"
+              >
+                <Volume2 size={16} className="text-green-400 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-[var(--secondary-text)] truncate">{vc.channelName}</p>
+                  <p className="text-[10px] text-[var(--primary-text)] truncate">{vc.serverName}</p>
+                </div>
+                <div className="flex items-center -space-x-2 shrink-0">
+                  {vc.users.slice(0, 3).map((u) => (
+                    <img
+                      key={u.socketId}
+                      src="/defaults/avatars/1.png"
+                      alt=""
+                      title={u.nickName}
+                      className="w-6 h-6 rounded-full object-cover border-2 border-[var(--secondary-bg)]"
+                    />
+                  ))}
+                  {vc.users.length > 3 && (
+                    <span className="w-6 h-6 rounded-full bg-[var(--secondary-bg)] border-2 border-[var(--secondary-bg)] flex items-center justify-center text-[9px] font-bold text-[var(--secondary-text)]">
+                      +{vc.users.length - 3}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Çevrimiçi arkadaşlar */}
+      <div className={`p-3 rounded-2xl ${GLASS}`}>
+        <RailTitle>
+          <span className="w-2 h-2 rounded-full bg-green-500" /> Çevrimiçi — {onlineFriends.length}
+        </RailTitle>
+        {loading ? (
+          <div className="flex flex-col gap-2 animate-pulse">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-10 rounded-lg bg-[var(--secondary-bg)]/40" />
+            ))}
+          </div>
+        ) : onlineFriends.length === 0 ? (
+          <p className="px-1 py-2 text-xs text-[var(--primary-text)]">Şu an kimse çevrimiçi değil.</p>
+        ) : (
+          <div className="flex flex-col gap-1">
+            {onlineFriends.slice(0, 8).map((f) => (
+              <div
+                key={f.userID}
+                className="group flex items-center gap-2 p-1.5 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors"
+              >
+                <div className="relative shrink-0">
+                  <img src={f.photoURL} alt="" className="w-8 h-8 rounded-full object-cover" />
+                  <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--secondary-bg)] ${statusColor(f.status)}`} />
+                </div>
+                <span className="flex-1 text-sm font-medium text-[var(--secondary-text)] truncate">{f.nickName}</span>
+                <button
+                  onClick={() => {
+                    navigate("/DirectMessaging", { state: { userID: f.userID } });
+                    setIsOpen(false);
+                  }}
+                  className="flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--secondary-bg)] border border-[var(--primary-border)] text-[var(--tertiary-border)] opacity-0 group-hover:opacity-100 hover:bg-[var(--tertiary-bg)] hover:text-[var(--tertiary-text)] transition-all"
+                  title="Sohbet başlat"
+                >
+                  <MessageCircle size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
 
   return (
     <div
@@ -526,119 +647,51 @@ const HomePage = () => {
           </div>
 
           {/* ================= SAĞ RAIL ================= */}
-          <aside className="space-y-5 lg:sticky lg:top-0 self-start">
-            {/* Mini profil */}
-            <motion.div
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className={`relative z-30 p-4 rounded-2xl ${GLASS}`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="relative shrink-0">
-                  <img src={avatar} alt="" className="w-12 h-12 rounded-2xl object-cover border-2 border-[var(--tertiary-border)]" />
-                  <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[var(--secondary-bg)] ${statusColor(myStatus)}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-[var(--secondary-text)] truncate">{userData?.nickName || "gezgin"}</p>
-                  {userData?.friendshipID && (
-                    <button
-                      onClick={copyFriendshipID}
-                      className="flex items-center gap-1 text-[11px] text-[var(--primary-text)] hover:text-[var(--tertiary-bg)] transition-colors"
-                      title="Arkadaşlık kodunu kopyala"
-                    >
-                      <Hash size={11} />
-                      <span className="truncate">{userData.friendshipID}</span>
-                      <Copy size={11} />
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="mt-3">
-                <StatusSelector status={myStatus} onChange={handleStatusChange} />
-              </div>
-            </motion.div>
-
-            {/* Aktif ses kanalları */}
-            {activeVoice.length > 0 && (
-              <div className={`p-3 rounded-2xl ${GLASS}`}>
-                <RailTitle>
-                  <Volume2 size={13} className="text-green-400" /> Aktif Ses Kanalları
-                </RailTitle>
-                <div className="flex flex-col gap-2">
-                  {activeVoice.map((vc) => (
-                    <div
-                      key={vc.channelId}
-                      onClick={() => navigate(`/server/${vc.serverId}`)}
-                      className="flex items-center gap-2 p-2 rounded-xl bg-[var(--secondary-bg)] border border-[var(--primary-border)] hover:border-green-400/40 hover:bg-[var(--primary-bg)] transition-all cursor-pointer"
-                    >
-                      <Volume2 size={16} className="text-green-400 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-[var(--secondary-text)] truncate">{vc.channelName}</p>
-                        <p className="text-[10px] text-[var(--primary-text)] truncate">{vc.serverName}</p>
-                      </div>
-                      <div className="flex items-center -space-x-2 shrink-0">
-                        {vc.users.slice(0, 3).map((u) => (
-                          <img
-                            key={u.socketId}
-                            src="/defaults/avatars/1.png"
-                            alt=""
-                            title={u.nickName}
-                            className="w-6 h-6 rounded-full object-cover border-2 border-[var(--secondary-bg)]"
-                          />
-                        ))}
-                        {vc.users.length > 3 && (
-                          <span className="w-6 h-6 rounded-full bg-[var(--secondary-bg)] border-2 border-[var(--secondary-bg)] flex items-center justify-center text-[9px] font-bold text-[var(--secondary-text)]">
-                            +{vc.users.length - 3}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Çevrimiçi arkadaşlar */}
-            <div className={`p-3 rounded-2xl ${GLASS}`}>
-              <RailTitle>
-                <span className="w-2 h-2 rounded-full bg-green-500" /> Çevrimiçi — {onlineFriends.length}
-              </RailTitle>
-              {loading ? (
-                <div className="flex flex-col gap-2 animate-pulse">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="h-10 rounded-lg bg-[var(--secondary-bg)]/40" />
-                  ))}
-                </div>
-              ) : onlineFriends.length === 0 ? (
-                <p className="px-1 py-2 text-xs text-[var(--primary-text)]">Şu an kimse çevrimiçi değil.</p>
-              ) : (
-                <div className="flex flex-col gap-1">
-                  {onlineFriends.slice(0, 8).map((f) => (
-                    <div
-                      key={f.userID}
-                      className="group flex items-center gap-2 p-1.5 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors"
-                    >
-                      <div className="relative shrink-0">
-                        <img src={f.photoURL} alt="" className="w-8 h-8 rounded-full object-cover" />
-                        <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--secondary-bg)] ${statusColor(f.status)}`} />
-                      </div>
-                      <span className="flex-1 text-sm font-medium text-[var(--secondary-text)] truncate">{f.nickName}</span>
-                      <button
-                        onClick={() => navigate("/DirectMessaging", { state: { userID: f.userID } })}
-                        className="flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--secondary-bg)] border border-[var(--primary-border)] text-[var(--tertiary-border)] opacity-0 group-hover:opacity-100 hover:bg-[var(--tertiary-bg)] hover:text-[var(--tertiary-text)] transition-all"
-                        title="Sohbet başlat"
-                      >
-                        <MessageCircle size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          <aside className="hidden lg:block space-y-5 lg:sticky lg:top-0 self-start">
+            {renderRightRail()}
           </aside>
         </div>
       </div>
       </div>
+
+      {/* Mobile Right Rail Drawer */}
+      {isMobile && (
+        <AnimatePresence>
+          {isOpen && (
+            <>
+              {/* Backdrop */}
+              <div
+                className="fixed inset-0 bg-black/60 z-40 transition-opacity duration-200"
+                onClick={() => setIsOpen(false)}
+              />
+              {/* Drawer Container */}
+              <motion.div
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="fixed top-0 right-0 bottom-0 w-[280px] bg-[var(--primary-bg)]/95 backdrop-blur-md border-l border-[var(--primary-border)]/20 z-50 p-5 overflow-y-auto flex flex-col gap-5 shadow-2xl"
+              >
+                {/* Header */}
+                <div className="flex justify-between items-center pb-2 border-b border-[var(--primary-border)]/25 shrink-0">
+                  <span className="font-bold text-sm text-[var(--secondary-text)] uppercase tracking-widest font-mono">Seçenekler</span>
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="p-1 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors text-[var(--secondary-text)] active:scale-95"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto space-y-5 pr-1">
+                  {renderRightRail()}
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      )}
     </div>
   );
 };
