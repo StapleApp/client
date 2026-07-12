@@ -201,6 +201,29 @@ export async function markChannelRead(channelId, userId) {
   }
 }
 
+/**
+ * Bir sunucudaki tüm metin kanalları için okunmamış mesaj sayılarını getir.
+ * { channelId: adet } döner. get_server_unread_counts RPC'si (supabase_fixes.sql
+ * bölüm 26) yoksa sessizce {} döner → rozetler görünmez ama hata olmaz.
+ */
+export async function getServerUnreadCounts(serverId) {
+  if (!serverId) return {};
+  try {
+    const { data, error } = await supabase.rpc("get_server_unread_counts", {
+      p_server_id: serverId,
+    });
+    if (error) throw error;
+    const map = {};
+    (data || []).forEach((r) => {
+      map[r.channel_id] = r.unread;
+    });
+    return map;
+  } catch (error) {
+    console.debug("getServerUnreadCounts failed:", error?.message);
+    return {};
+  }
+}
+
 /** Kanaldaki son okuma zamanımı getir (yoksa null). */
 export async function getChannelLastRead(channelId, userId) {
   if (!channelId || !userId) return null;

@@ -43,6 +43,7 @@ import { useMobileMenu } from "../../context/MobileMenuContext";
 import Navigator from "../../Components/layout/Navigator";
 import { supabase } from "../../config/supabase";
 import { hasPermission } from "../../config/permissions";
+import { getServerUnreadCounts } from "../../services/messageService";
 import {
   createChannel,
   renameChannel as apiRenameChannel,
@@ -113,12 +114,17 @@ const ChannelRow = ({ channel, h }) => {
     myUserId,
     canManageChannels,
     memberColors,
+    unreadCounts,
   } = h;
   const [showMove, setShowMove] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const active = isChannelActive(channel);
   const menuOpen = channelOptions === channel.id;
   const occupants = channel.type === "voice" ? voiceState[channel.id] || [] : [];
+
+  // Okunmamış rozeti: yalnızca metin kanallarında ve aktif olmayan kanalda göster.
+  const unread = channel.type === "text" ? unreadCounts?.[channel.id] || 0 : 0;
+  const showBadge = unread > 0 && !active;
 
   // Konuşma algılama yalnızca BAĞLI OLDUĞUN kanal için var (WebRTC peer'ları).
   // Başka kanallardaki kişiler için halka çıkmaz — bilgimiz yok.
@@ -164,9 +170,20 @@ const ChannelRow = ({ channel, h }) => {
               className="bg-transparent border-b border-current outline-none text-sm w-full"
             />
           ) : (
-            <span className="text-sm truncate">{channel.name}</span>
+            <span
+              className={`text-sm truncate ${
+                showBadge ? "font-semibold text-[var(--secondary-text)]" : ""
+              }`}
+            >
+              {channel.name}
+            </span>
           )}
         </div>
+        {showBadge && (
+          <span className="shrink-0 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
+            {unread > 9 ? "9+" : unread}
+          </span>
+        )}
         {canManageChannels && (
           <button
             aria-label="Kanal seçenekleri"
@@ -744,6 +761,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
   const [categories, setCategories] = useState([]);
   const [activeChannel, setActiveChannel] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState({}); // channelId -> okunmamış adet
 
   const channelsRef = useRef(channels);
   const categoriesRef = useRef(categories);
@@ -753,6 +771,68 @@ const SvSidebar = ({ serverData, onRefresh }) => {
   useEffect(() => {
     categoriesRef.current = categories;
   }, [categories]);
+
+  // Realtime mesaj dinleyicisi için: bu sunucunun metin kanal id'leri + aktif kanal.
+  const textChannelIds = useMemo(
+    () => new Set(channels.filter((c) => c.type === "text").map((c) => c.id)),
+    [channels]
+  );
+  const textChannelIdsRef = useRef(textChannelIds);
+  const activeChannelRef = useRef(activeChannel);
+  useEffect(() => {
+    textChannelIdsRef.current = textChannelIds;
+  }, [textChannelIds]);
+  useEffect(() => {
+    activeChannelRef.current = activeChannel;
+  }, [activeChannel]);
+
+  // Sunucu açıldığında okunmamış sayılarını çek (RPC yoksa {} döner → rozet yok).
+  useEffect(() => {
+    if (!serverId) {
+      setUnreadCounts({});
+      return;
+    }
+    let alive = true;
+    getServerUnreadCounts(serverId).then((m) => {
+      if (alive) setUnreadCounts(m);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [serverId]);
+
+  // Kanal görüntülenince (ChatPanel markChannelRead çağırır) rozetini sıfırla.
+  useEffect(() => {
+    const id = activeChannel?.id;
+    if (!id) return;
+    setUnreadCounts((prev) => (prev[id] ? { ...prev, [id]: 0 } : prev));
+  }, [activeChannel?.id]);
+
+  // Yeni mesaj geldikçe, aktif olmayan metin kanallarının rozetini artır.
+  useEffect(() => {
+    if (!serverId || !currentUser?.uid) return;
+    const nonce = Math.random().toString(36).slice(2);
+    const rt = supabase
+      .channel(`server-unread:${serverId}:${nonce}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        (payload) => {
+          const msg = payload.new;
+          if (!msg || !textChannelIdsRef.current.has(msg.channel_id)) return;
+          if (msg.sender_id === currentUser.uid) return;
+          if (activeChannelRef.current?.id === msg.channel_id) return;
+          setUnreadCounts((prev) => ({
+            ...prev,
+            [msg.channel_id]: (prev[msg.channel_id] || 0) + 1,
+          }));
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(rt);
+    };
+  }, [serverId, currentUser?.uid]);
 
   // Yanıt bildiriminden gelindiyse: hedef kanalı aç + mesaja atla
   const [jumpTarget, setJumpTarget] = useState(null); // { channelId, messageId }
@@ -1033,6 +1113,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
     myUserId: currentUser?.uid,
     canManageChannels,
     memberColors,
+    unreadCounts,
   };
 
   const renderChannelListSidebar = () => {
