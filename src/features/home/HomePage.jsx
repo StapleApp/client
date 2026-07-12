@@ -29,6 +29,7 @@ import { getDMOverview } from "../../services/groupService";
 import { socket } from "../../config/socket";
 
 import icon from "../../assets/branding/staple-icon.png";
+import Navigator from "../../Components/layout/Navigator";
 
 // Düz renk — koyu mavi kartlar/butonlar (projenin geneliyle aynı), gri paneller.
 const GLASS = "bg-[var(--primary-bg)] border-2 border-[var(--primary-border)]";
@@ -654,7 +655,7 @@ const HomePage = () => {
       </div>
       </div>
 
-      {/* Mobile Right Rail Drawer */}
+      {/* Mobile Drawer */}
       {isMobile && (
         <AnimatePresence>
           {isOpen && (
@@ -666,26 +667,33 @@ const HomePage = () => {
               />
               {/* Drawer Container */}
               <motion.div
-                initial={{ x: "100%" }}
+                initial={{ x: "-100%" }}
                 animate={{ x: 0 }}
-                exit={{ x: "100%" }}
+                exit={{ x: "-100%" }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className="fixed top-0 right-0 bottom-0 w-[280px] bg-[var(--primary-bg)]/95 backdrop-blur-md border-l border-[var(--primary-border)]/20 z-50 p-5 overflow-y-auto flex flex-col gap-5 shadow-2xl"
+                className="fixed top-0 bottom-0 left-0 z-50 flex w-[320px] shadow-2xl"
               >
-                {/* Header */}
-                <div className="flex justify-between items-center pb-2 border-b border-[var(--primary-border)]/25 shrink-0">
-                  <span className="font-bold text-sm text-[var(--secondary-text)] uppercase tracking-widest font-mono">Seçenekler</span>
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="p-1 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors text-[var(--secondary-text)] active:scale-95"
-                  >
-                    <X size={18} />
-                  </button>
+                {/* Left: Navigator */}
+                <div className="w-16 h-full shrink-0 relative z-20 bg-[var(--primary-bg)]/90 backdrop-blur-md border-r border-[var(--primary-border)]/20">
+                  <Navigator />
                 </div>
-                
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto space-y-5 pr-1">
-                  {renderRightRail()}
+                {/* Right: Options */}
+                <div className="w-64 h-full bg-[var(--primary-bg)]/90 backdrop-blur-md flex flex-col relative z-10 p-5 overflow-y-auto gap-5">
+                  {/* Header */}
+                  <div className="flex justify-between items-center pb-2 border-b border-[var(--primary-border)]/25 shrink-0">
+                    <span className="font-bold text-sm text-[var(--secondary-text)] uppercase tracking-widest font-mono">Seçenekler</span>
+                    <button
+                      onClick={() => setIsOpen(false)}
+                      className="p-1 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors text-[var(--secondary-text)] active:scale-95"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 overflow-y-auto space-y-5 pr-1">
+                    {renderRightRail()}
+                  </div>
                 </div>
               </motion.div>
             </>

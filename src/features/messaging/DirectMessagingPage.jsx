@@ -309,10 +309,10 @@ const DirectMessagingPage = () => {
               isOpen ? "translate-x-0" : "-translate-x-full"
             }`}
           >
-            <div className="w-16 h-full shrink-0 relative bg-[var(--primary-bg)]/90 backdrop-blur-md border-r border-[var(--primary-border)]/20">
+            <div className="w-16 h-full shrink-0 relative z-20 bg-[var(--primary-bg)]/90 backdrop-blur-md border-r border-[var(--primary-border)]/20">
               <Navigator />
             </div>
-            <div className="w-64 h-full bg-[var(--primary-bg)]/90 backdrop-blur-md flex flex-col relative">
+            <div className="w-64 h-full bg-[var(--primary-bg)]/90 backdrop-blur-md flex flex-col relative z-10">
               {renderFriendsListSidebar()}
             </div>
           </div>

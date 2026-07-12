@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useVoice } from "../../context/VoiceContext";
 import { useAuth } from "../../context/AuthContext";
+import { useMobileMenu } from "../../context/MobileMenuContext";
 
 const VoiceBar = () => {
   const {
@@ -53,12 +54,13 @@ const VoiceBar = () => {
     showSidebar,
   } = useVoice();
   const { userData } = useAuth();
+  const { isMobile, isOpen } = useMobileMenu();
   const navigate = useNavigate();
   const location = useLocation();
 
   const match = location.pathname.match(/^\/server\/([^/]+)/);
   const onServerPage = !!match;
-  const isDocked = onServerPage && !isDetached;
+  const isDocked = onServerPage && !isDetached && (!isMobile || isOpen);
   const [showList, setShowList] = useState(false);
   const [showVadSettings, setShowVadSettings] = useState(false);
   const boundsRef = useRef(null);
@@ -698,7 +700,7 @@ const VoiceBar = () => {
               }
             }}
             onPointerDown={handlePointerDown}
-            style={isDocked ? {} : { x, y }}
+            style={isDocked ? { touchAction: "none" } : { x, y, touchAction: "none" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

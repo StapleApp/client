@@ -1,16 +1,17 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useMemo } from "react";
 import { IoIosSearch, IoMdPersonAdd, IoMdCheckmarkCircle } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
-import { Menu, Compass, Tag as TagIcon, Users, X, RefreshCw } from "lucide-react";
+import { Menu, Compass, Tag as TagIcon, Users, X, RefreshCw, Home, UserPlus, Settings, User } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useMobileMenu } from "../../context/MobileMenuContext";
 import { getPublicServers, joinServer, getServersList } from "../../services/serverService";
 import fallbackIcon from "../../assets/branding/staple-icon.png";
+import Navigator from "../../Components/layout/Navigator";
 
 const SearchServerPage = () => {
   const { currentUser } = useAuth();
-  const { isMobile, setIsOpen } = useMobileMenu();
+  const { isMobile, isOpen, setIsOpen } = useMobileMenu();
   const navigate = useNavigate();
 
   const [searchInput, setSearchInput] = useState("");
@@ -311,6 +312,104 @@ const SearchServerPage = () => {
           )}
         </div>
       </div>
+      {/* Mobile Drawer */}
+      {isMobile && (
+        <AnimatePresence>
+          {isOpen && (
+            <>
+              {/* Backdrop */}
+              <div
+                className="fixed inset-0 bg-black/60 z-40 transition-opacity duration-200"
+                onClick={() => setIsOpen(false)}
+              />
+              {/* Drawer Container */}
+              <motion.div
+                initial={{ x: "-100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "-100%" }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="fixed top-0 bottom-0 left-0 z-50 flex w-[320px] shadow-2xl"
+              >
+                {/* Left: Navigator */}
+                <div className="w-16 h-full shrink-0 relative z-20 bg-[var(--primary-bg)]/90 backdrop-blur-md border-r border-[var(--primary-border)]/20">
+                  <Navigator />
+                </div>
+                {/* Right: Navigation Options */}
+                <div className="w-64 h-full bg-[var(--primary-bg)]/90 backdrop-blur-md flex flex-col relative z-10 p-5 overflow-y-auto gap-5 text-left">
+                  {/* Header */}
+                  <div className="flex justify-between items-center pb-2 border-b border-[var(--primary-border)]/25 shrink-0">
+                    <span className="font-bold text-sm text-[var(--secondary-text)] uppercase tracking-widest font-mono">Seçenekler</span>
+                    <button
+                      onClick={() => setIsOpen(false)}
+                      className="p-1 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors text-[var(--secondary-text)] active:scale-95"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  {/* Navigation Links */}
+                  <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+                    <button
+                      onClick={() => {
+                        navigate("/");
+                        setIsOpen(false);
+                      }}
+                      className="flex items-center gap-3 w-full p-2.5 rounded-xl bg-[var(--secondary-bg)]/40 hover:bg-[var(--secondary-bg)] border border-[var(--primary-border)]/30 hover:border-[var(--tertiary-border)]/40 text-sm font-semibold text-[var(--secondary-text)] transition-all active:scale-95"
+                    >
+                      <Home size={18} className="text-[var(--tertiary-bg)]" />
+                      <span>Ana Sayfa</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        navigate("/servers");
+                        setIsOpen(false);
+                      }}
+                      className="flex items-center gap-3 w-full p-2.5 rounded-xl bg-[var(--secondary-bg)] hover:bg-[var(--secondary-bg)] border border-[var(--primary-border)]/30 hover:border-[var(--tertiary-border)]/40 text-sm font-semibold text-[var(--secondary-text)] transition-all active:scale-95"
+                    >
+                      <Compass size={18} className="text-[var(--tertiary-bg)]" />
+                      <span>Sunucu Keşfet</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        navigate("/AddFriends");
+                        setIsOpen(false);
+                      }}
+                      className="flex items-center gap-3 w-full p-2.5 rounded-xl bg-[var(--secondary-bg)]/40 hover:bg-[var(--secondary-bg)] border border-[var(--primary-border)]/30 hover:border-[var(--tertiary-border)]/40 text-sm font-semibold text-[var(--secondary-text)] transition-all active:scale-95"
+                    >
+                      <UserPlus size={18} className="text-[var(--tertiary-bg)]" />
+                      <span>Arkadaş Ekle</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        navigate("/settings");
+                        setIsOpen(false);
+                      }}
+                      className="flex items-center gap-3 w-full p-2.5 rounded-xl bg-[var(--secondary-bg)]/40 hover:bg-[var(--secondary-bg)] border border-[var(--primary-border)]/30 hover:border-[var(--tertiary-border)]/40 text-sm font-semibold text-[var(--secondary-text)] transition-all active:scale-95"
+                    >
+                      <Settings size={18} className="text-[var(--tertiary-bg)]" />
+                      <span>Ayarlar</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        navigate("/Profile");
+                        setIsOpen(false);
+                      }}
+                      className="flex items-center gap-3 w-full p-2.5 rounded-xl bg-[var(--secondary-bg)]/40 hover:bg-[var(--secondary-bg)] border border-[var(--primary-border)]/30 hover:border-[var(--tertiary-border)]/40 text-sm font-semibold text-[var(--secondary-text)] transition-all active:scale-95"
+                    >
+                      <User size={18} className="text-[var(--tertiary-bg)]" />
+                      <span>Profili Düzenle</span>
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      )}
     </motion.div>
   );
 };
