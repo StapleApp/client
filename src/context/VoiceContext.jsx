@@ -29,7 +29,7 @@ const LEVEL_INTERVAL_MS = 50;
 // kesilmesin; release yavaş ki kelime araları "tık"lamasın.
 const GATE_ATTACK_TAU = 0.02;
 const GATE_RELEASE_TAU = 0.2;
-const HIGHPASS_HZ = 85; // insan sesi temel frekansının altını (uğultu/titreşim) kes
+const HIGHPASS_HZ = 120; // İnsan sesini korurken klavye/masa titreşim uğultularını kesmek için 85Hz -> 120Hz'e yükseltildi
 
 // Agresiflik (0-100) → RMS eşiği. Yüksek agresiflik = yüksek eşik = fısıltıyı,
 // klavye sesini, arka plan uğultusunu "konuşma" saymaz.
@@ -268,7 +268,7 @@ export const VoiceProvider = ({ children }) => {
     }
     document.querySelectorAll('audio[id^="voice-audio-"]').forEach((el) => {
       if (typeof el.setSinkId === "function") {
-        el.setSinkId(deviceId || "").catch(() => {});
+        el.setSinkId(deviceId || "").catch(() => { });
       }
     });
   };
@@ -310,7 +310,7 @@ export const VoiceProvider = ({ children }) => {
     }
     // Otomatik oynatma politikası: kullanıcı hareketiyle (kanala tıklama) açılır
     if (audioCtxRef.current.state === "suspended") {
-      audioCtxRef.current.resume().catch(() => {});
+      audioCtxRef.current.resume().catch(() => { });
     }
     return audioCtxRef.current;
   };
@@ -549,7 +549,7 @@ export const VoiceProvider = ({ children }) => {
             refreshParticipants();
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
 
     if (isInitiator) {
@@ -844,7 +844,7 @@ export const VoiceProvider = ({ children }) => {
     // AudioContext'i kapat — her katılımda yenisi açılır (tarayıcı başına
     // eşzamanlı AudioContext sayısı sınırlı)
     if (audioCtxRef.current) {
-      audioCtxRef.current.close().catch(() => {});
+      audioCtxRef.current.close().catch(() => { });
       audioCtxRef.current = null;
     }
 
