@@ -347,6 +347,31 @@ export const deleteServer = async (serverID) => {
   }
 };
 
+// ** Sunucu üyelerinin hafif profil listesi (mention otomatik tamamlama için) **
+export const getServerMemberProfiles = async (serverID) => {
+  try {
+    const { data: members, error } = await supabase
+      .from("server_members")
+      .select("user_id")
+      .eq("server_id", serverID);
+    if (error) throw error;
+    const ids = (members || []).map((m) => m.user_id);
+    if (!ids.length) return [];
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("id, nickname, avatar_url")
+      .in("id", ids);
+    return (profs || []).map((p) => ({
+      userID: p.id,
+      nickName: p.nickname || "Bilinmeyen",
+      photoURL: p.avatar_url || "/defaults/avatars/1.png",
+    }));
+  } catch (error) {
+    console.error("Error fetching member profiles:", error);
+    return [];
+  }
+};
+
 // ** Sunucudan ayrıl (herhangi bir üye) — sahibi ayrılamaz, silmeli **
 export const leaveServer = async (serverID, uid) => {
   try {

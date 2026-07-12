@@ -117,6 +117,107 @@ export async function setMessagePinned(messageId, pinned) {
 }
 
 /**
+ * Emoji tepkisi ekle/kaldır. hasReacted: kullanıcının bu emojisi zaten var mı
+ * (UI'daki mevcut duruma göre) — varsa sil, yoksa ekle.
+ */
+export async function toggleReaction(messageId, userId, emoji, hasReacted) {
+  try {
+    if (hasReacted) {
+      const { error } = await supabase
+        .from("message_reactions")
+        .delete()
+        .eq("message_id", messageId)
+        .eq("user_id", userId)
+        .eq("emoji", emoji);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from("message_reactions").insert({
+        message_id: messageId,
+        user_id: userId,
+        emoji,
+      });
+      // Çift tıklama yarışında unique ihlalini sessiz geç
+      if (error && error.code !== "23505") throw error;
+    }
+    return true;
+  } catch (error) {
+    console.error("Error toggling reaction:", error);
+    toast.error("Tepki eklenemedi");
+    return false;
+  }
+}
+
+/**
+ * Kanal içinde mesaj ara (en yeni önce). Sonuçlara gönderen adı eklenir.
+ */
+export async function searchMessages(channelId, term) {
+  const q = (term || "").trim();
+  if (!channelId || q.length < 2) return [];
+  try {
+    const { data, error } = await supabase
+      .from("messages")
+      .select("id, content, type, sender_id, created_at")
+      .eq("channel_id", channelId)
+      .ilike("content", `%${q}%`)
+      .order("created_at", { ascending: false })
+      .limit(25);
+    if (error) throw error;
+
+    const rows = data || [];
+    const ids = [...new Set(rows.map((r) => r.sender_id))];
+    const nameMap = {};
+    if (ids.length) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, nickname")
+        .in("id", ids);
+      (profs || []).forEach((p) => (nameMap[p.id] = p.nickname || "Bilinmeyen"));
+    }
+    return rows.map((r) => ({
+      id: r.id,
+      content: r.content,
+      type: r.type,
+      senderName: nameMap[r.sender_id] || "Bilinmeyen",
+      createdAt: r.created_at,
+    }));
+  } catch (error) {
+    console.error("Error searching messages:", error);
+    return [];
+  }
+}
+
+/**
+ * Kanalı okundu işaretle (channel_reads upsert). "Yeni mesajlar" ayracı için.
+ */
+export async function markChannelRead(channelId, userId) {
+  if (!channelId || !userId) return;
+  try {
+    await supabase.from("channel_reads").upsert(
+      { channel_id: channelId, user_id: userId, last_read_at: new Date().toISOString() },
+      { onConflict: "channel_id,user_id" }
+    );
+  } catch (error) {
+    console.debug("markChannelRead failed:", error?.message);
+  }
+}
+
+/** Kanaldaki son okuma zamanımı getir (yoksa null). */
+export async function getChannelLastRead(channelId, userId) {
+  if (!channelId || !userId) return null;
+  try {
+    const { data } = await supabase
+      .from("channel_reads")
+      .select("last_read_at")
+      .eq("channel_id", channelId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    return data?.last_read_at || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Bir kanaldaki sabitlenmiş mesajları getir (en yeni → en eski).
  * Üst sabit-mesaj çubuğu için; yüklü olmayan mesajları da kapsar.
  */
@@ -256,6 +357,33 @@ export function listenMessages(context, callback) {
 
   let currentMessages = [];
   const limitCount = 50;
+  // messageId -> [{ userId, emoji }] — tepkiler ayrı tutulur, emit'te birleşir
+  const reactionsMap = {};
+
+  // Mesajlara tepkileri iliştirip callback'i çağır
+  function emit(hasMore) {
+    const decorated = currentMessages.map((m) => ({
+      ...m,
+      reactions: reactionsMap[m.id] || [],
+    }));
+    if (hasMore === undefined) callback(decorated);
+    else callback(decorated, hasMore);
+  }
+
+  // Verilen mesaj id'lerinin tepkilerini çek → reactionsMap'e yaz
+  async function fetchReactions(ids) {
+    if (!ids.length) return;
+    const { data } = await supabase
+      .from("message_reactions")
+      .select("message_id, user_id, emoji")
+      .in("message_id", ids);
+    (data || []).forEach((r) => {
+      const list = reactionsMap[r.message_id] || (reactionsMap[r.message_id] = []);
+      if (!list.some((x) => x.userId === r.user_id && x.emoji === r.emoji)) {
+        list.push({ userId: r.user_id, emoji: r.emoji });
+      }
+    });
+  }
 
   // 1. İlk yükleme — en yeni 50 mesajı çek
   async function fetchInitial() {
@@ -275,7 +403,8 @@ export function listenMessages(context, callback) {
     const reversed = [...(data || [])].reverse();
     const mapped = await Promise.all(reversed.map(mapMessage));
     currentMessages = mapped;
-    callback([...currentMessages], data.length === limitCount);
+    await fetchReactions(mapped.map((m) => m.id));
+    emit(data.length === limitCount);
   }
 
   fetchInitial();
@@ -294,7 +423,7 @@ export function listenMessages(context, callback) {
       async (payload) => {
         const newMsg = await mapMessage(payload.new);
         currentMessages = [...currentMessages, newMsg];
-        callback([...currentMessages]);
+        emit();
       }
     )
     .on(
@@ -309,7 +438,8 @@ export function listenMessages(context, callback) {
         currentMessages = currentMessages.filter(
           (m) => m.id !== payload.old.id
         );
-        callback([...currentMessages]);
+        delete reactionsMap[payload.old.id];
+        emit();
       }
     )
     .on(
@@ -325,7 +455,36 @@ export function listenMessages(context, callback) {
         currentMessages = currentMessages.map((m) =>
           m.id === updated.id ? updated : m
         );
-        callback([...currentMessages]);
+        emit();
+      }
+    )
+    // Tepki eklendi/silindi — tablo kanal filtresi taşımadığından client'ta
+    // yalnızca yüklü mesajlara ait olaylar uygulanır.
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "message_reactions" },
+      (payload) => {
+        const r = payload.new;
+        if (!currentMessages.some((m) => m.id === r.message_id)) return;
+        const list = reactionsMap[r.message_id] || (reactionsMap[r.message_id] = []);
+        if (!list.some((x) => x.userId === r.user_id && x.emoji === r.emoji)) {
+          list.push({ userId: r.user_id, emoji: r.emoji });
+        }
+        emit();
+      }
+    )
+    .on(
+      "postgres_changes",
+      { event: "DELETE", schema: "public", table: "message_reactions" },
+      (payload) => {
+        // REPLICA IDENTITY FULL sayesinde old satır tam gelir
+        const r = payload.old;
+        const list = reactionsMap[r.message_id];
+        if (!list) return;
+        reactionsMap[r.message_id] = list.filter(
+          (x) => !(x.userId === r.user_id && x.emoji === r.emoji)
+        );
+        emit();
       }
     )
     .subscribe();
@@ -358,7 +517,8 @@ export function listenMessages(context, callback) {
     const reversed = [...data].reverse();
     const mapped = await Promise.all(reversed.map(mapMessage));
     currentMessages = [...mapped, ...currentMessages];
-    callback([...currentMessages], data.length === limitCount);
+    await fetchReactions(mapped.map((m) => m.id));
+    emit(data.length === limitCount);
     return data.length;
   };
 
@@ -397,7 +557,8 @@ export function listenMessages(context, callback) {
 
     const mapped = await Promise.all(data.map(mapMessage));
     currentMessages = [...mapped, ...currentMessages];
-    callback([...currentMessages]);
+    await fetchReactions(mapped.map((m) => m.id));
+    emit();
     return true;
   };
 

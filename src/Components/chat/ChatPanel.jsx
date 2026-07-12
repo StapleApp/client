@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Send, Hash, Smile, Pencil, Trash2, Check, X, ChevronDown, Reply, Menu, Pin, PinOff } from "lucide-react";
+import { Send, Hash, Smile, Pencil, Trash2, Check, X, ChevronDown, Reply, Menu, Pin, PinOff, Search, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import EmojiPicker from "emoji-picker-react";
 import { useAuth } from "../../context/AuthContext";
@@ -12,7 +12,12 @@ import {
   deleteMessage,
   setMessagePinned,
   getPinnedMessages,
+  toggleReaction,
+  searchMessages,
+  markChannelRead,
+  getChannelLastRead,
 } from "../../services/messageService";
+import { getServerMemberProfiles } from "../../services/serverService";
 import MessageContent from "./MessageContent";
 import GifPicker from "./GifPicker";
 import ProfilePanel from "../layout/ProfilePanel";
@@ -84,6 +89,21 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
   const [contextMenu, setContextMenu] = useState(null); // { x, y, message }
   const [pinnedMessages, setPinnedMessages] = useState([]); // en yeni → en eski
   const [pinIndex, setPinIndex] = useState(0); // üst çubukta sıradaki sabit mesaj
+
+  // Kanal içi arama
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState(null); // null = arama yapılmadı
+  const [searching, setSearching] = useState(false);
+
+  // @bahsetme: sunucu üyeleri + aktif sorgu (null = popup kapalı)
+  const [members, setMembers] = useState([]);
+  const [mentionQuery, setMentionQuery] = useState(null);
+
+  // Okunmamış "Yeni" ayracı: kanal başına bir kez hesaplanır
+  const [lastReadAt, setLastReadAt] = useState(undefined); // undefined = yükleniyor
+  const [unreadMarkerId, setUnreadMarkerId] = useState(null);
+  const unreadDoneRef = useRef(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null); // { id, senderName, content, type }
   const [highlightId, setHighlightId] = useState(null); // kısa vurgu için
@@ -226,10 +246,23 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     const el = e.target;
     el.style.height = "auto";
     el.style.height = Math.min(el.scrollHeight, 160) + "px";
+    detectMention(e.target.value, el.selectionStart);
     emitTyping();
   };
 
   const handleInputKeyDown = (e) => {
+    // Mention popup açıkken: Tab/Enter ilk adayı seçer, Escape kapatır
+    if (mentionQuery !== null && mentionMatches.length > 0) {
+      if (e.key === "Tab" || e.key === "Enter") {
+        e.preventDefault();
+        insertMention(mentionMatches[0]);
+        return;
+      }
+      if (e.key === "Escape") {
+        setMentionQuery(null);
+        return;
+      }
+    }
     // Enter gönderir, Shift+Enter yeni satır
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -441,8 +474,12 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
       replyTo: reply?.id || null,
     });
     notifyDMRecipient(content, "text");
-    if (newId) notifyReplyTarget(reply, newId, content, "text");
+    if (newId) {
+      notifyReplyTarget(reply, newId, content, "text");
+      notifyMentions(content, newId, reply?.senderId || null);
+    }
     setReplyingTo(null);
+    setMentionQuery(null);
     scrollToBottom();
   };
 
@@ -487,7 +524,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     e.stopPropagation(); // aynı sağ-tık'ın window kapatıcısını tetiklemesini önle
     // Menü genişlik/yüksekliğini ekran dışına taşmayacak şekilde konumla
     const MENU_W = 190;
-    const MENU_H = 210;
+    const MENU_H = 250; // hızlı tepki satırı dahil
     const x = Math.min(e.clientX, window.innerWidth - MENU_W - 8);
     const y = Math.min(e.clientY, window.innerHeight - MENU_H - 8);
     setEditingId(null);
@@ -524,6 +561,131 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     const t = setTimeout(() => scrollToMessage(jumpToMessageId), 300);
     return () => clearTimeout(t);
   }, [jumpToMessageId, messages.length]);
+
+  // Kanal değişince arama/mention/ayraç durumunu sıfırla + son okuma zamanını çek
+  useEffect(() => {
+    setSearchOpen(false);
+    setSearchTerm("");
+    setSearchResults(null);
+    setMentionQuery(null);
+    setUnreadMarkerId(null);
+    setLastReadAt(undefined);
+    unreadDoneRef.current = null;
+    if (!channelId || !userData?.userID) return;
+    getChannelLastRead(channelId, userData.userID).then(setLastReadAt);
+  }, [channelId, userData?.userID]);
+
+  // Mesajlar + son okuma zamanı hazır olunca ilk okunmamışı BİR KEZ işaretle;
+  // kanal görüntülendiği sürece okundu kaydını tazele.
+  useEffect(() => {
+    if (!channelId || !userData?.userID || messages.length === 0) return;
+    if (lastReadAt !== undefined && unreadDoneRef.current !== channelId) {
+      unreadDoneRef.current = channelId;
+      if (lastReadAt) {
+        const t = new Date(lastReadAt).getTime();
+        const firstUnread = messages.find(
+          (m) =>
+            m.senderId !== userData.userID &&
+            (m.createdAt?.seconds || 0) * 1000 > t
+        );
+        setUnreadMarkerId(firstUnread?.id || null);
+      }
+      // lastReadAt null (ilk ziyaret) → ayraç yok
+    }
+    markChannelRead(channelId, userData.userID);
+  }, [channelId, messages, lastReadAt, userData?.userID]);
+
+  // Sunucu kanalıysa üye profillerini çek (mention otomatik tamamlama)
+  useEffect(() => {
+    if (!context?.serverId) {
+      setMembers([]);
+      return;
+    }
+    let cancelled = false;
+    getServerMemberProfiles(context.serverId).then((list) => {
+      if (!cancelled) setMembers(list);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [context?.serverId]);
+
+  // Arama: Enter ile çalışır
+  const runSearch = async (e) => {
+    if (e) e.preventDefault();
+    const q = searchTerm.trim();
+    if (q.length < 2) return;
+    setSearching(true);
+    const res = await searchMessages(channelId, q);
+    setSearching(false);
+    setSearchResults(res);
+  };
+
+  // Tepki ekle/kaldır
+  const handleReact = async (message, emoji) => {
+    setContextMenu(null);
+    if (!userData?.userID) return;
+    const hasReacted = (message.reactions || []).some(
+      (r) => r.userId === userData.userID && r.emoji === emoji
+    );
+    await toggleReaction(message.id, userData.userID, emoji, hasReacted);
+  };
+
+  // Mention popup: imleçten geriye "@token" ara
+  const detectMention = (value, caret) => {
+    const before = value.slice(0, caret ?? value.length);
+    const m = before.match(/(^|\s)@([\p{L}\p{N}_]*)$/u);
+    setMentionQuery(m ? m[2].toLowerCase() : null);
+  };
+
+  const mentionMatches =
+    mentionQuery === null
+      ? []
+      : members
+          .filter(
+            (u) =>
+              u.userID !== userData?.userID &&
+              u.nickName.toLowerCase().includes(mentionQuery)
+          )
+          .slice(0, 6);
+
+  const insertMention = (user) => {
+    const el = inputRef.current;
+    const caret = el?.selectionStart ?? newMessage.length;
+    const before = newMessage
+      .slice(0, caret)
+      .replace(/@([\p{L}\p{N}_]*)$/u, `@${user.nickName} `);
+    setNewMessage(before + newMessage.slice(caret));
+    setMentionQuery(null);
+    el?.focus();
+  };
+
+  // İçerikte @Nick geçen üyelere bildirim (yanıt hedefi hariç — o zaten reply alır)
+  const notifyMentions = (content, newMessageId, replyTargetId) => {
+    if (!context?.serverId || !members.length || !userData) return;
+    const preview = content.length > 40 ? content.slice(0, 40) + "…" : content;
+    const seen = new Set();
+    members.forEach((u) => {
+      if (u.userID === userData.userID || u.userID === replyTargetId) return;
+      if (seen.has(u.userID)) return;
+      if (!content.includes(`@${u.nickName}`)) return;
+      seen.add(u.userID);
+      createNotification(u.userID, {
+        type: "mention",
+        from_user_id: userData.userID,
+        data: {
+          type: "mention",
+          user: userData.nickName || "Kullanıcı",
+          fromUid: userData.userID,
+          photo: userData.photoURL || "",
+          message: preview,
+          serverId: context.serverId,
+          channelId: context.channelId,
+          messageId: typeof newMessageId === "string" ? newMessageId : null,
+        },
+      });
+    });
+  };
 
   // Sabitli mesajlar: kanal değişince ve yüklü mesajların pin durumu değişince yenile
   const pinnedSig = messages
@@ -590,6 +752,80 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
               </h2>
             </>
           )}
+          <button
+            onClick={() => {
+              setSearchOpen((v) => !v);
+              setSearchResults(null);
+              setSearchTerm("");
+            }}
+            title="Mesajlarda ara"
+            aria-label="Mesajlarda ara"
+            className={`ml-auto p-1.5 rounded-lg transition-colors ${
+              searchOpen
+                ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
+                : "text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--secondary-bg)]"
+            }`}
+          >
+            <Search size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* Kanal içi arama paneli */}
+      {searchOpen && (
+        <div className="border-b-2 border-[var(--primary-border)] bg-[var(--primary-bg)] px-4 py-2">
+          <form onSubmit={runSearch} className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search
+                size={15}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--primary-text)]"
+              />
+              <input
+                autoFocus
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === "Escape" && setSearchOpen(false)}
+                placeholder="Bu kanalda ara... (Enter)"
+                className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-[var(--secondary-bg)] text-[var(--secondary-text)] border border-[var(--primary-border)] focus:outline-none focus:border-[var(--tertiary-border)] text-sm placeholder:text-[var(--primary-text)]"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={searching || searchTerm.trim().length < 2}
+              className="px-3 py-1.5 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] text-xs font-semibold hover:bg-[var(--quaternary-bg)] disabled:opacity-50 transition-colors"
+            >
+              {searching ? <Loader2 size={14} className="animate-spin" /> : "Ara"}
+            </button>
+          </form>
+          {searchResults !== null && (
+            <div className="custom-scrollbar mt-2 max-h-56 overflow-y-auto flex flex-col gap-0.5">
+              {searchResults.length === 0 ? (
+                <p className="text-xs text-[var(--primary-text)] py-2 px-1">
+                  Sonuç bulunamadı.
+                </p>
+              ) : (
+                searchResults.map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={() => scrollToMessage(r.id)}
+                    className="flex items-baseline gap-2 px-2 py-1.5 rounded-lg text-left hover:bg-[var(--secondary-bg)] transition-colors"
+                  >
+                    <span className="text-xs font-semibold text-[var(--quaternary-text)] shrink-0">
+                      {r.senderName}
+                    </span>
+                    <span className="text-xs text-[var(--secondary-text)] truncate flex-1">
+                      {r.type === "gif" ? "GIF" : r.content}
+                    </span>
+                    <span className="text-[10px] text-[var(--primary-text)] shrink-0">
+                      {r.createdAt
+                        ? new Date(r.createdAt).toLocaleDateString("tr-TR")
+                        : ""}
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -655,6 +891,16 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
                       {dayLabel(message.createdAt)}
                     </span>
                     <div className="flex-1 h-px bg-[var(--primary-border)]" />
+                  </div>
+                )}
+
+                {/* Okunmamış "Yeni" ayracı */}
+                {unreadMarkerId === message.id && (
+                  <div className="flex items-center gap-2 px-4 my-1 select-none">
+                    <div className="flex-1 h-px bg-red-500/70" />
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-red-400">
+                      Yeni
+                    </span>
                   </div>
                 )}
 
@@ -775,6 +1021,35 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
                         )}
                       </div>
                     )}
+
+                    {/* Emoji tepkileri */}
+                    {!isEditing && (message.reactions || []).length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {Object.entries(
+                          message.reactions.reduce((acc, r) => {
+                            (acc[r.emoji] = acc[r.emoji] || []).push(r.userId);
+                            return acc;
+                          }, {})
+                        ).map(([emoji, users]) => {
+                          const mine = users.includes(userData?.userID);
+                          return (
+                            <button
+                              key={emoji}
+                              onClick={() => handleReact(message, emoji)}
+                              title={mine ? "Tepkini kaldır" : "Tepki ver"}
+                              className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs border transition-colors ${
+                                mine
+                                  ? "bg-[var(--tertiary-bg)]/25 border-[var(--tertiary-border)] text-[var(--secondary-text)]"
+                                  : "bg-[var(--primary-bg)] border-[var(--primary-border)] text-[var(--primary-text)] hover:border-[var(--tertiary-border)]"
+                              }`}
+                            >
+                              <span className="text-sm leading-none">{emoji}</span>
+                              <span className="font-semibold">{users.length}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   {/* Hover aksiyonları: Yanıtla herkese, Düzenle/Sil sahibine */}
@@ -888,6 +1163,29 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
         }`}
       >
         <div className="flex-1 relative">
+          {/* @bahsetme otomatik tamamlama */}
+          {mentionQuery !== null && mentionMatches.length > 0 && (
+            <div className="absolute bottom-full left-0 mb-1.5 w-64 max-h-52 overflow-y-auto custom-scrollbar z-50 py-1 rounded-xl border-2 border-[var(--primary-border)] bg-[var(--secondary-bg)] shadow-2xl">
+              <p className="px-3 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wide text-[var(--primary-text)]">
+                Üyeler — Tab/Enter ile seç
+              </p>
+              {mentionMatches.map((u) => (
+                <button
+                  key={u.userID}
+                  type="button"
+                  onClick={() => insertMention(u)}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left text-[var(--secondary-text)] hover:bg-[var(--tertiary-bg)] hover:text-[var(--tertiary-text)] transition-colors"
+                >
+                  <img
+                    src={u.photoURL}
+                    alt=""
+                    className="w-6 h-6 rounded-full object-cover shrink-0"
+                  />
+                  <span className="truncate">{u.nickName}</span>
+                </button>
+              ))}
+            </div>
+          )}
           <textarea
             ref={inputRef}
             rows={1}
@@ -975,6 +1273,19 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
                 onContextMenu={(e) => e.preventDefault()}
                 className="z-[9999] w-[190px] py-1 rounded-xl overflow-hidden border-2 border-[var(--primary-border)] bg-[var(--secondary-bg)] shadow-2xl"
               >
+                {/* Hızlı emoji tepkileri */}
+                <div className="flex items-center justify-between px-2 pb-1.5 pt-0.5 border-b border-[var(--primary-border)]">
+                  {["👍", "❤️", "😂", "😮", "😢", "🔥"].map((e) => (
+                    <button
+                      key={e}
+                      onClick={() => handleReact(m, e)}
+                      className="p-1 text-lg leading-none rounded-lg hover:bg-[var(--primary-bg)] hover:scale-125 transition-transform"
+                      title={`${e} tepkisi ver`}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
                 <button
                   onClick={() => {
                     startReply(m);

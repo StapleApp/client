@@ -72,7 +72,26 @@ const MessageContent = ({ content }) => {
       </a>
     );
   }
-  // Normal metin — satır sonlarını koru (çok satırlı mesajlar için)
+  // Normal metin — satır sonlarını koru; @bahsetmeleri vurgula
+  const parts = content.split(/(@[\p{L}\p{N}_]+)/u);
+  if (parts.length > 1) {
+    return (
+      <span className="whitespace-pre-wrap">
+        {parts.map((p, i) =>
+          p.startsWith("@") && p.length > 1 ? (
+            <span
+              key={i}
+              className="px-1 rounded bg-[var(--tertiary-bg)]/25 text-[var(--quaternary-text)] font-semibold"
+            >
+              {p}
+            </span>
+          ) : (
+            p
+          )
+        )}
+      </span>
+    );
+  }
   return <span className="whitespace-pre-wrap">{content}</span>;
 };
 

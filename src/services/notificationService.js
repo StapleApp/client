@@ -126,10 +126,10 @@ export const listenNotifications = (uid, callback) => {
   };
 };
 
-// DB tipini UI'nin beklediği tipe eşle (UI: friend | message | app)
+// DB tipini UI'nin beklediği tipe eşle (UI: friend | message | reply | mention | app)
 function normalizeType(dbType) {
   if (dbType === "friend_request") return "friend";
-  if (dbType === "server_invite" || dbType === "mention") return "app";
+  if (dbType === "server_invite") return "app";
   return dbType || "app";
 }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { IoMdNotifications } from "react-icons/io";
-import { UserPlus, Mail, Bell, Trash2, Check, X, Reply } from "lucide-react";
+import { UserPlus, Mail, Bell, Trash2, Check, X, Reply, AtSign } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { acceptFriendRequest } from "../../services/friendService";
@@ -136,8 +136,11 @@ const NotificationsBell = () => {
                         navigate("/AddFriends");
                       } else if (item.type === "message" && item.fromUid) {
                         navigate("/DirectMessaging", { state: { userID: item.fromUid } });
-                      } else if (item.type === "reply" && item.serverId) {
-                        // Sunucudaki yanıta git: kanal + mesaj hedefi state ile taşınır
+                      } else if (
+                        (item.type === "reply" || item.type === "mention") &&
+                        item.serverId
+                      ) {
+                        // Sunucudaki yanıta/bahsetmeye git: kanal + mesaj hedefi state ile taşınır
                         navigate(`/server/${item.serverId}`, {
                           state: { channelId: item.channelId, messageId: item.messageId },
                         });
@@ -155,6 +158,8 @@ const NotificationsBell = () => {
                           <UserPlus size={9} />
                         ) : item.type === "reply" ? (
                           <Reply size={9} />
+                        ) : item.type === "mention" ? (
+                          <AtSign size={9} />
                         ) : (
                           <Mail size={9} />
                         )}
@@ -191,6 +196,13 @@ const NotificationsBell = () => {
                           <>
                             <span className="font-semibold text-[var(--quaternary-text)]">
                               Mesajına yanıt verdi:{" "}
+                            </span>
+                            {item.message || ""}
+                          </>
+                        ) : item.type === "mention" ? (
+                          <>
+                            <span className="font-semibold text-[var(--quaternary-text)]">
+                              Senden bahsetti:{" "}
                             </span>
                             {item.message || ""}
                           </>
