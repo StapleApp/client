@@ -25,12 +25,13 @@ export const createRole = async (serverId, { name, color, permissions, position 
 };
 
 // ** Rolü güncelle (isim / renk / izinler — verilen alanlar) **
-export const updateRole = async (roleId, { name, color, permissions }) => {
+export const updateRole = async (roleId, { name, color, permissions, position }) => {
   try {
     const patch = {};
     if (name !== undefined) patch.name = name;
     if (color !== undefined) patch.color = color;
     if (permissions !== undefined) patch.permissions = permissions;
+    if (position !== undefined) patch.position = position;
     if (Object.keys(patch).length === 0) return true;
 
     const { error } = await supabase.from("roles").update(patch).eq("id", roleId);
