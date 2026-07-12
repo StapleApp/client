@@ -1217,7 +1217,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
             pointerEvents: showSidebar ? "auto" : "none"
           }}
           transition={{ duration: 0.2, ease: "easeInOut" }}
-          className="fixed left-16 top-0 h-screen w-64 bg-[var(--primary-bg)] text-[var(--secondary-text)] shadow-2xl border-l border-r border-[var(--primary-border)] flex flex-col z-30"
+          className="fixed left-16 top-0 h-screen w-64 bg-[var(--primary-bg)]/90 backdrop-blur-md text-[var(--secondary-text)] shadow-2xl border-r border-[var(--primary-border)]/20 flex flex-col z-30"
         >
           {renderChannelListSidebar()}
         </motion.div>
@@ -1236,10 +1236,10 @@ const SvSidebar = ({ serverData, onRefresh }) => {
               isOpen ? "translate-x-0" : "-translate-x-full"
             }`}
           >
-            <div className="w-16 h-full shrink-0 relative bg-[var(--primary-bg)] border-r border-[var(--primary-border)]">
+            <div className="w-16 h-full shrink-0 relative bg-[var(--primary-bg)]/90 backdrop-blur-md border-r border-[var(--primary-border)]/20">
               <Navigator />
             </div>
-            <div className="w-64 h-full bg-[var(--primary-bg)] flex flex-col relative">
+            <div className="w-64 h-full bg-[var(--primary-bg)]/90 backdrop-blur-md flex flex-col relative">
               {renderChannelListSidebar()}
             </div>
           </div>

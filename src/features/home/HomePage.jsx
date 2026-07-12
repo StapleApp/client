@@ -346,7 +346,7 @@ const HomePage = () => {
       }`}
     >
       {isMobile && (
-        <div className="flex items-center h-[60px] px-5 py-4 bg-[var(--primary-bg)] border-b-2 border-[var(--primary-border)] text-[var(--secondary-text)] shrink-0 z-30">
+        <div className="flex items-center h-[60px] px-5 py-4 bg-[var(--primary-bg)]/80 backdrop-blur-md border-b border-[var(--primary-border)]/30 text-[var(--secondary-text)] shrink-0 z-30">
           <button
             onClick={() => setIsOpen(true)}
             className="p-1.5 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors mr-3 text-[var(--secondary-text)]"

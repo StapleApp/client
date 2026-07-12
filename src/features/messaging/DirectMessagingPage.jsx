@@ -290,7 +290,7 @@ const DirectMessagingPage = () => {
     >
       {/* Desktop sidebar view */}
       {!isMobile && (
-        <div className="fixed top-0 left-16 h-screen w-64 bg-[var(--primary-bg)] border-l border-r border-[var(--primary-border)] flex flex-col z-30">
+        <div className="fixed top-0 left-16 h-screen w-64 bg-[var(--primary-bg)]/90 backdrop-blur-md border-r border-[var(--primary-border)]/20 flex flex-col z-30">
           {renderFriendsListSidebar()}
         </div>
       )}
@@ -309,10 +309,10 @@ const DirectMessagingPage = () => {
               isOpen ? "translate-x-0" : "-translate-x-full"
             }`}
           >
-            <div className="w-16 h-full shrink-0 relative bg-[var(--primary-bg)] border-r border-[var(--primary-border)]">
+            <div className="w-16 h-full shrink-0 relative bg-[var(--primary-bg)]/90 backdrop-blur-md border-r border-[var(--primary-border)]/20">
               <Navigator />
             </div>
-            <div className="w-64 h-full bg-[var(--primary-bg)] flex flex-col relative">
+            <div className="w-64 h-full bg-[var(--primary-bg)]/90 backdrop-blur-md flex flex-col relative">
               {renderFriendsListSidebar()}
             </div>
           </div>
@@ -344,7 +344,7 @@ const DirectMessagingPage = () => {
         ) : (
           <div className="background h-full flex flex-col justify-center">
             {isMobile && (
-              <div className="flex items-center h-[60px] px-5 py-4 bg-[var(--primary-bg)] border-b-2 border-[var(--primary-border)] text-[var(--secondary-text)] shrink-0 absolute top-0 left-0 right-0 z-30">
+              <div className="flex items-center h-[60px] px-5 py-4 bg-[var(--primary-bg)]/80 backdrop-blur-md border-b border-[var(--primary-border)]/30 text-[var(--secondary-text)] shrink-0 absolute top-0 left-0 right-0 z-30">
                 <button
                   onClick={() => setIsOpen(true)}
                   className="p-1.5 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors mr-3 text-[var(--secondary-text)]"

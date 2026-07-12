@@ -67,7 +67,7 @@ const Navigator = () => {
       <div
         className={`fixed flex flex-col top-0 left-0 h-screen gap-0 z-50
               w-16 transition-all duration-145 ease-linear justify-between shadow-xl
-              bg-[var(--primary-bg)]`}
+              bg-[var(--primary-bg)]/85 backdrop-blur-md border-r border-[var(--primary-border)]/20`}
       >
         <div className="flex flex-col h-64">
           {/* Profil avatarı — paneli açar/kapar */}

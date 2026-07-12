@@ -720,7 +720,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     <div className="relative flex flex-col h-full bg-[var(--secondary-bg)] text-[var(--secondary-text)]">
       {/* Header */}
       {showHeader && (
-        <div className="flex items-center gap-2 px-5 py-4 border-b-2 border-[var(--primary-border)] bg-[var(--primary-bg)]">
+        <div className="flex items-center gap-2 px-5 py-4 border-b border-[var(--primary-border)]/30 bg-[var(--primary-bg)]/80 backdrop-blur-md z-10 shrink-0">
           {isMobile && (
             <button
               onClick={() => setIsOpen(true)}
