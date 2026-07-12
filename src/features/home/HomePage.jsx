@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import {
@@ -22,11 +22,8 @@ import {
   getVoiceChannelsMap,
 } from "../../services/serverService";
 import { getFriendsList } from "../../services/friendService";
-import {
-  getUser,
-  resolveStatus,
-  updateUserStatus,
-} from "../../services/userService";
+import { getUser, updateUserStatus } from "../../services/userService";
+import { usePresence } from "../../context/PresenceContext";
 import { getDMOverview } from "../../services/groupService";
 import { socket } from "../../config/socket";
 
@@ -194,6 +191,7 @@ const RailTitle = ({ children }) => (
 const HomePage = () => {
   const navigate = useNavigate();
   const { userData, currentUser, refreshUserData } = useAuth();
+  const { liveStatus, presenceActive, onlineIds } = usePresence();
   const { isMobile, setIsOpen } = useMobileMenu();
 
   const [servers, setServers] = useState([]);
@@ -207,8 +205,10 @@ const HomePage = () => {
   const [voiceChanMap, setVoiceChanMap] = useState({}); // channelId -> { name, serverId }
 
   useEffect(() => {
-    setMyStatus(resolveStatus(userData?.status, userData?.lastSeen));
-  }, [userData?.status, userData?.lastSeen]);
+    setMyStatus(liveStatus(userData?.userID, userData?.status, userData?.lastSeen));
+    // liveStatus her render'da yeni referans; asıl sinyaller aşağıdakiler
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userData?.userID, userData?.status, userData?.lastSeen, presenceActive, onlineIds]);
 
   useEffect(() => {
     const load = async () => {
@@ -232,15 +232,15 @@ const HomePage = () => {
       // Ses kanalı isim haritası (rail'deki aktif kanal başlıkları için)
       getVoiceChannelsMap(mappedServers.map((s) => s.id)).then(setVoiceChanMap);
 
+      // Ham durum + lastSeen saklanır; canlı durum render'da liveStatus ile çözülür
       setFriends(
-        validFriends
-          .map((p) => ({
-            userID: p.userID,
-            nickName: p.nickName || p.name || "Kullanıcı",
-            photoURL: p.photoURL || "/defaults/avatars/1.png",
-            status: resolveStatus(p.status, p.lastSeen),
-          }))
-          .sort((a, b) => (a.status !== "offline" ? -1 : 1) - (b.status !== "offline" ? -1 : 1))
+        validFriends.map((p) => ({
+          userID: p.userID,
+          nickName: p.nickName || p.name || "Kullanıcı",
+          photoURL: p.photoURL || "/defaults/avatars/1.png",
+          rawStatus: p.status || "offline",
+          lastSeen: p.lastSeen || null,
+        }))
       );
 
       // Devam eden sohbetler — DM overview + isim/foto çözümle
@@ -301,7 +301,21 @@ const HomePage = () => {
     toast.success("Arkadaşlık kodu kopyalandı");
   };
 
-  const onlineFriends = friends.filter((f) => f.status !== "offline");
+  // Canlı statülü arkadaş listesi: socket presence değiştikçe anında güncellenir
+  const liveFriends = useMemo(
+    () =>
+      friends
+        .map((f) => ({ ...f, status: liveStatus(f.userID, f.rawStatus, f.lastSeen) }))
+        .sort(
+          (a, b) =>
+            (a.status !== "offline" ? -1 : 1) - (b.status !== "offline" ? -1 : 1)
+        ),
+    // liveStatus her render'da yeni referans; asıl sinyaller aşağıdakiler
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [friends, presenceActive, onlineIds]
+  );
+
+  const onlineFriends = liveFriends.filter((f) => f.status !== "offline");
   const unreadDms = dmList.filter((d) => d.unread > 0);
   const totalUnread = unreadDms.reduce((n, d) => n + d.unread, 0);
   const avatar = userData?.photoURL || "/defaults/avatars/1.png";
@@ -457,7 +471,7 @@ const HomePage = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {friends.map((f) => (
+                  {liveFriends.map((f) => (
                     <div
                       key={f.userID}
                       onClick={() => navigate("/DirectMessaging", { state: { userID: f.userID } })}

@@ -19,10 +19,10 @@ import {
   rejectFriendRequest,
   cancelFriendRequest,
 } from "../../services/friendService";
-import { getUser, resolveStatus } from "../../services/userService";
+import { getUser } from "../../services/userService";
+import { usePresence } from "../../context/PresenceContext";
 
-const statusPill = (status, lastSeen) => {
-  const st = resolveStatus(status, lastSeen);
+const statusPill = (st) => {
   if (st === "online") return <span className="text-green-500 text-xs">● Çevrimiçi</span>;
   if (st === "sleeping") return <span className="text-blue-500 text-xs">● Uykuda</span>;
   if (st === "dnd") return <span className="text-red-500 text-xs">● Rahatsız Etmeyin</span>;
@@ -48,6 +48,7 @@ const RequestRow = ({ profile, children }) => (
 
 const AddFriendsPage = () => {
   const { userData } = useAuth();
+  const { liveStatus } = usePresence();
   const { isMobile, setIsOpen } = useMobileMenu();
   const location = useLocation();
   const [searchId, setSearchId] = useState("");
@@ -223,7 +224,7 @@ const AddFriendsPage = () => {
                     {friendData.nickName || "Bilinmeyen Kullanıcı"}
                   </h2>
                   <p className="text-[var(--primary-text)] text-sm">#{friendData.friendshipID}</p>
-                  {statusPill(friendData.status, friendData.lastSeen)}
+                  {statusPill(liveStatus(friendData.userID, friendData.status, friendData.lastSeen))}
                 </div>
                 <button
                   onClick={() => handleAdd(friendData)}

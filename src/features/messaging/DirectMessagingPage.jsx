@@ -5,7 +5,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 import { getFriendsList } from "../../services/friendService";
-import { getUser, resolveStatus } from "../../services/userService";
+import { getUser } from "../../services/userService";
+import { usePresence } from "../../context/PresenceContext";
 import { getOrCreateDMChannel, getDMOverview, markDmRead } from "../../services/groupService";
 import ChatPanel from "../../Components/chat/ChatPanel";
 import { useMobileMenu } from "../../context/MobileMenuContext";
@@ -50,6 +51,7 @@ const DirectMessagingPage = () => {
   const requestedUserID = location.state?.userID;
 
   const { userData } = useAuth();
+  const { liveStatus } = usePresence();
   const { isMobile, isOpen, setIsOpen } = useMobileMenu();
   const [friends, setFriends] = useState([]);
   const [loadingFriends, setLoadingFriends] = useState(true);
@@ -238,7 +240,7 @@ const DirectMessagingPage = () => {
                         alt=""
                         className="w-10 h-10 rounded-full border border-[var(--primary-border)] object-cover group-hover:scale-105 transition-transform"
                       />
-                      <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[var(--primary-bg)] ${statusColor(resolveStatus(friend.status, friend.lastSeen))}`} />
+                      <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[var(--primary-bg)] ${statusColor(liveStatus(friend.userID, friend.status, friend.lastSeen))}`} />
                     </div>
 
                     <div className="flex-1 min-w-0">

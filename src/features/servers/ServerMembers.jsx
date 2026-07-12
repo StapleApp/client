@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Crown, Users, MoreVertical, UserMinus, Shield, ChevronRight } from "lucide-react";
-import { getUser, resolveStatus } from "../../services/userService";
+import { getUser } from "../../services/userService";
+import { usePresence } from "../../context/PresenceContext";
 import { assignMemberRole, kickMember } from "../../services/roleService";
 import { useAuth } from "../../context/AuthContext";
 import { hasPermission } from "../../config/permissions";
@@ -19,6 +20,7 @@ const statusColor = (status) => {
 
 const ServerMembers = ({ serverData, onRefresh, showMembers, onToggleCollapse }) => {
   const { currentUser } = useAuth();
+  const { liveStatus } = usePresence();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0); // periyodik yenileme tetikleyicisi
@@ -222,7 +224,7 @@ const ServerMembers = ({ serverData, onRefresh, showMembers, onToggleCollapse })
                               className="w-8 h-8 rounded-full object-cover"
                             />
                             <span
-                              className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--primary-bg)] ${statusColor(resolveStatus(m.status, m.lastSeen))}`}
+                              className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--primary-bg)] ${statusColor(liveStatus(m.userID, m.status, m.lastSeen))}`}
                             />
                           </div>
                           <span
