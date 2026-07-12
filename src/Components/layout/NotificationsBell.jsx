@@ -74,6 +74,7 @@ const NotificationsBell = () => {
 
   const handleDelete = async (notificationId) => {
     if (!uid) return;
+    setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
     await deleteNotification(uid, notificationId);
   };
 
@@ -127,130 +128,140 @@ const NotificationsBell = () => {
                   <p className="text-sm">Bildirim bulunmuyor</p>
                 </div>
               ) : (
-                sortedNotifications.map((item) => (
-                  <div
-                    key={item.id}
-                    onClick={async () => {
-                      await handleMarkRead(item.id);
-                      if (item.type === "friend") {
-                        navigate("/AddFriends");
-                      } else if (item.type === "message" && item.fromUid) {
-                        navigate("/DirectMessaging", { state: { userID: item.fromUid } });
-                      } else if (
-                        (item.type === "reply" || item.type === "mention") &&
-                        item.serverId
-                      ) {
-                        // Sunucudaki yanıta/bahsetmeye git: kanal + mesaj hedefi state ile taşınır
-                        navigate(`/server/${item.serverId}`, {
-                          state: { channelId: item.channelId, messageId: item.messageId },
-                        });
-                      }
-                      setOpen(false);
-                    }}
-                    className={`flex items-start gap-3 px-4 py-3 border-b border-[var(--primary-border)] cursor-pointer bg-[var(--secondary-bg)] hover:bg-[var(--primary-bg)] transition-colors relative ${
-                      !item.read ? "border-l-2 border-red-500" : ""
-                    }`}
-                  >
-                    <div className="relative shrink-0 mt-0.5">
-                      <img src={item.photo || "/defaults/avatars/1.png"} alt="" className="w-9 h-9 rounded-full object-cover" />
-                      <span className="absolute -bottom-1 -right-1 w-4.5 h-4.5 flex items-center justify-center rounded-full bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] border-2 border-[var(--secondary-bg)]">
-                        {item.type === "friend" ? (
-                          <UserPlus size={9} />
-                        ) : item.type === "reply" ? (
-                          <Reply size={9} />
-                        ) : item.type === "mention" ? (
-                          <AtSign size={9} />
-                        ) : (
-                          <Mail size={9} />
-                        )}
-                      </span>
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="text-sm font-semibold text-[var(--secondary-text)] truncate">
-                            {item.user || "Kullanıcı"}
-                          </span>
-                          {!item.read && (
-                            <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
-                          )}
-                        </div>
-
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(item.id);
-                          }}
-                          className="p-1 text-[var(--primary-text)] hover:text-red-500 rounded-full transition-colors shrink-0"
-                          title="Bildirimi sil"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-
-                      <p className="text-xs text-[var(--primary-text)] break-words mt-0.5">
-                        {item.type === "friend" ? (
-                          item.message || "Size arkadaşlık isteği gönderdi"
-                        ) : item.type === "reply" ? (
-                          <>
-                            <span className="font-semibold text-[var(--quaternary-text)]">
-                              Mesajına yanıt verdi:{" "}
-                            </span>
-                            {item.message || ""}
-                          </>
-                        ) : item.type === "mention" ? (
-                          <>
-                            <span className="font-semibold text-[var(--quaternary-text)]">
-                              Senden bahsetti:{" "}
-                            </span>
-                            {item.message || ""}
-                          </>
-                        ) : (
-                          <>
-                            {/* Gruplanmış mesaj bildirimi: sayaç + son önizleme */}
-                            {item.count > 1 && (
-                              <span className="font-semibold text-[var(--quaternary-text)]">
-                                {item.count} yeni mesaj ·{" "}
-                              </span>
+                <AnimatePresence initial={false}>
+                  {sortedNotifications.map((item) => (
+                    <motion.div
+                      layout
+                      key={item.id}
+                      initial={{ opacity: 0, scale: 0.95, y: -15 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9, x: 120 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    >
+                      <div
+                        onClick={async () => {
+                          await handleMarkRead(item.id);
+                          if (item.type === "friend") {
+                            navigate("/AddFriends");
+                          } else if (item.type === "message" && item.fromUid) {
+                            navigate("/DirectMessaging", { state: { userID: item.fromUid } });
+                          } else if (
+                            (item.type === "reply" || item.type === "mention") &&
+                            item.serverId
+                          ) {
+                            // Sunucudaki yanıta/bahsetmeye git: kanal + mesaj hedefi state ile taşınır
+                            navigate(`/server/${item.serverId}`, {
+                              state: { channelId: item.channelId, messageId: item.messageId },
+                            });
+                          }
+                          setOpen(false);
+                        }}
+                        className={`flex items-start gap-3 px-4 py-3 border-b border-[var(--primary-border)] cursor-pointer bg-[var(--secondary-bg)] hover:bg-[var(--primary-bg)] transition-colors relative ${
+                          !item.read ? "border-l-2 border-red-500" : ""
+                        }`}
+                      >
+                        <div className="relative shrink-0 mt-0.5">
+                          <img src={item.photo || "/defaults/avatars/1.png"} alt="" className="w-9 h-9 rounded-full object-cover" />
+                          <span className="absolute -bottom-1 -right-1 w-4.5 h-4.5 flex items-center justify-center rounded-full bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] border-2 border-[var(--secondary-bg)]">
+                            {item.type === "friend" ? (
+                              <UserPlus size={9} />
+                            ) : item.type === "reply" ? (
+                              <Reply size={9} />
+                            ) : item.type === "mention" ? (
+                              <AtSign size={9} />
+                            ) : (
+                              <Mail size={9} />
                             )}
-                            {item.message || "Yeni bir mesaj gönderdi"}
-                          </>
-                        )}
-                      </p>
-
-                      {/* Friend request accept/reject actions inside the notification panel */}
-                      {item.type === "friend" && !item.responded && (
-                        <div className="flex gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => handleFriendRequest(item.id, true)}
-                            className="px-2 py-1 bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] text-[10px] font-bold rounded-md hover:bg-[var(--quaternary-bg)] flex items-center gap-1"
-                          >
-                            <Check size={12} /> Kabul Et
-                          </button>
-                          <button
-                            onClick={() => handleFriendRequest(item.id, false)}
-                            className="px-2 py-1 bg-[var(--primary-bg)] text-[var(--secondary-text)] text-[10px] font-bold rounded-md border border-[var(--secondary-border)] hover:border-[var(--tertiary-border)] flex items-center gap-1"
-                          >
-                            <X size={12} /> Reddet
-                          </button>
-                        </div>
-                      )}
-
-                      {item.type === "friend" && item.responded && (
-                        <div className="mt-1.5">
-                          <span className="text-[10px] bg-[var(--primary-bg)] text-[var(--secondary-text)] px-2 py-0.5 rounded-full border border-[var(--primary-border)]">
-                            {item.accepted ? 'Kabul edildi' : 'Reddedildi'}
                           </span>
                         </div>
-                      )}
 
-                      <p className="text-[10px] text-[var(--primary-text)] opacity-70 mt-1">
-                        {getNotificationTime(item)}
-                      </p>
-                    </div>
-                  </div>
-                ))
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="text-sm font-semibold text-[var(--secondary-text)] truncate">
+                                {item.user || "Kullanıcı"}
+                              </span>
+                              {!item.read && (
+                                <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                              )}
+                            </div>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(item.id);
+                              }}
+                              className="p-1 text-[var(--primary-text)] hover:text-red-500 rounded-full transition-colors shrink-0"
+                              title="Bildirimi sil"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+
+                          <p className="text-xs text-[var(--primary-text)] break-words mt-0.5">
+                            {item.type === "friend" ? (
+                              item.message || "Size arkadaşlık isteği gönderdi"
+                            ) : item.type === "reply" ? (
+                              <>
+                                <span className="font-semibold text-[var(--quaternary-text)]">
+                                  Mesajına yanıt verdi:{" "}
+                                </span>
+                                {item.message || ""}
+                              </>
+                            ) : item.type === "mention" ? (
+                              <>
+                                <span className="font-semibold text-[var(--quaternary-text)]">
+                                  Senden bahsetti:{" "}
+                                </span>
+                                {item.message || ""}
+                              </>
+                            ) : (
+                              <>
+                                {/* Gruplanmış mesaj bildirimi: sayaç + son önizleme */}
+                                {item.count > 1 && (
+                                  <span className="font-semibold text-[var(--quaternary-text)]">
+                                    {item.count} yeni mesaj ·{" "}
+                                  </span>
+                                )}
+                                {item.message || "Yeni bir mesaj gönderdi"}
+                              </>
+                            )}
+                          </p>
+
+                          {/* Friend request accept/reject actions inside the notification panel */}
+                          {item.type === "friend" && !item.responded && (
+                            <div className="flex gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                onClick={() => handleFriendRequest(item.id, true)}
+                                className="px-2 py-1 bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] text-[10px] font-bold rounded-md hover:bg-[var(--quaternary-bg)] flex items-center gap-1"
+                              >
+                                <Check size={12} /> Kabul Et
+                              </button>
+                              <button
+                                onClick={() => handleFriendRequest(item.id, false)}
+                                className="px-2 py-1 bg-[var(--primary-bg)] text-[var(--secondary-text)] text-[10px] font-bold rounded-md border border-[var(--secondary-border)] hover:border-[var(--tertiary-border)] flex items-center gap-1"
+                              >
+                                <X size={12} /> Reddet
+                              </button>
+                            </div>
+                          )}
+
+                          {item.type === "friend" && item.responded && (
+                            <div className="mt-1.5">
+                              <span className="text-[10px] bg-[var(--primary-bg)] text-[var(--secondary-text)] px-2 py-0.5 rounded-full border border-[var(--primary-border)]">
+                                {item.accepted ? 'Kabul edildi' : 'Reddedildi'}
+                              </span>
+                            </div>
+                          )}
+
+                          <p className="text-[10px] text-[var(--primary-text)] opacity-70 mt-1">
+                            {getNotificationTime(item)}
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               )}
             </div>
           </motion.div>
