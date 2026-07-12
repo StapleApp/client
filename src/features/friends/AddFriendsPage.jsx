@@ -2,8 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { IoIosSearch, IoMdPersonAdd } from "react-icons/io";
-import { Check, X, Clock, Menu, Home, Compass, UserPlus, Settings, User } from "lucide-react";
+import { Check, X, Clock, Menu, Home, Compass, UserPlus, Settings, User, Search, Copy, Inbox, SendHorizontal } from "lucide-react";
 import Navigator from "../../Components/layout/Navigator";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
@@ -24,24 +23,24 @@ import { getUser } from "../../services/userService";
 import { usePresence } from "../../context/PresenceContext";
 
 const statusPill = (st) => {
-  if (st === "online") return <span className="text-green-500 text-xs">● Çevrimiçi</span>;
-  if (st === "sleeping") return <span className="text-blue-500 text-xs">● Uykuda</span>;
-  if (st === "dnd") return <span className="text-red-500 text-xs">● Rahatsız Etmeyin</span>;
-  return <span className="text-gray-500 text-xs">● Çevrimdışı</span>;
+  if (st === "online") return <span className="text-green-500 text-xs font-semibold flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> Çevrimiçi</span>;
+  if (st === "sleeping") return <span className="text-blue-400 text-xs font-semibold flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Uykuda</span>;
+  if (st === "dnd") return <span className="text-red-500 text-xs font-semibold flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Rahatsız Etmeyin</span>;
+  return <span className="text-[var(--primary-text)] text-xs font-semibold flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-gray-500" /> Çevrimdışı</span>;
 };
 
 const RequestRow = ({ profile, children }) => (
-  <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--primary-bg)] border border-[var(--primary-border)]">
+  <div className="flex items-center gap-3 p-3.5 rounded-xl bg-[var(--primary-bg)]/40 backdrop-blur-sm border border-[var(--primary-border)]/40 hover:border-[var(--tertiary-border)]/30 hover:bg-[var(--primary-bg)]/60 transition-all duration-200">
     <img
       src={profile?.photoURL || pfp}
       alt=""
-      className="w-10 h-10 rounded-full object-cover shrink-0"
+      className="w-10 h-10 rounded-full object-cover shrink-0 border border-[var(--primary-border)]/50 bg-[var(--secondary-bg)]"
     />
     <div className="flex-1 min-w-0">
-      <p className="font-semibold text-[var(--secondary-text)] truncate">
+      <p className="font-bold text-[var(--secondary-text)] truncate text-sm">
         {profile?.nickName || profile?.name || "Kullanıcı"}
       </p>
-      <p className="text-xs text-[var(--primary-text)] truncate">#{profile?.friendshipID || "—"}</p>
+      <p className="text-[11px] font-semibold text-[var(--primary-text)] font-mono truncate mt-0.5">#{profile?.friendshipID || "—"}</p>
     </div>
     <div className="flex items-center gap-2 shrink-0">{children}</div>
   </div>
@@ -145,178 +144,251 @@ const AddFriendsPage = () => {
     loadRequests();
   };
 
+  const copyFriendshipID = () => {
+    if (!userData?.friendshipID) return;
+    navigator.clipboard.writeText(userData.friendshipID);
+    toast.success("Arkadaşlık kodunuz kopyalandı!");
+  };
+
   return (
     <motion.div
-      initial={{ opacity: 0, x: -100 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 100 }}
-      transition={{ duration: 0.1 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
       className="parallax-bg fixed top-0 left-0 w-full h-screen bg-[var(--secondary-bg)] text-[var(--secondary-text)] overflow-hidden text-left flex flex-col"
       style={{
         paddingLeft: isMobile ? "0px" : "64px",
       }}
     >
       {isMobile && (
-        <div className="flex items-center h-[60px] px-5 py-4 bg-[var(--primary-bg)] border-b-2 border-[var(--primary-border)] text-[var(--secondary-text)] shrink-0 z-30">
+        <div className="flex items-center h-[60px] px-5 py-4 bg-[var(--primary-bg)] border-b border-[var(--primary-border)]/30 text-[var(--secondary-text)] shrink-0 z-30">
           <button
             onClick={() => setIsOpen(true)}
-            className="p-1.5 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors mr-3 text-[var(--secondary-text)]"
+            className="p-1.5 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors mr-3 text-[var(--secondary-text)] active:scale-95"
+            aria-label="Menüyü Aç"
           >
             <Menu size={20} />
           </button>
           <span className="font-bold truncate text-lg">Arkadaşlar</span>
         </div>
       )}
+      
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-6 py-8">
-          <h1 className="text-2xl font-bold mb-6">Arkadaşlar</h1>
+          <h1 className="text-2xl font-black mb-6 flex items-center gap-2.5 text-[var(--secondary-text)]">
+            <UserPlus size={24} className="text-[var(--tertiary-bg)]" />
+            Arkadaş Ekle
+          </h1>
 
-        {/* Arama */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center flex-1 rounded-lg border-2 border-[var(--secondary-border)] focus-within:border-[var(--tertiary-border)] bg-[var(--primary-bg)] px-3">
-              <IoIosSearch size={20} className="text-[var(--primary-text)]" />
-              <input
-                type="text"
-                placeholder="Arkadaşlık kodu ile ara..."
-                value={searchId}
-                onChange={(e) => setSearchId(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="w-full p-2 bg-transparent focus:outline-none"
-              />
+          {/* Kendi kodun kutusu */}
+          <div className="mb-6 p-4 rounded-2xl border border-[var(--primary-border)]/40 bg-[var(--primary-bg)]/45 backdrop-blur-md flex items-center justify-between gap-4 shadow-sm">
+            <div>
+              <p className="text-xs text-[var(--primary-text)] font-extrabold uppercase tracking-wider">Kendi Arkadaşlık Kodun</p>
+              <p className="text-lg font-black text-[var(--secondary-text)] font-mono mt-1 select-all">#{userData?.friendshipID || "------"}</p>
             </div>
             <button
-              onClick={handleSearch}
-              className="px-4 py-2.5 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] font-semibold hover:bg-[var(--quaternary-bg)] transition-colors"
+              onClick={copyFriendshipID}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-[var(--tertiary-bg)] hover:bg-[var(--quaternary-bg)] text-[var(--tertiary-text)] hover:scale-[1.03] active:scale-95 transition-all duration-200 shadow-sm"
             >
-              Ara
+              <Copy size={13} /> Kopyala
             </button>
           </div>
 
-          {/* Sonuç */}
-          {!searched && !friendData && (
-            <div className="flex flex-col items-center mt-6">
-              <DotLottieReact
-                src="https://lottie.host/7ae9face-ddcd-4284-8dfe-19efef04d56b/sySXGDavLA.lottie"
-                autoplay
-                style={{ width: 220, height: 220 }}
-              />
-              <span className="text-lg font-semibold text-[var(--quaternary-text)]">
-                ARKADAŞLARINI BUL
-              </span>
-            </div>
-          )}
-          {searched && friendData && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-4 rounded-xl overflow-hidden bg-[var(--primary-bg)] border-2 border-[var(--primary-border)]"
-            >
-              <div
-                className="flex items-center gap-4 p-4 bg-cover bg-center"
-                style={{ backgroundImage: `url(${profileBanner})` }}
-              >
-                <img
-                  src={friendData.photoURL || pfp}
-                  alt=""
-                  className="w-20 h-20 rounded-full border-4 border-[var(--tertiary-border)] object-cover shrink-0"
+          {/* Arama Kutusu */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center flex-1 rounded-2xl border border-[var(--primary-border)]/55 bg-[var(--primary-bg)]/60 backdrop-blur-sm focus-within:border-[var(--tertiary-border)] transition-colors duration-200 px-4">
+                <Search size={18} className="text-[var(--primary-text)] shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Arkadaşlık kodu ile ara..."
+                  value={searchId}
+                  onChange={(e) => setSearchId(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  className="w-full py-3 pl-3 bg-transparent text-[var(--secondary-text)] placeholder-[var(--primary-text)]/75 focus:outline-none text-sm font-semibold"
                 />
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-xl font-bold text-[var(--secondary-text)] truncate">
-                    {friendData.nickName || "Bilinmeyen Kullanıcı"}
-                  </h2>
-                  <p className="text-[var(--primary-text)] text-sm">#{friendData.friendshipID}</p>
-                  {statusPill(liveStatus(friendData.userID, friendData.status, friendData.lastSeen))}
-                </div>
-                <button
-                  onClick={() => handleAdd(friendData)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] font-semibold hover:bg-[var(--quaternary-bg)] transition-colors shrink-0"
-                >
-                  <IoMdPersonAdd size={20} /> Ekle
-                </button>
               </div>
-              {friendData.about && (
-                <div className="p-4">
-                  <p className="text-sm text-[var(--primary-text)]">{friendData.about}</p>
+              <button
+                onClick={handleSearch}
+                className="px-6 py-3 rounded-2xl bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] font-bold hover:bg-[var(--quaternary-bg)] transition-all hover:scale-[1.02] active:scale-95 shadow-md shadow-[var(--tertiary-bg)]/10"
+              >
+                Ara
+              </button>
+            </div>
+
+            {/* Arama Sonucu */}
+            <AnimatePresence mode="wait">
+              {!searched && !friendData && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex flex-col items-center mt-8 p-6 rounded-2xl border border-[var(--primary-border)]/20 bg-[var(--primary-bg)]/15 backdrop-blur-sm"
+                >
+                  <DotLottieReact
+                    src="https://lottie.host/7ae9face-ddcd-4284-8dfe-19efef04d56b/sySXGDavLA.lottie"
+                    autoplay
+                    style={{ width: 160, height: 160 }}
+                  />
+                  <span className="text-sm font-extrabold text-[var(--quaternary-text)] tracking-widest uppercase mt-4">
+                    Arkadaşlarını Bul
+                  </span>
+                </motion.div>
+              )}
+              
+              {searched && friendData && (
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                  className="mt-6 rounded-2xl overflow-hidden bg-[var(--primary-bg)]/80 backdrop-blur-md border border-[var(--primary-border)]/50 shadow-2xl relative"
+                >
+                  {/* Banner */}
+                  <div
+                    className="h-28 bg-cover bg-center w-full relative"
+                    style={{ backgroundImage: `url(${profileBanner})` }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-t from-[var(--primary-bg)] to-transparent" />
+                  </div>
+                  
+                  <div className="px-6 pb-6 relative">
+                    {/* Avatar */}
+                    <div className="flex justify-between items-end -mt-10 mb-4">
+                      <div className="relative">
+                        <img
+                          src={friendData.photoURL || pfp}
+                          alt=""
+                          className="w-20 h-20 rounded-full border-4 border-[var(--primary-bg)] object-cover bg-[var(--primary-bg)] shadow-md"
+                        />
+                        {/* Status Circle */}
+                        <div className="absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-[var(--primary-bg)] flex items-center justify-center bg-[var(--primary-bg)]">
+                          <span className={`w-2 h-2 rounded-full ${
+                            liveStatus(friendData.userID, friendData.status, friendData.lastSeen) === "online"
+                              ? "bg-green-500"
+                              : liveStatus(friendData.userID, friendData.status, friendData.lastSeen) === "sleeping"
+                              ? "bg-blue-500"
+                              : liveStatus(friendData.userID, friendData.status, friendData.lastSeen) === "dnd"
+                              ? "bg-red-500"
+                              : "bg-gray-500"
+                          }`} />
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => handleAdd(friendData)}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--tertiary-bg)] hover:bg-[var(--quaternary-bg)] text-[var(--tertiary-text)] font-bold transition-all duration-200 hover:scale-[1.03] active:scale-95 shadow-md shadow-[var(--tertiary-bg)]/15 shrink-0"
+                      >
+                        <UserPlus size={16} /> Ekle
+                      </button>
+                    </div>
+
+                    <div className="min-w-0">
+                      <h2 className="text-xl font-black text-[var(--secondary-text)] flex items-center gap-2">
+                        {friendData.nickName || "Bilinmeyen Kullanıcı"}
+                        <span className="text-xs font-mono font-bold text-[var(--primary-text)] bg-[var(--secondary-bg)]/60 px-2 py-0.5 rounded-md border border-[var(--primary-border)]/20">
+                          #{friendData.friendshipID}
+                        </span>
+                      </h2>
+                      <div className="mt-1.5">
+                        {statusPill(liveStatus(friendData.userID, friendData.status, friendData.lastSeen))}
+                      </div>
+                    </div>
+
+                    {friendData.about && (
+                      <div className="mt-4 pt-4 border-t border-[var(--primary-border)]/20">
+                        <p className="text-xs text-[var(--primary-text)] uppercase font-extrabold tracking-wider mb-1">Hakkında</p>
+                        <p className="text-sm text-[var(--secondary-text)]/90 italic leading-relaxed">{friendData.about}</p>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+              
+              {searched && friendData === null && (
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-6 text-center text-[var(--primary-text)] font-bold p-4 bg-red-500/10 border border-red-500/20 rounded-2xl"
+                >
+                  Kullanıcı bulunamadı. Lütfen kodu kontrol edin.
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* İstekler Izgarası */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Gelen İstekler */}
+            <div>
+              <h2 className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[var(--primary-text)] mb-4">
+                <span className="w-1.5 h-4 rounded-full bg-[var(--tertiary-bg)]" />
+                Gelen İstekler {incoming.length > 0 && <span className="bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] text-[10px] font-black px-1.5 py-0.5 rounded-full ml-1">{incoming.length}</span>}
+              </h2>
+              {incoming.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed border-[var(--primary-border)]/35 bg-[var(--primary-bg)]/10 text-center gap-2">
+                  <Inbox size={24} className="text-[var(--primary-text)]/40" />
+                  <p className="text-sm font-semibold text-[var(--primary-text)]/80">Bekleyen istek yok.</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2.5">
+                  {incoming.map((r) => (
+                    <RequestRow key={r.uid} profile={r.profile}>
+                      <button
+                        onClick={() => handleAccept(r.uid)}
+                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] hover:opacity-90 active:scale-90 transition duration-150"
+                        title="Kabul et"
+                      >
+                        <Check size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleReject(r.uid)}
+                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--secondary-bg)] border border-[var(--primary-border)] text-[var(--primary-text)] hover:text-red-400 hover:border-red-400/50 active:scale-90 transition duration-150"
+                        title="Reddet"
+                      >
+                        <X size={16} />
+                      </button>
+                    </RequestRow>
+                  ))}
                 </div>
               )}
-            </motion.div>
-          )}
-          {searched && friendData === null && (
-            <p className="mt-6 text-center text-[var(--primary-text)] font-semibold">
-              Kullanıcı bulunamadı
-            </p>
-          )}
-        </div>
+            </div>
 
-        {/* İstekler */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Gelen */}
-          <div>
-            <h2 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--primary-text)] mb-3">
-              <span className="w-1 h-4 rounded-full bg-[var(--tertiary-bg)]" />
-              Gelen İstekler{incoming.length > 0 && ` (${incoming.length})`}
-            </h2>
-            {incoming.length === 0 ? (
-              <p className="text-sm text-[var(--primary-text)] p-4 rounded-lg border-2 border-dashed border-[var(--primary-border)]">
-                Bekleyen istek yok.
-              </p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {incoming.map((r) => (
-                  <RequestRow key={r.uid} profile={r.profile}>
-                    <button
-                      onClick={() => handleAccept(r.uid)}
-                      className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] hover:opacity-90 transition"
-                      title="Kabul et"
-                    >
-                      <Check size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleReject(r.uid)}
-                      className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--secondary-bg)] border border-[var(--primary-border)] text-[var(--primary-text)] hover:text-red-400 hover:border-red-400/50 transition"
-                      title="Reddet"
-                    >
-                      <X size={16} />
-                    </button>
-                  </RequestRow>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Gönderilen */}
-          <div>
-            <h2 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--primary-text)] mb-3">
-              <span className="w-1 h-4 rounded-full bg-[var(--tertiary-bg)]" />
-              Gönderilen İstekler{outgoing.length > 0 && ` (${outgoing.length})`}
-            </h2>
-            {outgoing.length === 0 ? (
-              <p className="text-sm text-[var(--primary-text)] p-4 rounded-lg border-2 border-dashed border-[var(--primary-border)]">
-                Gönderilen istek yok.
-              </p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {outgoing.map((r) => (
-                  <RequestRow key={r.uid} profile={r.profile}>
-                    <span className="flex items-center gap-1 text-[11px] text-[var(--primary-text)]">
-                      <Clock size={12} /> Bekliyor
-                    </span>
-                    <button
-                      onClick={() => handleCancel(r.uid)}
-                      className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--secondary-bg)] border border-[var(--primary-border)] text-[var(--primary-text)] hover:text-red-400 hover:border-red-400/50 transition"
-                      title="İsteği iptal et"
-                    >
-                      <X size={16} />
-                    </button>
-                  </RequestRow>
-                ))}
-              </div>
-            )}
+            {/* Gönderilen İstekler */}
+            <div>
+              <h2 className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[var(--primary-text)] mb-4">
+                <span className="w-1.5 h-4 rounded-full bg-[var(--tertiary-bg)]" />
+                Gönderilen İstekler {outgoing.length > 0 && <span className="bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] text-[10px] font-black px-1.5 py-0.5 rounded-full ml-1">{outgoing.length}</span>}
+              </h2>
+              {outgoing.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed border-[var(--primary-border)]/35 bg-[var(--primary-bg)]/10 text-center gap-2">
+                  <SendHorizontal size={24} className="text-[var(--primary-text)]/40" />
+                  <p className="text-sm font-semibold text-[var(--primary-text)]/80">Gönderilen istek yok.</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2.5">
+                  {outgoing.map((r) => (
+                    <RequestRow key={r.uid} profile={r.profile}>
+                      <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--primary-text)] bg-[var(--secondary-bg)]/50 border border-[var(--primary-border)]/30 px-2 py-1 rounded-lg">
+                        <Clock size={11} className="text-[var(--tertiary-bg)]" /> Bekliyor
+                      </span>
+                      <button
+                        onClick={() => handleCancel(r.uid)}
+                        className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--secondary-bg)] border border-[var(--primary-border)] text-[var(--primary-text)] hover:text-red-400 hover:border-red-400/50 active:scale-90 transition duration-150"
+                        title="İsteği iptal et"
+                      >
+                        <X size={16} />
+                      </button>
+                    </RequestRow>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-      </div>
+
       {/* Mobile Drawer */}
       {isMobile && (
         <AnimatePresence>
@@ -381,7 +453,7 @@ const AddFriendsPage = () => {
                         navigate("/AddFriends");
                         setIsOpen(false);
                       }}
-                      className="flex items-center gap-3 w-full p-2.5 rounded-xl bg-[var(--secondary-bg)]/40 hover:bg-[var(--secondary-bg)] border border-[var(--primary-border)]/30 hover:border-[var(--tertiary-border)]/40 text-sm font-semibold text-[var(--secondary-text)] transition-all active:scale-95"
+                      className="flex items-center gap-3 w-full p-2.5 rounded-xl bg-[var(--secondary-bg)] hover:bg-[var(--secondary-bg)] border border-[var(--primary-border)]/30 hover:border-[var(--tertiary-border)]/40 text-sm font-semibold text-[var(--secondary-text)] transition-all active:scale-95"
                     >
                       <UserPlus size={18} className="text-[var(--tertiary-bg)]" />
                       <span>Arkadaş Ekle</span>
