@@ -151,7 +151,7 @@ const AddFriendsPage = () => {
       transition={{ duration: 0.1 }}
       className="parallax-bg fixed top-0 left-0 w-full h-screen bg-[var(--secondary-bg)] text-[var(--secondary-text)] overflow-hidden text-left flex flex-col"
       style={{
-        paddingLeft: isMobile ? "0px" : "80px",
+        paddingLeft: isMobile ? "0px" : "64px",
       }}
     >
       {isMobile && (
