@@ -112,6 +112,7 @@ const ChannelRow = ({ channel, h }) => {
     speaking,
     myUserId,
     canManageChannels,
+    memberColors,
   } = h;
   const [showMove, setShowMove] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
@@ -205,7 +206,10 @@ const ChannelRow = ({ channel, h }) => {
                   isSpeaking(u) ? "ring-green-500" : "ring-transparent"
                 }`}
               />
-              <span className="text-xs text-[var(--primary-text)] truncate flex-1">
+              <span
+                className="text-xs text-[var(--primary-text)] truncate flex-1"
+                style={{ color: memberColors?.[u.userId] || undefined }}
+              >
                 {u.nickName || "Bilinmeyen"}
               </span>
               {u.muted && (
@@ -984,6 +988,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
     speaking: voice.speaking,
     myUserId: currentUser?.uid,
     canManageChannels,
+    memberColors,
   };
 
   const renderChannelListSidebar = () => {
