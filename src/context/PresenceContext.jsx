@@ -4,24 +4,32 @@ import { useAuth } from "./AuthContext";
 import { resolveStatus } from "../services/userService";
 
 // Gerçek zamanlı çevrimiçilik: uygulama açıkken Render socket sunucusuyla
-// bağlantı açık tutulur. Sunucu, kullanıcının hiç socket'i kalmayınca onu
-// çevrimdışı sayar ve herkese yayınlar. Socket sunucusuna ulaşılamıyorsa
-// (ör. Render free tier uykuda) last_seen tabanlı eski yönteme düşülür.
+// bağlantı açık tutulur. Sunucu hem çevrimiçi/çevrimdışı geçişlerini hem de
+// durum tercihi (uyuyor/dnd) değişikliklerini anında herkese yayınlar.
+// Socket sunucusuna ulaşılamıyorsa (ör. Render free tier uykuda) last_seen
+// tabanlı eski yönteme düşülür.
 const PresenceContext = createContext(null);
 
 export const PresenceProvider = ({ children }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, userData } = useAuth();
   const uid = currentUser?.uid;
 
-  const [onlineIds, setOnlineIds] = useState(() => new Set());
+  // userId -> durum tercihi ("online" | "sleeping" | "dnd" | "offline")
+  const [onlineMap, setOnlineMap] = useState(() => new Map());
   const [presenceActive, setPresenceActive] = useState(false); // socket canlı mı
   const uidRef = useRef(uid);
   uidRef.current = uid;
+  const statusRef = useRef(userData?.status);
+  statusRef.current = userData?.status;
 
   useEffect(() => {
     if (!uid) return;
 
-    const announce = () => socket.emit("presence:online", { userId: uidRef.current });
+    const announce = () =>
+      socket.emit("presence:online", {
+        userId: uidRef.current,
+        status: statusRef.current || "online",
+      });
 
     const onConnect = () => {
       setPresenceActive(true);
@@ -29,16 +37,20 @@ export const PresenceProvider = ({ children }) => {
     };
     const onDisconnect = () => {
       setPresenceActive(false);
-      setOnlineIds(new Set());
+      setOnlineMap(new Map());
     };
-    const onSnapshot = ({ userIds }) => {
+    const onSnapshot = ({ users, userIds }) => {
       setPresenceActive(true);
-      setOnlineIds(new Set(userIds || []));
+      const next = new Map();
+      // Yeni format: [{ userId, status }] — eski format (userIds) fallback
+      (users || []).forEach((u) => next.set(u.userId, u.status || "online"));
+      (userIds || []).forEach((id) => !next.has(id) && next.set(id, "online"));
+      setOnlineMap(next);
     };
-    const onDiff = ({ userId, online }) => {
-      setOnlineIds((prev) => {
-        const next = new Set(prev);
-        if (online) next.add(userId);
+    const onDiff = ({ userId, online, status }) => {
+      setOnlineMap((prev) => {
+        const next = new Map(prev);
+        if (online) next.set(userId, status || next.get(userId) || "online");
         else next.delete(userId);
         return next;
       });
@@ -60,24 +72,43 @@ export const PresenceProvider = ({ children }) => {
       // Oturum kapanırken çevrimdışı bildir (socket'i koparmadan — ses vs. kullanıyor olabilir)
       socket.emit("presence:offline");
       setPresenceActive(false);
-      setOnlineIds(new Set());
+      setOnlineMap(new Map());
     };
   }, [uid]);
 
-  // Gösterilecek durum: socket presence canlıysa gerçek zamanlı bilgi,
-  // değilse last_seen tabanlı eski çözüm (fallback).
+  // Durum tercihim değişti → sunucuya yayınla (DB güncellemesinden bağımsız,
+  // diğer kullanıcılar anında görsün)
+  const announceStatus = (status) => {
+    if (!status) return;
+    statusRef.current = status;
+    if (socket.connected) socket.emit("presence:status", { status });
+    // Kendi haritamı da anında güncelle
+    setOnlineMap((prev) => {
+      if (!uidRef.current || !prev.has(uidRef.current)) return prev;
+      const next = new Map(prev);
+      next.set(uidRef.current, status);
+      return next;
+    });
+  };
+
+  // Gösterilecek durum: socket presence canlıysa gerçek zamanlı bilgi
+  // (bağlantı + canlı durum tercihi), değilse last_seen fallback'i.
   const liveStatus = (userId, status, lastSeen) => {
     if (presenceActive) {
-      if (!onlineIds.has(userId)) return "offline";
-      return status === "offline" ? "offline" : status || "online";
+      const live = onlineMap.get(userId);
+      if (!live) return "offline"; // bağlı değil
+      const pref = live || status || "online";
+      return pref === "offline" ? "offline" : pref; // "offline" tercihi = görünmez
     }
     return resolveStatus(status, lastSeen);
   };
 
-  const isOnline = (userId) => presenceActive && onlineIds.has(userId);
+  const isOnline = (userId) => presenceActive && onlineMap.has(userId);
 
   return (
-    <PresenceContext.Provider value={{ presenceActive, onlineIds, isOnline, liveStatus }}>
+    <PresenceContext.Provider
+      value={{ presenceActive, onlineMap, isOnline, liveStatus, announceStatus }}
+    >
       {children}
     </PresenceContext.Provider>
   );

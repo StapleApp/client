@@ -191,7 +191,7 @@ const RailTitle = ({ children }) => (
 const HomePage = () => {
   const navigate = useNavigate();
   const { userData, currentUser, refreshUserData } = useAuth();
-  const { liveStatus, presenceActive, onlineIds } = usePresence();
+  const { liveStatus, presenceActive, onlineMap, announceStatus } = usePresence();
   const { isMobile, setIsOpen } = useMobileMenu();
 
   const [servers, setServers] = useState([]);
@@ -208,7 +208,7 @@ const HomePage = () => {
     setMyStatus(liveStatus(userData?.userID, userData?.status, userData?.lastSeen));
     // liveStatus her render'da yeni referans; asıl sinyaller aşağıdakiler
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userData?.userID, userData?.status, userData?.lastSeen, presenceActive, onlineIds]);
+  }, [userData?.userID, userData?.status, userData?.lastSeen, presenceActive, onlineMap]);
 
   useEffect(() => {
     const load = async () => {
@@ -287,11 +287,13 @@ const HomePage = () => {
   const handleStatusChange = useCallback(
     async (s) => {
       setMyStatus(s);
+      announceStatus(s); // diğer kullanıcılar socket üzerinden anında görsün
       if (userData?.userID) {
         await updateUserStatus(userData.userID, s);
         refreshUserData && refreshUserData();
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [userData?.userID, refreshUserData]
   );
 
@@ -312,7 +314,7 @@ const HomePage = () => {
         ),
     // liveStatus her render'da yeni referans; asıl sinyaller aşağıdakiler
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [friends, presenceActive, onlineIds]
+    [friends, presenceActive, onlineMap]
   );
 
   const onlineFriends = liveFriends.filter((f) => f.status !== "offline");
