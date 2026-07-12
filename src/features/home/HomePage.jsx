@@ -18,6 +18,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useMobileMenu } from "../../context/MobileMenuContext";
+import { useNavData } from "../../context/NavDataContext";
 import {
   getServersList,
   getVoiceChannelsMap,
@@ -195,6 +196,7 @@ const HomePage = () => {
   const { userData, currentUser, refreshUserData } = useAuth();
   const { liveStatus, presenceActive, onlineMap, announceStatus } = usePresence();
   const { isMobile, isOpen, setIsOpen } = useMobileMenu();
+  const { serverUnread, userUnread } = useNavData();
 
   const [servers, setServers] = useState([]);
   const [friends, setFriends] = useState([]);
@@ -447,6 +449,11 @@ const HomePage = () => {
                 <div className="relative shrink-0">
                   <img src={f.photoURL} alt="" className="w-8 h-8 rounded-full object-cover" />
                   <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--secondary-bg)] ${statusColor(f.status)}`} />
+                  {(userUnread[f.userID] || 0) > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold leading-none border-2 border-[var(--secondary-bg)]">
+                      {userUnread[f.userID] > 9 ? "9+" : userUnread[f.userID]}
+                    </span>
+                  )}
                 </div>
                 <span className="flex-1 text-sm font-medium text-[var(--secondary-text)] truncate">{f.nickName}</span>
                 <button
@@ -585,16 +592,26 @@ const HomePage = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {servers.map((s) => (
-                    <div
-                      key={s.id}
-                      onClick={() => navigate(`/server/${s.id}`)}
-                      className={`flex items-center gap-3 p-3 rounded-xl ${GLASS} ${GLASS_HOVER} hover:-translate-y-0.5 transition-all duration-200 cursor-pointer`}
-                    >
-                      <img src={s.photo} alt="" className="w-11 h-11 rounded-2xl object-cover" />
-                      <span className="font-semibold text-[var(--secondary-text)] truncate">{s.name}</span>
-                    </div>
-                  ))}
+                  {servers.map((s) => {
+                    const unread = serverUnread[s.id] || 0;
+                    return (
+                      <div
+                        key={s.id}
+                        onClick={() => navigate(`/server/${s.id}`)}
+                        className={`relative flex items-center gap-3 p-3 rounded-xl ${GLASS} ${GLASS_HOVER} hover:-translate-y-0.5 transition-all duration-200 cursor-pointer`}
+                      >
+                        <div className="relative shrink-0">
+                          <img src={s.photo} alt="" className="w-11 h-11 rounded-2xl object-cover" />
+                          {unread > 0 && (
+                            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none border-2 border-[var(--primary-bg)]">
+                              {unread > 9 ? "9+" : unread}
+                            </span>
+                          )}
+                        </div>
+                        <span className="font-semibold text-[var(--secondary-text)] truncate">{s.name}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -622,19 +639,27 @@ const HomePage = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {liveFriends.map((f) => (
-                    <div
-                      key={f.userID}
-                      onClick={() => navigate("/DirectMessaging", { state: { userID: f.userID } })}
-                      className={`flex items-center gap-3 p-3 rounded-xl ${GLASS} ${GLASS_HOVER} hover:-translate-y-0.5 transition-all duration-200 cursor-pointer`}
-                    >
-                      <div className="relative shrink-0">
-                        <img src={f.photoURL} alt="" className="w-10 h-10 rounded-full object-cover" />
-                        <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[var(--secondary-bg)] ${statusColor(f.status)}`} />
+                  {liveFriends.map((f) => {
+                    const unread = userUnread[f.userID] || 0;
+                    return (
+                      <div
+                        key={f.userID}
+                        onClick={() => navigate("/DirectMessaging", { state: { userID: f.userID } })}
+                        className={`flex items-center gap-3 p-3 rounded-xl ${GLASS} ${GLASS_HOVER} hover:-translate-y-0.5 transition-all duration-200 cursor-pointer`}
+                      >
+                        <div className="relative shrink-0">
+                          <img src={f.photoURL} alt="" className="w-10 h-10 rounded-full object-cover" />
+                          <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[var(--secondary-bg)] ${statusColor(f.status)}`} />
+                          {unread > 0 && (
+                            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none border-2 border-[var(--primary-bg)]">
+                              {unread > 9 ? "9+" : unread}
+                            </span>
+                          )}
+                        </div>
+                        <span className="font-medium text-[var(--secondary-text)] truncate">{f.nickName}</span>
                       </div>
-                      <span className="font-medium text-[var(--secondary-text)] truncate">{f.nickName}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

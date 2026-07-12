@@ -29,20 +29,23 @@ import NotFound from "./Components/layout/NotFound";
 import ErrorBoundary from "./Components/layout/ErrorBoundary";
 import { MobileMenuProvider, useMobileMenu } from "./context/MobileMenuContext";
 import { PresenceProvider } from "./context/PresenceContext";
+import { NavDataProvider } from "./context/NavDataContext";
 
 function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
         <PresenceProvider>
-          <MobileMenuProvider>
-            <VoiceProvider>
-              <Router>
-                <MainLayout />
-                <VoiceBar />
-              </Router>
-            </VoiceProvider>
-          </MobileMenuProvider>
+          <NavDataProvider>
+            <MobileMenuProvider>
+              <VoiceProvider>
+                <Router>
+                  <MainLayout />
+                  <VoiceBar />
+                </Router>
+              </VoiceProvider>
+            </MobileMenuProvider>
+          </NavDataProvider>
         </PresenceProvider>
       </AuthProvider>
     </ErrorBoundary>

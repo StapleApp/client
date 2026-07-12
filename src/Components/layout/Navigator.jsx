@@ -1,6 +1,7 @@
 import { BsGearFill } from "react-icons/bs";
 import { FaStapler } from "react-icons/fa6";
 import { MdHome, MdSearch, MdOutlineMessage } from "react-icons/md";
+import { motion, AnimatePresence } from "framer-motion";
 
 import ProfilePanel from './ProfilePanel'
 import NotificationsBell from './NotificationsBell'
@@ -9,6 +10,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import "../../styles/components.css";
 
 import { useAuth } from "../../context/AuthContext";
+import { useNavData } from "../../context/NavDataContext";
 
 // Sol menü öğeleri — tek kaynaktan yönetilir.
 // Bildirimler (custom) tıklanınca sayfaya gitmez, scroll dropdown açar.
@@ -46,9 +48,47 @@ const NavItem = ({ path, label, icon, badge = 0 }) => {
   );
 };
 
+// Alt kısımda listelenen sunucu ikonu — tıklayınca sunucuya gider, sağ üstte
+// okunmamış bildirim rozeti taşır. Aşağıdan yukarıya sırayla belirir (stagger).
+const ServerNavIcon = ({ server, badge, index }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const active = location.pathname.startsWith(`/server/${server.id}`);
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 16, scale: 0.5 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 16, scale: 0.5 }}
+      transition={{ type: "spring", stiffness: 500, damping: 30, delay: index * 0.05 }}
+      onClick={() => navigate(`/server/${server.id}`)}
+      className={`${active ? "hovered-icon" : "icon"} group overflow-visible`}
+      title={server.name}
+    >
+      <img
+        src={server.photo}
+        alt={server.name}
+        className="w-full h-full object-cover rounded-[9px]"
+      />
+      {badge > 0 && (
+        <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none border-2 border-[var(--primary-bg)] z-10">
+          {badge > 9 ? "9+" : badge}
+        </span>
+      )}
+      <span className="sidebar-tooltip group-hover:scale-100">{server.name}</span>
+    </motion.div>
+  );
+};
+
 const Navigator = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { userData } = useAuth();
+  const { servers, serverUnread } = useNavData();
+  const location = useLocation();
+
+  // Ana sayfada sunucular zaten listelendiğinden çubukta gösterilmez.
+  const isHome = location.pathname === "/" || location.pathname === "/Home";
+  const showServers = !isHome && servers.length > 0;
 
   return (
     <>
@@ -110,17 +150,43 @@ const Navigator = () => {
           ))}
         </div>
 
-        {/* Ayarlar (altta, ayraçlı) */}
-        <div
-          className={`flex flex-col h-16 transition-all duration-250 ease-in-out delay-300
-                     ${isExpanded ? '-translate-y-0' : 'translate-y-0'}`}
-        >
-          <hr className="border-[var(--primary-border)] border" />
-          <NavItem
-            path="/Settings"
-            label="Ayarlar"
-            icon={<BsGearFill size="22" />}
-          />
+        {/* Alt grup: sunucu ikonları + Ayarlar (ayraçla ayrılır) */}
+        <div className="flex flex-col min-h-0">
+          {/* Katıldığın sunucular — ana sayfa dışında, ayarların üstündeki
+              çizgiden aşağıdan yukarıya animasyonla belirir. */}
+          <AnimatePresence>
+            {showServers && (
+              <motion.div
+                key="server-nav-list"
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 24 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="flex flex-col-reverse items-center pt-1"
+              >
+                {servers.map((s, i) => (
+                  <ServerNavIcon
+                    key={s.id}
+                    server={s}
+                    badge={serverUnread[s.id] || 0}
+                    index={i}
+                  />
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div
+            className={`flex flex-col h-16 transition-all duration-250 ease-in-out delay-300
+                       ${isExpanded ? '-translate-y-0' : 'translate-y-0'}`}
+          >
+            <hr className="border-[var(--primary-border)] border" />
+            <NavItem
+              path="/Settings"
+              label="Ayarlar"
+              icon={<BsGearFill size="22" />}
+            />
+          </div>
         </div>
       </div>
     </>

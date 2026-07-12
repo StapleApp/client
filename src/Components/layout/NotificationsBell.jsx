@@ -4,9 +4,9 @@ import { IoMdNotifications } from "react-icons/io";
 import { UserPlus, Mail, Bell, Trash2, Check, X, Reply, AtSign } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useNavData } from "../../context/NavDataContext";
 import { acceptFriendRequest } from "../../services/friendService";
 import {
-  listenNotifications,
   markAsRead,
   updateNotification,
   deleteNotification,
@@ -27,20 +27,11 @@ const relTime = (iso) => {
 const NotificationsBell = () => {
   const navigate = useNavigate();
   const { userData } = useAuth();
+  const { notifications, setNotifications, unreadCount } = useNavData();
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
   const ref = useRef(null);
 
   const uid = userData?.userID;
-
-  // Realtime listen notifications
-  useEffect(() => {
-    if (!uid) return;
-    const unsub = listenNotifications(uid, (data) => {
-      setNotifications(data);
-    });
-    return () => unsub && unsub();
-  }, [uid]);
 
   // Click outside / Esc close
   useEffect(() => {
@@ -77,8 +68,6 @@ const NotificationsBell = () => {
     setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
     await deleteNotification(uid, notificationId);
   };
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const sortedNotifications = [...notifications].sort((a, b) => {
     const aTime = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0;
