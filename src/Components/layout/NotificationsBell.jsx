@@ -10,6 +10,7 @@ import {
   markAsRead,
   updateNotification,
   deleteNotification,
+  deleteAllNotifications,
 } from "../../services/notificationService";
 
 const relTime = (iso) => {
@@ -69,6 +70,12 @@ const NotificationsBell = () => {
     await deleteNotification(uid, notificationId);
   };
 
+  const handleDeleteAll = async () => {
+    if (!uid || notifications.length === 0) return;
+    setNotifications([]);
+    await deleteAllNotifications(uid);
+  };
+
   const sortedNotifications = [...notifications].sort((a, b) => {
     const aTime = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0;
     const bTime = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0;
@@ -102,11 +109,22 @@ const NotificationsBell = () => {
             className="absolute left-full top-0 ml-3 w-[320px] max-w-[80vw] z-[60] rounded-xl overflow-hidden bg-[var(--primary-bg)] border-2 border-[var(--primary-border)] shadow-xl"
           >
             <div className="flex items-center justify-between px-4 py-3 border-b-2 border-[var(--primary-border)]">
-              <span className="text-sm font-bold text-[var(--secondary-text)]">Bildirimler</span>
-              {unreadCount > 0 && (
-                <span className="min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
-                  {unreadCount}
-                </span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-[var(--secondary-text)]">Bildirimler</span>
+                {unreadCount > 0 && (
+                  <span className="min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
+              {sortedNotifications.length > 0 && (
+                <button
+                  onClick={handleDeleteAll}
+                  className="flex items-center gap-1 text-[11px] font-semibold text-[var(--primary-text)] hover:text-red-400 transition-colors"
+                  title="Tüm bildirimleri sil"
+                >
+                  <Trash2 size={13} /> Tümünü sil
+                </button>
               )}
             </div>
 
