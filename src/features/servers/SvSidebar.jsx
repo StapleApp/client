@@ -814,12 +814,36 @@ const SvSidebar = ({ serverData, onRefresh }) => {
           setCategories((prev) => applyRowChange(prev, payload, mapCategoryRow));
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "roles",
+          filter: `server_id=eq.${serverId}`,
+        },
+        () => {
+          onRefresh && onRefresh();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "server_members",
+          filter: `server_id=eq.${serverId}`,
+        },
+        () => {
+          onRefresh && onRefresh();
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(rt);
     };
-  }, [serverId]);
+  }, [serverId, onRefresh]);
 
   // Sunucudaki sesli kanalların doluluğunu izle
   const { watchServerVoice } = voice;

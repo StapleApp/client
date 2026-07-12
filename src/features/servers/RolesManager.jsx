@@ -11,17 +11,24 @@ const COLOR_PRESETS = [
 ];
 
 // serverData.Roles -> düzenlenebilir yerel biçim
-const toLocal = (roles) =>
-  [...(roles || [])]
-    .map((r) => ({
-      id: r.RoleID,
-      name: r.RoleName,
-      color: r.RoleColor || "#B9BBBE",
-      permissions: r.Permissions || [],
-      position: r.Position ?? 0,
-      kind: r.RoleKind || null, // 'admin' | 'member' | null
-    }))
-    .sort((a, b) => b.position - a.position);
+const toLocal = (roles) => {
+  const list = [...(roles || [])].map((r) => ({
+    id: r.RoleID,
+    name: r.RoleName,
+    color: r.RoleColor || "#B9BBBE",
+    permissions: r.Permissions || [],
+    position: r.Position ?? 0,
+    kind: r.RoleKind || null, // 'admin' | 'member' | null
+  }));
+
+  return list.sort((a, b) => {
+    if (a.kind === "admin") return -1;
+    if (b.kind === "admin") return 1;
+    if (a.kind === "member") return 1;
+    if (b.kind === "member") return -1;
+    return b.position - a.position;
+  });
+};
 
 const RolesManager = ({ serverData, onChanged }) => {
   const [roles, setRoles] = useState(() => toLocal(serverData?.Roles));
