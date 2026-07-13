@@ -16,7 +16,9 @@ import { AnimatePresence } from "framer-motion";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 import { VoiceProvider } from "./context/VoiceContext";
+import { MusicProvider } from "./context/MusicContext";
 import VoiceBar from "./Components/voice/VoiceBar";
+import MusicPanel from "./Components/voice/MusicPanel";
 
 import RegisterPage from "./features/auth/RegisterPage";
 import LoginPage from "./features/auth/LoginPage"; 
@@ -40,10 +42,13 @@ function App() {
           <NavDataProvider>
             <MobileMenuProvider>
               <VoiceProvider>
-                <Router>
-                  <MainLayout />
-                  <VoiceBar />
-                </Router>
+                <MusicProvider>
+                  <Router>
+                    <MainLayout />
+                    <VoiceBar />
+                    <MusicPanel />
+                  </Router>
+                </MusicProvider>
               </VoiceProvider>
             </MobileMenuProvider>
           </NavDataProvider>
