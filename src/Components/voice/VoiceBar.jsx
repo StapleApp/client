@@ -718,20 +718,19 @@ const VoiceBar = () => {
       </div>
 
       {/* Alt Satır: İşlem Butonları */}
-      <div className="flex items-center justify-between gap-1 mt-1">
+      <div className="flex items-center justify-between gap-1.5 mt-1">
         {/* Ekran Paylaşımı */}
         <button
           onClick={isScreenSharing ? stopScreenShare : startScreenShare}
           title={isScreenSharing ? "Paylaşımı durdur" : "Ekran paylaş"}
           disabled={!active}
-          className={`flex-1 flex items-center justify-center p-1.5 rounded-lg border transition-all disabled:opacity-40 text-xs gap-1 ${
+          className={`flex-1 flex items-center justify-center py-2 rounded-lg border transition-all disabled:opacity-40 text-xs ${
             isScreenSharing
               ? "bg-[var(--tertiary-bg)] border-[var(--tertiary-border)] text-[var(--tertiary-text)]"
               : "bg-[var(--secondary-bg)] border-[var(--primary-border)] text-[var(--secondary-text)] hover:border-[var(--tertiary-border)]"
           }`}
         >
-          {isScreenSharing ? <ScreenShareOff size={14} /> : <ScreenShare size={14} />}
-          <span className="text-[10px] font-semibold">Paylaş</span>
+          {isScreenSharing ? <ScreenShareOff size={15} /> : <ScreenShare size={15} />}
         </button>
 
         {/* Sustur/Aç */}
@@ -739,14 +738,13 @@ const VoiceBar = () => {
           onClick={toggleMute}
           title={muted ? "Sesi aç" : "Sustur"}
           disabled={!active}
-          className={`flex-1 flex items-center justify-center p-1.5 rounded-lg border transition-all disabled:opacity-40 text-xs gap-1 ${
+          className={`flex-1 flex items-center justify-center py-2 rounded-lg border transition-all disabled:opacity-40 text-xs ${
             muted
               ? "bg-red-500/20 border-red-500 text-red-400"
               : "bg-[var(--secondary-bg)] border-[var(--primary-border)] text-[var(--secondary-text)] hover:border-[var(--tertiary-border)]"
           }`}
         >
-          {muted ? <MicOff size={14} /> : <Mic size={14} />}
-          <span className="text-[10px] font-semibold">{muted ? "Aç" : "Sustur"}</span>
+          {muted ? <MicOff size={15} /> : <Mic size={15} />}
         </button>
 
         {/* Sağırlaştır/Aç */}
@@ -754,24 +752,22 @@ const VoiceBar = () => {
           onClick={toggleDeafen}
           title={deafened ? "Sağırlaştırmayı kaldır" : "Sağırlaştır"}
           disabled={!active}
-          className={`flex-1 flex items-center justify-center p-1.5 rounded-lg border transition-all disabled:opacity-40 text-xs gap-1 ${
+          className={`flex-1 flex items-center justify-center py-2 rounded-lg border transition-all disabled:opacity-40 text-xs ${
             deafened
               ? "bg-red-500/20 border-red-500 text-red-400"
               : "bg-[var(--secondary-bg)] border-[var(--primary-border)] text-[var(--secondary-text)] hover:border-[var(--tertiary-border)]"
           }`}
         >
-          {deafened ? <HeadphoneOff size={14} /> : <Headphones size={14} />}
-          <span className="text-[10px] font-semibold">{deafened ? "Aç" : "Sağır"}</span>
+          {deafened ? <HeadphoneOff size={15} /> : <Headphones size={15} />}
         </button>
 
         {/* Ayrıl */}
         <button
           onClick={leaveVoice}
           title="Ayrıl"
-          className="flex-1 flex items-center justify-center p-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors text-xs gap-1"
+          className="flex-1 flex items-center justify-center py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors text-xs"
         >
-          <PhoneOff size={14} />
-          <span className="text-[10px] font-semibold">Ayrıl</span>
+          <PhoneOff size={15} />
         </button>
       </div>
     </div>
