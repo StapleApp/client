@@ -4,6 +4,8 @@ import { motion, AnimatePresence, useDragControls, useMotionValue } from "framer
 import {
   Mic,
   MicOff,
+  Headphones,
+  HeadphoneOff,
   PhoneOff,
   Volume2,
   VolumeX,
@@ -29,8 +31,10 @@ const VoiceBar = () => {
     active,
     connecting,
     muted,
+    deafened,
     participants,
     toggleMute,
+    toggleDeafen,
     leaveVoice,
     isScreenSharing,
     localScreenStream,
@@ -327,6 +331,7 @@ const VoiceBar = () => {
             {isScreenSharing && (
               <ScreenShare size={14} className="text-[var(--quaternary-text)]" />
             )}
+            {deafened && <HeadphoneOff size={13} className="text-red-400" />}
             {muted && <MicOff size={13} className="text-red-400" />}
           </div>
 
@@ -349,6 +354,7 @@ const VoiceBar = () => {
                     }`}
                   />
                   <span className="text-sm truncate flex-1">{p.nickName}</span>
+                  {p.deafened && <HeadphoneOff size={13} className="text-red-400 shrink-0" />}
                   {p.muted && <MicOff size={13} className="text-red-400 shrink-0" />}
                   {sharing &&
                     (watchingThis ? (
@@ -600,6 +606,22 @@ const VoiceBar = () => {
           {muted ? <MicOff size={isMobile ? 14 : 18} /> : <Mic size={isMobile ? 14 : 18} />}
         </button>
 
+        {/* Sağırlaştır/aç */}
+        <button
+          onClick={toggleDeafen}
+          title={deafened ? "Sağırlaştırmayı kaldır" : "Sağırlaştır"}
+          disabled={!active}
+          className={`rounded-xl border-2 transition-all disabled:opacity-40 ${
+            isMobile ? "p-1.5" : "p-2.5"
+          } ${
+            deafened
+              ? "bg-red-500/20 border-red-500 text-red-400"
+              : "bg-[var(--secondary-bg)] border-[var(--primary-border)] text-[var(--secondary-text)] hover:border-[var(--tertiary-border)] hover:text-[var(--quaternary-text)]"
+          }`}
+        >
+          {deafened ? <HeadphoneOff size={isMobile ? 14 : 18} /> : <Headphones size={isMobile ? 14 : 18} />}
+        </button>
+
         {/* Sesten ayrıl */}
         <button
           onClick={leaveVoice}
@@ -725,6 +747,21 @@ const VoiceBar = () => {
         >
           {muted ? <MicOff size={14} /> : <Mic size={14} />}
           <span className="text-[10px] font-semibold">{muted ? "Aç" : "Sustur"}</span>
+        </button>
+
+        {/* Sağırlaştır/Aç */}
+        <button
+          onClick={toggleDeafen}
+          title={deafened ? "Sağırlaştırmayı kaldır" : "Sağırlaştır"}
+          disabled={!active}
+          className={`flex-1 flex items-center justify-center p-1.5 rounded-lg border transition-all disabled:opacity-40 text-xs gap-1 ${
+            deafened
+              ? "bg-red-500/20 border-red-500 text-red-400"
+              : "bg-[var(--secondary-bg)] border-[var(--primary-border)] text-[var(--secondary-text)] hover:border-[var(--tertiary-border)]"
+          }`}
+        >
+          {deafened ? <HeadphoneOff size={14} /> : <Headphones size={14} />}
+          <span className="text-[10px] font-semibold">{deafened ? "Aç" : "Sağır"}</span>
         </button>
 
         {/* Ayrıl */}

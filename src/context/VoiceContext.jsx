@@ -124,6 +124,7 @@ export const VoiceProvider = ({ children }) => {
   const [active, setActive] = useState(null);
   const [connecting, setConnecting] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [deafened, setDeafened] = useState(false); // sağırlaştırma (kimseyi duyma)
   const [participants, setParticipants] = useState([]); // uzak katılımcılar
   const [isDetached, setIsDetached] = useState(false);
   const [isTheaterExpanded, setIsTheaterExpanded] = useState(true);
@@ -162,6 +163,9 @@ export const VoiceProvider = ({ children }) => {
 
   // WebAudio: uzak sesler gain node'undan geçer, seviyeleri analyser ölçer
   const audioCtxRef = useRef(null);
+  const masterGainRef = useRef(null); // tüm uzak sesler buradan geçer (deafen=0)
+  const deafenedRef = useRef(false);
+  const wasMutedBeforeDeafenRef = useRef(false); // undeafen'de eski mute'a dön
   const remoteNodesRef = useRef({}); // socketId -> { source, gain, analyser, buf }
   // Giden zincir: raw -> highpass -> gate -> dest; analyser highpass sonrası ölçer
   const localNodeRef = useRef(null); // { source, highpass, gate, dest, analyser, buf }
@@ -190,6 +194,7 @@ export const VoiceProvider = ({ children }) => {
         nickName: p.nickName || "Bilinmeyen",
         photoURL: p.photoURL || "/defaults/avatars/1.png",
         muted: !!p.muted,
+        deafened: !!p.deafened,
       }))
     );
   };
@@ -337,6 +342,11 @@ export const VoiceProvider = ({ children }) => {
     if (!audioCtxRef.current) {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       audioCtxRef.current = new Ctx();
+      // Tüm uzak sesler master gain'den geçer → sağırlaştırma tek noktadan 0'lanır
+      const mg = audioCtxRef.current.createGain();
+      mg.gain.value = deafenedRef.current ? 0 : 1;
+      mg.connect(audioCtxRef.current.destination);
+      masterGainRef.current = mg;
       // Seçili çıkış cihazını yeni context'e uygula
       if (audioDevicesRef.current.output) {
         applyOutputSink(audioDevicesRef.current.output);
@@ -389,12 +399,14 @@ export const VoiceProvider = ({ children }) => {
       const gain = ctx.createGain();
       gain.gain.value = volumeFor(peersRef.current[socketId]?.userId);
       source.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(masterGainRef.current || ctx.destination);
       remoteNodesRef.current[socketId] = { source, gain, analyser, buf };
     } catch (err) {
-      // WebAudio kurulamazsa sesi tamamen kaybetme — öğeyi çalar hâle getir
+      // WebAudio kurulamazsa sesi tamamen kaybetme — öğeyi çalar hâle getir.
+      // Fallback olarak işaretle; sağırlaştırma bunları el.muted ile susturur.
       console.error("WebAudio graph error:", err);
-      el.muted = false;
+      el.dataset.fallback = "1";
+      el.muted = deafenedRef.current;
     }
   };
 
@@ -634,6 +646,7 @@ export const VoiceProvider = ({ children }) => {
       nickName: info.nickName,
       photoURL: "/defaults/avatars/1.png",
       muted: !!info.muted,
+      deafened: !!info.deafened,
     };
     refreshParticipants();
 
@@ -710,7 +723,7 @@ export const VoiceProvider = ({ children }) => {
       peers.forEach((p) => {
         createPeer(
           p.socketId,
-          { userId: p.userId, nickName: p.nickName, muted: p.muted },
+          { userId: p.userId, nickName: p.nickName, muted: p.muted, deafened: p.deafened },
           true
         );
         // Kanalda zaten paylaşım yapanları işaretle
@@ -727,6 +740,15 @@ export const VoiceProvider = ({ children }) => {
       const entry = peersRef.current[socketId];
       if (entry) {
         entry.muted = !!muted;
+        refreshParticipants();
+      }
+    });
+
+    // Bir peer kendini sağırlaştırdı/açtı → katılımcı listesindeki ikonu güncelle
+    socket.on("voice:peer-deafen", ({ socketId, deafened: d }) => {
+      const entry = peersRef.current[socketId];
+      if (entry) {
+        entry.deafened = !!d;
         refreshParticipants();
       }
     });
@@ -880,6 +902,7 @@ export const VoiceProvider = ({ children }) => {
       "voice:ice-candidate",
       "voice:peer-left",
       "voice:peer-mute",
+      "voice:peer-deafen",
       "screen:started",
       "screen:stopped",
       "screen:watch-request",
@@ -936,8 +959,13 @@ export const VoiceProvider = ({ children }) => {
       audioCtxRef.current = null;
     }
 
+    masterGainRef.current = null;
     setParticipants([]);
     setMuted(false);
+    mutedRef.current = false;
+    setDeafened(false);
+    deafenedRef.current = false;
+    wasMutedBeforeDeafenRef.current = false;
     setIsScreenSharing(false);
     setLocalScreenStream(null);
     setShowSelfPreview(true);
@@ -1001,14 +1029,48 @@ export const VoiceProvider = ({ children }) => {
     setActive(null);
   };
 
-  const toggleMute = () => {
+  const applyMute = (nowMuted) => {
     const track = localStreamRef.current?.getAudioTracks()[0];
-    if (track) {
-      track.enabled = !track.enabled;
-      const nowMuted = !track.enabled;
-      setMuted(nowMuted);
-      // Diğer katılımcılara + presence izleyicilerine bildir
-      socket.emit("voice:mute", { muted: nowMuted });
+    if (track) track.enabled = !nowMuted;
+    setMuted(nowMuted);
+    mutedRef.current = nowMuted;
+    // Diğer katılımcılara + presence izleyicilerine bildir
+    socket.emit("voice:mute", { muted: nowMuted });
+  };
+
+  const applyDeafen = (next) => {
+    setDeafened(next);
+    deafenedRef.current = next;
+    // Tüm uzak sesleri tek noktadan sustur/aç
+    if (masterGainRef.current) {
+      try { masterGainRef.current.gain.value = next ? 0 : 1; } catch { /* yok say */ }
+    }
+    // WebAudio kurulamamış (fallback) elemanları da sustur/aç
+    document
+      .querySelectorAll('audio[id^="voice-audio-"][data-fallback="1"]')
+      .forEach((el) => { el.muted = next; });
+    // Diğer katılımcılara + presence izleyicilerine bildir
+    socket.emit("voice:deafen", { deafened: next });
+  };
+
+  const toggleMute = () => {
+    const nowMuted = !mutedRef.current;
+    applyMute(nowMuted);
+    // Sağırken mikrofonu açarsan sağırlığı da kaldır (Discord mantığı)
+    if (!nowMuted && deafenedRef.current) applyDeafen(false);
+  };
+
+  // Sağırlaştır: hiçbir uzak sesi duymazsın. Discord gibi mikrofonu da susturur;
+  // kapatınca sağırlaştırmadan önceki mute durumuna döner.
+  const toggleDeafen = () => {
+    const next = !deafenedRef.current;
+    if (next) {
+      wasMutedBeforeDeafenRef.current = mutedRef.current;
+      applyDeafen(true);
+      if (!mutedRef.current) applyMute(true);
+    } else {
+      applyDeafen(false);
+      if (!wasMutedBeforeDeafenRef.current && mutedRef.current) applyMute(false);
     }
   };
 
@@ -1089,10 +1151,12 @@ export const VoiceProvider = ({ children }) => {
         active,
         connecting,
         muted,
+        deafened,
         participants,
         joinVoice,
         leaveVoice,
         toggleMute,
+        toggleDeafen,
         isDetached,
         setIsDetached,
         isTheaterExpanded,

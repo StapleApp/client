@@ -25,6 +25,7 @@ import {
   ScreenShare,
   MonitorPlay,
   MonitorX,
+  HeadphoneOff,
   Eye,
   EyeOff,
   Users,
@@ -230,6 +231,9 @@ const ChannelRow = ({ channel, h }) => {
               >
                 {u.nickName || "Bilinmeyen"}
               </span>
+              {u.deafened && (
+                <HeadphoneOff size={11} className="shrink-0 text-red-400" />
+              )}
               {u.muted && (
                 <MicOff size={11} className="shrink-0 text-red-400" />
               )}
