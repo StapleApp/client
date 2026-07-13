@@ -167,6 +167,9 @@ export const VoiceProvider = ({ children }) => {
   const deafenedRef = useRef(false);
   const wasMutedBeforeDeafenRef = useRef(false); // undeafen'de eski mute'a dön
   const remoteNodesRef = useRef({}); // socketId -> { source, gain, analyser, buf }
+  // remoteDescription set edilmeden gelen ICE adaylarını peer başına tamponla;
+  // set edilince flushPendingIce ile boşalt. (Kaybolan aday = bazıları duyamaz.)
+  const pendingIceRef = useRef({}); // socketId -> [candidate]
   // Giden zincir: raw -> highpass -> gate -> dest; analyser highpass sonrası ölçer
   const localNodeRef = useRef(null); // { source, highpass, gate, dest, analyser, buf }
   const gateOpenRef = useRef(false); // gate'in son hedef durumu (gereksiz set'i önle)
@@ -701,6 +704,7 @@ export const VoiceProvider = ({ children }) => {
       delete peersRef.current[socketId];
     }
     removeRemoteAudio(socketId);
+    delete pendingIceRef.current[socketId];
 
     // Ekran paylaşımı temizliği: ayrılan peer paylaşıyorduysa / izleyiciydiyse
     setSharingSocketIds((prev) => prev.filter((id) => id !== socketId));
@@ -716,6 +720,21 @@ export const VoiceProvider = ({ children }) => {
     }
 
     refreshParticipants();
+  };
+
+  // remoteDescription set edildikten sonra o peer için biriken adayları uygula.
+  const flushPendingIce = async (socketId) => {
+    const entry = peersRef.current[socketId];
+    const pending = pendingIceRef.current[socketId];
+    if (!entry || !pending || pending.length === 0) return;
+    delete pendingIceRef.current[socketId];
+    for (const candidate of pending) {
+      try {
+        await entry.pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (err) {
+        console.error("flushPendingIce error:", err);
+      }
+    }
   };
 
   const registerSocketHandlers = () => {
@@ -760,6 +779,8 @@ export const VoiceProvider = ({ children }) => {
         : createPeer(from, { userId, nickName }, false);
       try {
         await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+        // remoteDescription hazır → tamponlanan adayları uygula
+        await flushPendingIce(from);
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
         socket.emit("voice:answer", { to: from, sdp: pc.localDescription });
@@ -773,6 +794,8 @@ export const VoiceProvider = ({ children }) => {
       if (entry) {
         try {
           await entry.pc.setRemoteDescription(new RTCSessionDescription(sdp));
+          // remoteDescription hazır → tamponlanan adayları uygula
+          await flushPendingIce(from);
         } catch (err) {
           console.error("answer handling error:", err);
         }
@@ -780,13 +803,18 @@ export const VoiceProvider = ({ children }) => {
     });
 
     socket.on("voice:ice-candidate", async ({ from, candidate }) => {
+      if (!candidate) return;
       const entry = peersRef.current[from];
-      if (entry && candidate) {
-        try {
-          await entry.pc.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (err) {
-          console.error("addIceCandidate error:", err);
-        }
+      // Peer henüz yok ya da remoteDescription set edilmediyse → tamponla.
+      // Aksi halde aday reddedilip DÜŞER ve o çift birbirini duyamayabilir.
+      if (!entry || !entry.pc.remoteDescription || !entry.pc.remoteDescription.type) {
+        (pendingIceRef.current[from] ||= []).push(candidate);
+        return;
+      }
+      try {
+        await entry.pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (err) {
+        console.error("addIceCandidate error:", err);
       }
     });
 
@@ -948,6 +976,7 @@ export const VoiceProvider = ({ children }) => {
     socket.emit("voice:leave");
     Object.keys(peersRef.current).forEach(closePeer);
     peersRef.current = {};
+    pendingIceRef.current = {};
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     localStreamRef.current = null;
     unregisterSocketHandlers();
