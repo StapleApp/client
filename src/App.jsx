@@ -12,7 +12,7 @@ import CreateServerPage from "./features/servers/CreateServerPage";
 import ServerPage from "./features/servers/ServerPage";
 import InvitePage from "./features/servers/InvitePage";
 
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, MotionConfig } from "framer-motion";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 import { VoiceProvider } from "./context/VoiceContext";
@@ -33,12 +33,23 @@ import ErrorBoundary from "./Components/layout/ErrorBoundary";
 import { MobileMenuProvider, useMobileMenu } from "./context/MobileMenuContext";
 import { PresenceProvider } from "./context/PresenceContext";
 import { NavDataProvider } from "./context/NavDataContext";
-import { ThemeProvider } from "./context/ThemeContext";
+import { ThemeProvider, useTheme } from "./context/ThemeContext";
+
+// framer-motion animasyonlarını "Hareketi azalt" tercihine bağla
+function MotionPrefs({ children }) {
+  const { reduceMotion } = useTheme();
+  return (
+    <MotionConfig reducedMotion={reduceMotion ? "always" : "never"}>
+      {children}
+    </MotionConfig>
+  );
+}
 
 function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
+      <MotionPrefs>
       <AuthProvider>
         <PresenceProvider>
           <NavDataProvider>
@@ -56,6 +67,7 @@ function App() {
           </NavDataProvider>
         </PresenceProvider>
       </AuthProvider>
+      </MotionPrefs>
       </ThemeProvider>
     </ErrorBoundary>
   );
@@ -64,6 +76,7 @@ function App() {
 function MainLayout() {
   const location = useLocation();
   const { setIsOpen } = useMobileMenu();
+  const { parallax, reduceMotion } = useTheme();
 
   useEffect(() => {
     setIsOpen(false);
@@ -80,6 +93,12 @@ function MainLayout() {
   ];
 
   useEffect(() => {
+    // Parallax kapalı ya da hareket azaltılmışsa: dinleme yok, ofseti sıfırla
+    if (!parallax || reduceMotion) {
+      document.documentElement.style.setProperty("--parallax-x", "0px");
+      document.documentElement.style.setProperty("--parallax-y", "0px");
+      return undefined;
+    }
     const handleMouseMove = (e) => {
       const x = (e.clientX - window.innerWidth / 2) / (window.innerWidth / 2);
       const y = (e.clientY - window.innerHeight / 2) / (window.innerHeight / 2);
@@ -89,7 +108,7 @@ function MainLayout() {
 
     window.addEventListener("mousemove", handleMouseMove, { passive: true });
     return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+  }, [parallax, reduceMotion]);
 
   return (
     <div className="flex">

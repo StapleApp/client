@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 import { FaPowerOff } from "react-icons/fa6";
-import { Loader2, Trash2, AlertTriangle, Pencil, Menu, Mic, Volume2, ChevronDown, Check, Home, Compass, UserPlus, Settings as SettingsIcon, User, X, Sun, Moon, MoonStar, Palette } from "lucide-react";
+import { Loader2, Trash2, AlertTriangle, Pencil, Menu, Mic, Volume2, ChevronDown, Check, Home, Compass, UserPlus, Settings as SettingsIcon, User, X, Sun, Moon, MoonStar, Monitor, Palette, Pipette, Sparkles, Grid2x2, Zap } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useMobileMenu } from "../../context/MobileMenuContext";
 import { useVoice } from "../../context/VoiceContext";
@@ -82,12 +82,53 @@ const DeviceSelect = ({ value, options, onChange, disabled, icon }) => {
   );
 };
 
-// ===== Görünüm: tema + vurgu rengi =====
+// Küçük aç/kapa anahtarı
+const Toggle = ({ checked, onChange, label, hint, icon }) => (
+  <div className="flex items-center justify-between gap-3 py-2">
+    <div className="min-w-0">
+      <span className="flex items-center gap-1.5 text-sm text-[var(--secondary-text)] font-medium">
+        {icon} {label}
+      </span>
+      {hint && <p className="text-[11px] text-[var(--primary-text)] mt-0.5">{hint}</p>}
+    </div>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+      className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${
+        checked
+          ? "bg-[var(--tertiary-bg)]"
+          : "bg-[var(--secondary-bg)] border border-[var(--primary-border)]"
+      }`}
+    >
+      <span
+        className="absolute top-1/2 -translate-y-1/2 rounded-full bg-white shadow transition-all"
+        style={{ width: 18, height: 18, left: checked ? 22 : 3 }}
+      />
+    </button>
+  </div>
+);
+
+// ===== Görünüm: tema + vurgu + arka plan/hareket =====
 const AppearanceSettings = () => {
-  const { theme, setTheme, accent, setAccent, accents, themes } = useTheme();
+  const {
+    theme, setTheme,
+    accent, setAccent, customAccent, setCustomAccent,
+    reduceMotion, setReduceMotion, parallax, setParallax,
+    tileSize, setTileSize,
+    accents, themes, tileSizes,
+  } = useTheme();
+
+  const themeIcon = (id) =>
+    id === "light" ? <Sun size={15} /> :
+    id === "black" ? <MoonStar size={15} /> :
+    id === "auto" ? <Monitor size={15} /> :
+    <Moon size={15} />;
 
   return (
-    <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)] mb-6">
+    <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)]">
       <h2 className="text-lg font-semibold mb-4 text-[var(--quaternary-text)]">
         Görünüm
       </h2>
@@ -97,25 +138,19 @@ const AppearanceSettings = () => {
         <label className="flex items-center gap-1.5 mb-2 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
           <Palette size={13} /> Uygulama Teması
         </label>
-        <div className="inline-flex p-1 rounded-xl bg-[var(--secondary-bg)] border-2 border-[var(--primary-border)]">
+        <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-[var(--secondary-bg)] border-2 border-[var(--primary-border)] w-fit max-w-full">
           {themes.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setTheme(t.id)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
                 theme === t.id
                   ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
                   : "text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
               }`}
             >
-              {t.id === "light" ? (
-                <Sun size={15} />
-              ) : t.id === "black" ? (
-                <MoonStar size={15} />
-              ) : (
-                <Moon size={15} />
-              )}
+              {themeIcon(t.id)}
               {t.label}
             </button>
           ))}
@@ -123,11 +158,11 @@ const AppearanceSettings = () => {
       </div>
 
       {/* Vurgu rengi (accent) — temadan bağımsız */}
-      <div>
+      <div className="mb-5">
         <label className="flex items-center gap-1.5 mb-2 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
           <Palette size={13} /> Vurgu Rengi
         </label>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3 items-center">
           {accents.map((a) => {
             const active = accent === a.id;
             return (
@@ -149,10 +184,85 @@ const AppearanceSettings = () => {
               </button>
             );
           })}
+
+          {/* Özel renk (hex picker) */}
+          <label
+            className="relative w-9 h-9 rounded-full flex items-center justify-center cursor-pointer transition-transform hover:scale-110 overflow-hidden"
+            title="Kendi rengin"
+            style={{
+              background:
+                accent === "custom"
+                  ? customAccent
+                  : "conic-gradient(from 0deg, #ef4444, #f59e0b, #eab308, #22c55e, #06b6d4, #3b82f6, #a855f7, #ef4444)",
+              boxShadow:
+                accent === "custom"
+                  ? `0 0 0 2px var(--primary-bg), 0 0 0 4px ${customAccent}`
+                  : "none",
+            }}
+          >
+            <input
+              type="color"
+              value={customAccent}
+              onChange={(e) => { setCustomAccent(e.target.value); setAccent("custom"); }}
+              onClick={() => setAccent("custom")}
+              aria-label="Özel vurgu rengi"
+              className="absolute inset-0 opacity-0 cursor-pointer"
+            />
+            {accent === "custom" ? (
+              <Check size={16} className="text-white" style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,.7))" }} />
+            ) : (
+              <Pipette size={15} className="text-white" style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,.7))" }} />
+            )}
+          </label>
         </div>
         <p className="mt-2 text-[11px] text-[var(--primary-text)]">
-          Vurgu rengi tema değişse de korunur.
+          Vurgu rengi tema değişse de korunur. Son yuvarlak ile kendi rengini seçebilirsin.
         </p>
+      </div>
+
+      {/* Arka plan & hareket */}
+      <div className="pt-4 border-t border-[var(--primary-border)]">
+        <label className="flex items-center gap-1.5 mb-3 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
+          <Grid2x2 size={13} /> Arka Plan & Hareket
+        </label>
+
+        {/* Desen boyutu */}
+        <div className="mb-2">
+          <span className="block mb-1.5 text-sm text-[var(--secondary-text)] font-medium">
+            Desen boyutu
+          </span>
+          <div className="inline-flex p-1 rounded-xl bg-[var(--secondary-bg)] border-2 border-[var(--primary-border)]">
+            {tileSizes.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTileSize(t.id)}
+                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                  tileSize === t.id
+                    ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
+                    : "text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <Toggle
+          checked={parallax}
+          onChange={setParallax}
+          icon={<Sparkles size={14} />}
+          label="Parallax arka plan"
+          hint="Fare hareketiyle arka plan hafifçe kayar."
+        />
+        <Toggle
+          checked={reduceMotion}
+          onChange={setReduceMotion}
+          icon={<Zap size={14} />}
+          label="Hareketi azalt"
+          hint="Animasyonları ve parallax'ı kapatır (erişilebilirlik / düşük donanım)."
+        />
       </div>
     </section>
   );
@@ -217,7 +327,7 @@ const AudioDeviceSettings = () => {
   ];
 
   return (
-    <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)] mb-6">
+    <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)]">
       <h2 className="text-lg font-semibold mb-4 text-[var(--quaternary-text)]">
         Ses ve Görüntü
       </h2>
@@ -334,69 +444,77 @@ const SettingsPage = () => {
         </div>
       )}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-4 py-10">
-          <h1 className="text-3xl font-bold mb-8">Ayarlar</h1>
+        <div className="max-w-5xl mx-auto px-4 py-10">
+          <h1 className="text-3xl font-black mb-8 text-[var(--secondary-text)]">Ayarlar</h1>
 
-        {/* Profil özeti + düzenle */}
-        <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)] mb-6">
-          <h2 className="text-lg font-semibold mb-4 text-[var(--quaternary-text)]">
-            Profil
-          </h2>
-          <div className="flex items-center gap-4">
-            <img
-              src={userData?.photoURL || "/defaults/avatars/1.png"}
-              alt="Avatar"
-              className="w-16 h-16 rounded-full border-4 border-[var(--tertiary-border)] object-cover"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-lg truncate">
-                {userData?.nickName || `${userData?.name || ""} ${userData?.surname || ""}`}
-              </p>
-              <p className="text-sm text-[var(--primary-text)] truncate">
-                {userData?.email}
-              </p>
-              <p className="text-xs text-[var(--primary-text)]">
-                #{userData?.friendshipID}
-              </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            {/* Sol Sütun: Profil ve Görünüm */}
+            <div className="space-y-6">
+              {/* Profil özeti + düzenle */}
+              <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)]">
+                <h2 className="text-lg font-semibold mb-4 text-[var(--quaternary-text)]">
+                  Profil
+                </h2>
+                <div className="flex items-center gap-4">
+                  <img
+                    src={userData?.photoURL || "/defaults/avatars/1.png"}
+                    alt="Avatar"
+                    className="w-16 h-16 rounded-full border-4 border-[var(--tertiary-border)] object-cover"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-lg truncate">
+                      {userData?.nickName || `${userData?.name || ""} ${userData?.surname || ""}`}
+                    </p>
+                    <p className="text-sm text-[var(--primary-text)] truncate">
+                      {userData?.email}
+                    </p>
+                    <p className="text-xs text-[var(--primary-text)]">
+                      #{userData?.friendshipID}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate("/ProfileSettings")}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] font-semibold text-sm hover:bg-[var(--quaternary-bg)] transition-colors shrink-0"
+                  >
+                    <Pencil size={15} /> Düzenle
+                  </button>
+                </div>
+              </section>
+
+              {/* Görünüm: tema + vurgu rengi */}
+              <AppearanceSettings />
             </div>
-            <button
-              onClick={() => navigate("/ProfileSettings")}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] font-semibold text-sm hover:bg-[var(--quaternary-bg)] transition-colors shrink-0"
-            >
-              <Pencil size={15} /> Profili Düzenle
-            </button>
+
+            {/* Sağ Sütun: Ses Cihazları ve Hesap */}
+            <div className="space-y-6">
+              {/* Ses ve görüntü cihazları */}
+              <AudioDeviceSettings />
+
+              {/* Hesap işlemleri */}
+              <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)]">
+                <h2 className="text-lg font-semibold mb-4 text-[var(--quaternary-text)]">
+                  Hesap
+                </h2>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-3 px-6 py-3 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors w-full sm:w-auto justify-center"
+                  >
+                    <FaPowerOff size={18} />
+                    Çıkış Yap
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="flex items-center gap-3 px-6 py-3 rounded-xl bg-transparent text-red-400 font-semibold border-2 border-red-500/60 hover:bg-red-500 hover:text-white transition-colors w-full sm:w-auto justify-center"
+                  >
+                    <Trash2 size={18} />
+                    Hesabı Sil
+                  </button>
+                </div>
+              </section>
+            </div>
           </div>
-        </section>
-
-        {/* Görünüm: tema + vurgu rengi */}
-        <AppearanceSettings />
-
-        {/* Ses ve görüntü cihazları */}
-        <AudioDeviceSettings />
-
-        {/* Hesap işlemleri */}
-        <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)]">
-          <h2 className="text-lg font-semibold mb-4 text-[var(--quaternary-text)]">
-            Hesap
-          </h2>
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-3 px-6 py-3 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors"
-            >
-              <FaPowerOff size={18} />
-              Çıkış Yap
-            </button>
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center gap-3 px-6 py-3 rounded-xl bg-transparent text-red-400 font-semibold border-2 border-red-500/60 hover:bg-red-500 hover:text-white transition-colors"
-            >
-              <Trash2 size={18} />
-              Hesabı Sil
-            </button>
-          </div>
-        </section>
-      </div>
+        </div>
 
       {/* Hesap silme onay penceresi */}
       <AnimatePresence>

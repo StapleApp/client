@@ -14,9 +14,24 @@
     <script>
       (function () {
         try {
-          var valid = { ocean: 1, black: 1, light: 1 };
-          var t = localStorage.getItem("staple-theme");
-          document.documentElement.setAttribute("data-theme", valid[t] ? t : "ocean");
+          var d = document.documentElement;
+          var mm = window.matchMedia;
+          // Tema (Otomatik → OS'a göre Karanlık/Açık)
+          var t = localStorage.getItem("staple-theme") || "ocean";
+          var eff = t;
+          if (t === "auto") {
+            eff = mm && mm("(prefers-color-scheme: dark)").matches ? "black" : "light";
+          } else if (!/^(ocean|black|light)$/.test(t)) {
+            eff = "ocean";
+          }
+          d.setAttribute("data-theme", eff);
+          // Hareketi azalt (kayıt yoksa OS tercihinden)
+          var rm = localStorage.getItem("staple-reduce-motion");
+          if (rm === null) rm = mm && mm("(prefers-reduced-motion: reduce)").matches ? "1" : "0";
+          d.setAttribute("data-reduce-motion", rm === "1" ? "1" : "0");
+          // Tile boyutu
+          var ts = localStorage.getItem("staple-tile-size") || "medium";
+          d.style.setProperty("--tile-size", ts === "small" ? "140px" : ts === "large" ? "280px" : "200px");
         } catch (e) {}
       })();
     </script>

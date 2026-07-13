@@ -1,7 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
-// Vurgu (accent) ön ayarları — tema DEĞİŞTİRMEZ. Her biri dolgu + açık ton +
-// dolgu üstü metin rengi (kontrast) tanımlar.
 // Vurgu ön ayarları (sıcak → soğuk). on = dolgu üstü metin/ikon kontrastı.
 export const ACCENTS = [
   { id: "amber", label: "Sarı", accent: "#ffbc1f", soft: "#fff3a1", on: "#222831" },
@@ -23,28 +21,76 @@ export const ACCENTS = [
 
 export const THEMES = [
   { id: "ocean", label: "Okyanus" }, // varsayılan (mavi-gri) — :root
-  { id: "black", label: "Karanlık" }, // OLED / kapkaranlık
+  { id: "black", label: "Karanlık" }, // OLED
   { id: "light", label: "Açık" },
+  { id: "auto", label: "Otomatik" }, // OS'a göre Açık↔Karanlık
+];
+
+export const TILE_SIZES = [
+  { id: "small", label: "Küçük", px: "140px" },
+  { id: "medium", label: "Orta", px: "200px" },
+  { id: "large", label: "Büyük", px: "280px" },
 ];
 
 const DEFAULT_THEME = "ocean";
 const THEME_KEY = "staple-theme";
 const ACCENT_KEY = "staple-accent";
+const ACCENT_CUSTOM_KEY = "staple-accent-custom";
+const RM_KEY = "staple-reduce-motion";
+const PARALLAX_KEY = "staple-parallax";
+const TILE_KEY = "staple-tile-size";
 
-// Bilinmeyen/eski değeri (ör. eski "dark") varsayılana normalize et
-const normalizeTheme = (id) =>
-  THEMES.some((t) => t.id === id) ? id : DEFAULT_THEME;
+// ---- Renk yardımcıları (özel vurgu için soft + kontrast hesabı) ----
+const normalizeHex = (hex) => {
+  if (!hex) return null;
+  let h = String(hex).trim().replace(/^#/, "");
+  if (/^[0-9a-fA-F]{3}$/.test(h)) h = h.split("").map((c) => c + c).join("");
+  return /^[0-9a-fA-F]{6}$/.test(h) ? "#" + h.toLowerCase() : null;
+};
+const hexToRgb = (hex) => {
+  const n = parseInt(hex.slice(1), 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+};
+const toHex = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
+const mixWhite = (hex, amt) => {
+  const { r, g, b } = hexToRgb(hex);
+  return "#" + toHex(r + (255 - r) * amt) + toHex(g + (255 - g) * amt) + toHex(b + (255 - b) * amt);
+};
+const isLight = (hex) => {
+  const { r, g, b } = hexToRgb(hex);
+  return 0.299 * r + 0.587 * g + 0.114 * b > 150; // algılanan parlaklık
+};
+const accentVarsFor = (hex) => ({
+  accent: hex,
+  soft: mixWhite(hex, 0.72),
+  on: isLight(hex) ? "#20242e" : "#ffffff",
+});
+
+// ---- Uygulayıcılar ----
+const VALID_THEME = /^(ocean|black|light|auto)$/;
+const normalizeTheme = (id) => (VALID_THEME.test(id) ? id : DEFAULT_THEME);
+const prefersDark = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia &&
+  window.matchMedia("(prefers-color-scheme: dark)").matches;
+const resolveTheme = (theme) =>
+  theme === "auto" ? (prefersDark() ? "black" : "light") : normalizeTheme(theme);
 
 const applyTheme = (theme) => {
-  document.documentElement.setAttribute("data-theme", normalizeTheme(theme));
+  document.documentElement.setAttribute("data-theme", resolveTheme(theme));
 };
-
-const applyAccent = (accentId) => {
-  const a = ACCENTS.find((x) => x.id === accentId) || ACCENTS[0];
+const applyAccent = (accentId, customHex) => {
+  let v;
+  if (accentId === "custom") {
+    v = accentVarsFor(normalizeHex(customHex) || "#ffbc1f");
+  } else {
+    const a = ACCENTS.find((x) => x.id === accentId) || ACCENTS[0];
+    v = { accent: a.accent, soft: a.soft, on: a.on };
+  }
   const s = document.documentElement.style;
-  s.setProperty("--accent", a.accent);
-  s.setProperty("--accent-soft", a.soft);
-  s.setProperty("--on-accent", a.on);
+  s.setProperty("--accent", v.accent);
+  s.setProperty("--accent-soft", v.soft);
+  s.setProperty("--on-accent", v.on);
 };
 
 const ThemeContext = createContext(null);
@@ -52,20 +98,71 @@ const ThemeContext = createContext(null);
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => normalizeTheme(localStorage.getItem(THEME_KEY)));
   const [accent, setAccent] = useState(() => localStorage.getItem(ACCENT_KEY) || "amber");
+  const [customAccent, setCustomAccent] = useState(
+    () => normalizeHex(localStorage.getItem(ACCENT_CUSTOM_KEY)) || "#ff5c8a"
+  );
+  const [reduceMotion, setReduceMotion] = useState(() => {
+    const s = localStorage.getItem(RM_KEY);
+    if (s === "1") return true;
+    if (s === "0") return false;
+    return (
+      typeof window !== "undefined" &&
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    );
+  });
+  const [parallax, setParallax] = useState(() => localStorage.getItem(PARALLAX_KEY) !== "0");
+  const [tileSize, setTileSize] = useState(() => localStorage.getItem(TILE_KEY) || "medium");
 
+  // Tema (+ Otomatik ise OS değişimini canlı izle)
   useEffect(() => {
     applyTheme(theme);
     localStorage.setItem(THEME_KEY, theme);
+    if (theme !== "auto" || !window.matchMedia) return undefined;
+    const mql = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = () => applyTheme("auto");
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
   }, [theme]);
 
+  // Vurgu (ön ayar veya özel hex)
   useEffect(() => {
-    applyAccent(accent);
+    applyAccent(accent, customAccent);
     localStorage.setItem(ACCENT_KEY, accent);
-  }, [accent]);
+    localStorage.setItem(ACCENT_CUSTOM_KEY, customAccent);
+  }, [accent, customAccent]);
+
+  // Hareketi azalt
+  useEffect(() => {
+    document.documentElement.setAttribute("data-reduce-motion", reduceMotion ? "1" : "0");
+    localStorage.setItem(RM_KEY, reduceMotion ? "1" : "0");
+  }, [reduceMotion]);
+
+  // Parallax tercihi (App'teki mousemove tüketir)
+  useEffect(() => {
+    localStorage.setItem(PARALLAX_KEY, parallax ? "1" : "0");
+  }, [parallax]);
+
+  // Tile boyutu
+  useEffect(() => {
+    const t = TILE_SIZES.find((x) => x.id === tileSize) || TILE_SIZES[1];
+    document.documentElement.style.setProperty("--tile-size", t.px);
+    localStorage.setItem(TILE_KEY, tileSize);
+  }, [tileSize]);
 
   return (
     <ThemeContext.Provider
-      value={{ theme, setTheme, accent, setAccent, accents: ACCENTS, themes: THEMES }}
+      value={{
+        theme, setTheme,
+        accent, setAccent,
+        customAccent, setCustomAccent,
+        reduceMotion, setReduceMotion,
+        parallax, setParallax,
+        tileSize, setTileSize,
+        accents: ACCENTS,
+        themes: THEMES,
+        tileSizes: TILE_SIZES,
+      }}
     >
       {children}
     </ThemeContext.Provider>

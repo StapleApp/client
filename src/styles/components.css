@@ -36,7 +36,7 @@
     background-position: calc(50% + var(--parallax-x, 0px)) calc(50% + var(--parallax-y, 0px));
     background-repeat: repeat;
     background-attachment: scroll;
-    background-size: 200px 200px;
+    background-size: var(--tile-size, 200px) var(--tile-size, 200px);
     height: 100vh;
     width: 100vw;
     transition: background-position 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -46,7 +46,7 @@
     background-image: url("../assets/backgrounds/tile.png");
     background-position: calc(50% + var(--parallax-x, 0px)) calc(50% + var(--parallax-y, 0px));
     background-repeat: repeat;
-    background-size: 200px 200px;
+    background-size: var(--tile-size, 200px) var(--tile-size, 200px);
     transition: background-position 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
@@ -130,4 +130,16 @@
 .no-scrollbar {
   -ms-overflow-style: none; /* IE/Edge */
   scrollbar-width: none; /* Firefox */
+}
+
+/* Hareketi azalt: animasyon/geçişleri kes (framer-motion ayrıca MotionConfig ile
+   kapatılır; bu, CSS geçişlerini ve parallax background geçişini de durdurur). */
+:root[data-reduce-motion="1"] *,
+:root[data-reduce-motion="1"] *::before,
+:root[data-reduce-motion="1"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-delay: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
 }
