@@ -38,6 +38,7 @@ import ChatPanel from "../../Components/chat/ChatPanel";
 import ServerMembers from "./ServerMembers";
 import ServerSettings from "./ServerSettings";
 import { useVoice } from "../../context/VoiceContext";
+import { useMusic } from "../../context/MusicContext";
 import { useAuth } from "../../context/AuthContext";
 import { useMobileMenu } from "../../context/MobileMenuContext";
 import Navigator from "../../Components/layout/Navigator";
@@ -731,6 +732,10 @@ const SvSidebar = ({ serverData, onRefresh }) => {
 
   const isDocked = voice.active && !isDetached;
 
+  // Watch Party (müzik) dock durumu — VoiceBar ile aynı mantık, üstünde durur
+  const music = useMusic();
+  const musicDocked = !isMobile && music.isActive && !music.detached;
+
   // Sidebar kapandığında voicebar docked ise otomatik dışarı (detached) al
   useEffect(() => {
     if (!showSidebar && isDocked) {
@@ -1167,7 +1172,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
         <div
           className="flex-1 flex flex-col min-h-0 relative transition-all duration-200"
           style={
-            isDragOverSidebar
+            isDragOverSidebar || music.dragOverSidebar
               ? { outline: "3px dashed var(--tertiary-border)", outlineOffset: "-3px", backgroundColor: "rgba(255, 188, 31, 0.05)" }
               : {}
           }
@@ -1278,6 +1283,10 @@ const SvSidebar = ({ serverData, onRefresh }) => {
           </div>
         </div>
 
+        {/* Docked Watch Party (müzik) için yer — VoiceBar'ın hemen üstünde */}
+        {musicDocked && (
+          <div className="h-[132px] shrink-0 border-t border-[var(--primary-border)]/10" />
+        )}
         {/* Reserving space for docked VoiceBar at the bottom of the sidebar */}
         {isDocked && (
           <div className="h-[96px] shrink-0 border-t border-[var(--primary-border)]/10" />
