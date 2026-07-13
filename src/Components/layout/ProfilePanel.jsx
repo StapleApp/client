@@ -182,7 +182,7 @@ const ProfilePanel = ({
               <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--primary-text)] px-0.5">
                 Hakkında
               </div>
-              <div className="text-xs bg-[#1a1f26] text-[var(--secondary-text)] p-2.5 rounded-xl min-h-[50px] max-h-[60px] overflow-y-auto select-text text-left border border-white/5 leading-normal">
+              <div className="text-xs bg-[var(--secondary-bg)] text-[var(--secondary-text)] p-2.5 rounded-xl min-h-[50px] max-h-[60px] overflow-y-auto select-text text-left border border-[var(--primary-border)] leading-normal">
                 {about || "Kullanıcı hakkında bilgi girmemiş."}
               </div>
             </div>

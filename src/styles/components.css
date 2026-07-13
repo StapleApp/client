@@ -50,13 +50,27 @@
     transition: background-position 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
+  /* Açık tema: arka plan tile'ının açık sürümü.
+     Dosya: client/src/assets/backgrounds/tile-light.png */
+  :root[data-theme="light"] .background,
+  :root[data-theme="light"] .parallax-bg {
+    background-image: url("../assets/backgrounds/tile-light.png");
+  }
+
+  /* Karanlık (OLED) tema: kapkaranlık tile.
+     Dosyayı buraya koy → client/src/assets/backgrounds/tile-black.png */
+  :root[data-theme="black"] .background,
+  :root[data-theme="black"] .parallax-bg {
+    background-image: url("../assets/backgrounds/tile-black.png");
+  }
+
 
   .icon {
-    @apply relative flex items-center justify-center h-12 w-12 mt-2 mb-2 mx-auto shadow-lg bg-[var(--primary-bg)] text-[var(--primary-text)] border-3 border-[var(--primary-border)] hover:bg-[var(--tertiary-text)] hover:text-[var(--tertiary-bg)] hover:border-[var(--tertiary-border)] rounded-xl transition-all duration-150 active:scale-90 cursor-pointer;
+    @apply relative flex items-center justify-center h-12 w-12 mt-2 mb-2 mx-auto shadow-lg bg-[var(--primary-bg)] text-[var(--primary-text)] border-3 border-[var(--primary-border)] hover:bg-[var(--secondary-bg)] hover:text-[var(--tertiary-bg)] hover:border-[var(--tertiary-border)] rounded-xl transition-all duration-150 active:scale-90 cursor-pointer;
   }
 
   .hovered-icon {
-    @apply relative flex items-center justify-center h-12 w-12 mt-2 mb-2 mx-auto shadow-lg bg-[var(--tertiary-text)] text-[var(--tertiary-bg)] border-3 border-[var(--tertiary-border)] rounded-xl transition-all duration-150 active:scale-90 cursor-pointer;
+    @apply relative flex items-center justify-center h-12 w-12 mt-2 mb-2 mx-auto shadow-lg bg-[var(--secondary-bg)] text-[var(--tertiary-bg)] border-3 border-[var(--tertiary-border)] rounded-xl transition-all duration-150 active:scale-90 cursor-pointer;
   }
 
   .sidebar-tooltip {

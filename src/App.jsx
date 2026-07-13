@@ -33,10 +33,12 @@ import ErrorBoundary from "./Components/layout/ErrorBoundary";
 import { MobileMenuProvider, useMobileMenu } from "./context/MobileMenuContext";
 import { PresenceProvider } from "./context/PresenceContext";
 import { NavDataProvider } from "./context/NavDataContext";
+import { ThemeProvider } from "./context/ThemeContext";
 
 function App() {
   return (
     <ErrorBoundary>
+      <ThemeProvider>
       <AuthProvider>
         <PresenceProvider>
           <NavDataProvider>
@@ -54,6 +56,7 @@ function App() {
           </NavDataProvider>
         </PresenceProvider>
       </AuthProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

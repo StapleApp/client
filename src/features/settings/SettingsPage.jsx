@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 import { FaPowerOff } from "react-icons/fa6";
-import { Loader2, Trash2, AlertTriangle, Pencil, Menu, Mic, Volume2, ChevronDown, Check, Home, Compass, UserPlus, Settings as SettingsIcon, User, X } from "lucide-react";
+import { Loader2, Trash2, AlertTriangle, Pencil, Menu, Mic, Volume2, ChevronDown, Check, Home, Compass, UserPlus, Settings as SettingsIcon, User, X, Sun, Moon, MoonStar, Palette } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useMobileMenu } from "../../context/MobileMenuContext";
 import { useVoice } from "../../context/VoiceContext";
+import { useTheme } from "../../context/ThemeContext";
 import Navigator from "../../Components/layout/Navigator";
 
 // ===== Uygulama stiline uygun özel dropdown =====
@@ -78,6 +79,82 @@ const DeviceSelect = ({ value, options, onChange, disabled, icon }) => {
         )}
       </AnimatePresence>
     </div>
+  );
+};
+
+// ===== Görünüm: tema + vurgu rengi =====
+const AppearanceSettings = () => {
+  const { theme, setTheme, accent, setAccent, accents, themes } = useTheme();
+
+  return (
+    <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)] mb-6">
+      <h2 className="text-lg font-semibold mb-4 text-[var(--quaternary-text)]">
+        Görünüm
+      </h2>
+
+      {/* Uygulama teması */}
+      <div className="mb-5">
+        <label className="flex items-center gap-1.5 mb-2 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
+          <Palette size={13} /> Uygulama Teması
+        </label>
+        <div className="inline-flex p-1 rounded-xl bg-[var(--secondary-bg)] border-2 border-[var(--primary-border)]">
+          {themes.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTheme(t.id)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                theme === t.id
+                  ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
+                  : "text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
+              }`}
+            >
+              {t.id === "light" ? (
+                <Sun size={15} />
+              ) : t.id === "black" ? (
+                <MoonStar size={15} />
+              ) : (
+                <Moon size={15} />
+              )}
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Vurgu rengi (accent) — temadan bağımsız */}
+      <div>
+        <label className="flex items-center gap-1.5 mb-2 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
+          <Palette size={13} /> Vurgu Rengi
+        </label>
+        <div className="flex flex-wrap gap-3">
+          {accents.map((a) => {
+            const active = accent === a.id;
+            return (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => setAccent(a.id)}
+                title={a.label}
+                aria-label={a.label}
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-transform hover:scale-110"
+                style={{
+                  backgroundColor: a.accent,
+                  boxShadow: active
+                    ? `0 0 0 2px var(--primary-bg), 0 0 0 4px ${a.accent}`
+                    : "none",
+                }}
+              >
+                {active && <Check size={16} style={{ color: a.on }} />}
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-2 text-[11px] text-[var(--primary-text)]">
+          Vurgu rengi tema değişse de korunur.
+        </p>
+      </div>
+    </section>
   );
 };
 
@@ -290,6 +367,9 @@ const SettingsPage = () => {
             </button>
           </div>
         </section>
+
+        {/* Görünüm: tema + vurgu rengi */}
+        <AppearanceSettings />
 
         {/* Ses ve görüntü cihazları */}
         <AudioDeviceSettings />

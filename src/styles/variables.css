@@ -1,18 +1,55 @@
-/* Uygulama renk paleti — :root üzerinde, her yerde miras alınır. */
+/* Uygulama renk paleti — :root üzerinde, her yerde miras alınır.
+ *
+ * İKİ EKSEN:
+ *  1) TEMA (koyu/açık): yapısal renkleri (arka plan, metin, kenarlık) belirler.
+ *     data-theme="light" ile açık temaya geçilir.
+ *  2) VURGU (accent): sarı/mavi/... — TEMADAN BAĞIMSIZDIR. --accent / --accent-soft
+ *     / --on-accent, JS ile document.documentElement üzerine yazılır (ThemeContext).
+ *
+ * Bileşenler eskisi gibi --tertiary-bg / --tertiary-border / --quaternary-text vb.
+ * kullanmaya devam eder; bunlar aşağıda accent değişkenlerine BAĞLANIR, böylece
+ * accent değişince tüm vurgular otomatik güncellenir, tema değişince accent korunur.
+ */
 :root {
+  /* --- Vurgu (accent) — tema DEĞİŞTİRMEZ; varsayılan sarı --- */
+  --accent: #ffbc1f;
+  --accent-soft: #fff3a1; /* açık ton (hover/tint) */
+  --on-accent: #222831; /* accent dolgusu üzerindeki metin/ikon rengi */
+
+  /* --- Tema: OKYANUS (varsayılan, mavi-gri) --- */
   --primary-bg: #222831;
-  --secondary-bg: #393E46;
-  --tertiary-bg: #ffbc1f;
-  --quaternary-bg: #fff3a1;
-
-  --primary-text: #BBBBBB;
-  --secondary-text: #DDDDDD;
-  --tertiary-text: #222831;
-  --quaternary-text: #ffbc1f;
-
-  --primary-border: #393E46;
+  --secondary-bg: #393e46;
+  --primary-text: #bbbbbb;
+  --secondary-text: #dddddd;
+  --primary-border: #393e46;
   --secondary-border: #222831;
-  --tertiary-border: #ffbc1f;
+
+  /* --- Rol eşlemeleri: vurguyu mevcut değişkenlere bağla (bileşenler değişmez) --- */
+  --tertiary-bg: var(--accent);
+  --quaternary-bg: var(--accent-soft);
+  --tertiary-text: var(--on-accent);
+  --quaternary-text: var(--accent);
+  --tertiary-border: var(--accent);
+}
+
+/* --- Tema: KARANLIK (OLED / kapkaranlık) --- accent korunur */
+:root[data-theme="black"] {
+  --primary-bg: #000000;
+  --secondary-bg: #0c0c0e;
+  --primary-text: #8a8a8a;
+  --secondary-text: #e6e6e6;
+  --primary-border: #1a1a1c;
+  --secondary-border: #000000;
+}
+
+/* --- Tema: AÇIK --- (accent değişkenleri BURADA override edilmez → sarı korunur) */
+:root[data-theme="light"] {
+  --primary-bg: #ffffff;
+  --secondary-bg: #f1f3f5;
+  --primary-text: #6b7280;
+  --secondary-text: #1f2937;
+  --primary-border: #e2e5e9;
+  --secondary-border: #d1d5db;
 }
 
 /*
