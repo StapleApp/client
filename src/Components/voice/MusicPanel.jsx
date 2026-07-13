@@ -9,6 +9,7 @@ import {
   Plus,
   X,
   Volume2,
+  VolumeX,
   Video,
   VideoOff,
   ListMusic,
@@ -40,6 +41,10 @@ const MusicPanel = () => {
     const v = Number(localStorage.getItem("staple-music-volume"));
     return Number.isFinite(v) && v >= 0 && v <= 100 ? v : 70;
   });
+
+  // Docked bar ses açılır kutusu
+  const [volOpen, setVolOpen] = useState(false);
+  const volWrapRef = useRef(null);
 
   // Video penceresi (kontrollere bağlı ayrı, sürüklenebilir + boyutlanabilir)
   const [videoOpen, setVideoOpen] = useState(false);
@@ -178,6 +183,19 @@ const MusicPanel = () => {
   useEffect(() => {
     if (!music.isActive) setVideoOpen(false);
   }, [music.isActive]);
+
+  // Ses açılır kutusu: dışarı tıkla / Esc ile kapan
+  useEffect(() => {
+    if (!volOpen) return undefined;
+    const onDown = (e) => { if (!volWrapRef.current?.contains(e.target)) setVolOpen(false); };
+    const onKey = (e) => { if (e.key === "Escape") setVolOpen(false); };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [volOpen]);
 
   const changeVolume = (v) => {
     const val = clamp(Math.round(v), 0, 100);
@@ -327,6 +345,44 @@ const MusicPanel = () => {
             )}
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
+            {/* Ses — tıklayınca üstünde açılır kutu */}
+            <div className="relative" ref={volWrapRef}>
+              <button
+                onClick={() => setVolOpen((v) => !v)}
+                title="Ses"
+                className={`p-1.5 rounded-lg transition-colors ${
+                  volOpen
+                    ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
+                    : "text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--secondary-bg)]"
+                }`}
+              >
+                {volume === 0 ? <VolumeX size={15} /> : <Volume2 size={15} />}
+              </button>
+              {volOpen && (
+                <div className="absolute bottom-full right-0 mb-2 z-[60] w-44 p-2 rounded-xl bg-[var(--primary-bg)] border-2 border-[var(--primary-border)] shadow-2xl">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => changeVolume(volume === 0 ? 70 : 0)}
+                      title={volume === 0 ? "Sesi aç" : "Sustur"}
+                      className={`shrink-0 transition-colors ${
+                        volume === 0 ? "text-red-400" : "text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
+                      }`}
+                    >
+                      {volume === 0 ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                    </button>
+                    <input
+                      type="range" role="slider" min={0} max={100} value={volume}
+                      onChange={(e) => changeVolume(Number(e.target.value))}
+                      className="flex-1 h-1 cursor-pointer" style={{ accentColor: "var(--tertiary-bg)" }}
+                      title="Ses (yalnızca sende)"
+                    />
+                    <span className="w-8 shrink-0 text-right text-[10px] tabular-nums text-[var(--primary-text)]">
+                      %{volume}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
             {videoToggleBtn}
             <button onClick={detach} title="Kenardan çıkar"
               className="p-1.5 rounded-lg text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--secondary-bg)] transition-colors">
@@ -353,6 +409,19 @@ const MusicPanel = () => {
             className="w-full flex items-center justify-center gap-1.5 py-1 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] text-[11px] font-bold hover:bg-[var(--quaternary-bg)] transition-colors">
             <Play size={12} /> Sesi başlat
           </button>
+        )}
+
+        {/* Video süre kontrolü (seek) */}
+        {current && (
+          <div>
+            <input type="range" role="slider" min={0} max={Math.max(duration, 1)} step={1} value={position}
+              onChange={(e) => music.seek(Number(e.target.value))}
+              className="w-full h-1 cursor-pointer" style={{ accentColor: "var(--tertiary-bg)" }} />
+            <div className="flex justify-between text-[10px] text-[var(--primary-text)] tabular-nums">
+              <span>{formatTime(position)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
+          </div>
         )}
 
         {/* Kontroller + ekle */}

@@ -1285,7 +1285,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
 
         {/* Docked Watch Party (müzik) için yer — VoiceBar'ın hemen üstünde */}
         {musicDocked && (
-          <div className="h-[132px] shrink-0 border-t border-[var(--primary-border)]/10" />
+          <div className="h-[164px] shrink-0 border-t border-[var(--primary-border)]/10" />
         )}
         {/* Reserving space for docked VoiceBar at the bottom of the sidebar */}
         {isDocked && (
