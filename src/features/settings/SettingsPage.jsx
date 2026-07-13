@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 import { FaPowerOff } from "react-icons/fa6";
-import { Loader2, Trash2, AlertTriangle, Pencil, Menu, Mic, Volume2, ChevronDown, Check, Home, Compass, UserPlus, Settings as SettingsIcon, User, X, Sun, Moon, MoonStar, Monitor, Palette, Pipette, Sparkles, Grid2x2, Zap } from "lucide-react";
+import { Loader2, Trash2, AlertTriangle, Pencil, Menu, Mic, Volume2, ChevronDown, Check, Home, Compass, UserPlus, Settings as SettingsIcon, User, X, Sun, Moon, MoonStar, Monitor, Palette, Pipette, Sparkles, Grid2x2, Zap, Type, MessageSquare } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useMobileMenu } from "../../context/MobileMenuContext";
 import { useVoice } from "../../context/VoiceContext";
@@ -118,6 +118,10 @@ const AppearanceSettings = () => {
     accent, setAccent, customAccent, setCustomAccent,
     reduceMotion, setReduceMotion, parallax, setParallax,
     tileSize, setTileSize,
+    chatDensity, setChatDensity,
+    messageStyle, setMessageStyle,
+    fontScale, setFontScale,
+    fontFamily, setFontFamily,
     accents, themes, tileSizes,
   } = useTheme();
 
@@ -133,136 +137,335 @@ const AppearanceSettings = () => {
         Görünüm
       </h2>
 
-      {/* Uygulama teması */}
-      <div className="mb-5">
-        <label className="flex items-center gap-1.5 mb-2 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
-          <Palette size={13} /> Uygulama Teması
-        </label>
-        <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-[var(--secondary-bg)] border-2 border-[var(--primary-border)] w-fit max-w-full">
-          {themes.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTheme(t.id)}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                theme === t.id
-                  ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
-                  : "text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
-              }`}
-            >
-              {themeIcon(t.id)}
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Vurgu rengi (accent) — temadan bağımsız */}
-      <div className="mb-5">
-        <label className="flex items-center gap-1.5 mb-2 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
-          <Palette size={13} /> Vurgu Rengi
-        </label>
-        <div className="flex flex-wrap gap-3 items-center">
-          {accents.map((a) => {
-            const active = accent === a.id;
-            return (
-              <button
-                key={a.id}
-                type="button"
-                onClick={() => setAccent(a.id)}
-                title={a.label}
-                aria-label={a.label}
-                className="w-9 h-9 rounded-full flex items-center justify-center transition-transform hover:scale-110"
-                style={{
-                  backgroundColor: a.accent,
-                  boxShadow: active
-                    ? `0 0 0 2px var(--primary-bg), 0 0 0 4px ${a.accent}`
-                    : "none",
-                }}
-              >
-                {active && <Check size={16} style={{ color: a.on }} />}
-              </button>
-            );
-          })}
-
-          {/* Özel renk (hex picker) */}
-          <label
-            className="relative w-9 h-9 rounded-full flex items-center justify-center cursor-pointer transition-transform hover:scale-110 overflow-hidden"
-            title="Kendi rengin"
-            style={{
-              background:
-                accent === "custom"
-                  ? customAccent
-                  : "conic-gradient(from 0deg, #ef4444, #f59e0b, #eab308, #22c55e, #06b6d4, #3b82f6, #a855f7, #ef4444)",
-              boxShadow:
-                accent === "custom"
-                  ? `0 0 0 2px var(--primary-bg), 0 0 0 4px ${customAccent}`
-                  : "none",
-            }}
-          >
-            <input
-              type="color"
-              value={customAccent}
-              onChange={(e) => { setCustomAccent(e.target.value); setAccent("custom"); }}
-              onClick={() => setAccent("custom")}
-              aria-label="Özel vurgu rengi"
-              className="absolute inset-0 opacity-0 cursor-pointer"
-            />
-            {accent === "custom" ? (
-              <Check size={16} className="text-white" style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,.7))" }} />
-            ) : (
-              <Pipette size={15} className="text-white" style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,.7))" }} />
-            )}
+      {/* 1. Satır Izgarası: Tema ve Vurgu Rengi */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-5">
+        {/* Uygulama teması */}
+        <div>
+          <label className="flex items-center gap-1.5 mb-2 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
+            <Palette size={13} /> Uygulama Teması
           </label>
-        </div>
-        <p className="mt-2 text-[11px] text-[var(--primary-text)]">
-          Vurgu rengi tema değişse de korunur. Son yuvarlak ile kendi rengini seçebilirsin.
-        </p>
-      </div>
-
-      {/* Arka plan & hareket */}
-      <div className="pt-4 border-t border-[var(--primary-border)]">
-        <label className="flex items-center gap-1.5 mb-3 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
-          <Grid2x2 size={13} /> Arka Plan & Hareket
-        </label>
-
-        {/* Desen boyutu */}
-        <div className="mb-2">
-          <span className="block mb-1.5 text-sm text-[var(--secondary-text)] font-medium">
-            Desen boyutu
-          </span>
-          <div className="inline-flex p-1 rounded-xl bg-[var(--secondary-bg)] border-2 border-[var(--primary-border)]">
-            {tileSizes.map((t) => (
+          <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-[var(--secondary-bg)] border-2 border-[var(--primary-border)] w-fit max-w-full">
+            {themes.map((t) => (
               <button
                 key={t.id}
                 type="button"
-                onClick={() => setTileSize(t.id)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                  tileSize === t.id
+                onClick={() => setTheme(t.id)}
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  theme === t.id
                     ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
                     : "text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
                 }`}
               >
+                {themeIcon(t.id)}
                 {t.label}
               </button>
             ))}
           </div>
         </div>
 
-        <Toggle
-          checked={parallax}
-          onChange={setParallax}
-          icon={<Sparkles size={14} />}
-          label="Parallax arka plan"
-          hint="Fare hareketiyle arka plan hafifçe kayar."
-        />
-        <Toggle
-          checked={reduceMotion}
-          onChange={setReduceMotion}
-          icon={<Zap size={14} />}
-          label="Hareketi azalt"
-          hint="Animasyonları ve parallax'ı kapatır (erişilebilirlik / düşük donanım)."
-        />
+        {/* Vurgu rengi (accent) — temadan bağımsız */}
+        <div>
+          <label className="flex items-center gap-1.5 mb-2 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
+            <Palette size={13} /> Vurgu Rengi
+          </label>
+          <div className="flex flex-wrap gap-2 items-center">
+            {accents.map((a) => {
+              const active = accent === a.id;
+              return (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => setAccent(a.id)}
+                  title={a.label}
+                  aria-label={a.label}
+                  className="w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-110"
+                  style={{
+                    backgroundColor: a.accent,
+                    boxShadow: active
+                      ? `0 0 0 2px var(--primary-bg), 0 0 0 4px ${a.accent}`
+                      : "none",
+                  }}
+                >
+                  {active && <Check size={14} style={{ color: a.on }} />}
+                </button>
+              );
+            })}
+
+            {/* Özel renk (hex picker) */}
+            <label
+              className="relative w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-transform hover:scale-110 overflow-hidden"
+              title="Kendi rengin"
+              style={{
+                background:
+                  accent === "custom"
+                    ? customAccent
+                    : "conic-gradient(from 0deg, #ef4444, #f59e0b, #eab308, #22c55e, #06b6d4, #3b82f6, #a855f7, #ef4444)",
+                boxShadow:
+                  accent === "custom"
+                    ? `0 0 0 2px var(--primary-bg), 0 0 0 4px ${customAccent}`
+                    : "none",
+              }}
+            >
+              <input
+                type="color"
+                value={customAccent}
+                onChange={(e) => { setCustomAccent(e.target.value); setAccent("custom"); }}
+                onClick={() => setAccent("custom")}
+                aria-label="Özel vurgu rengi"
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+              {accent === "custom" ? (
+                <Check size={14} className="text-white" style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,.7))" }} />
+              ) : (
+                <Pipette size={14} className="text-white" style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,.7))" }} />
+              )}
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Satır Izgarası: Sohbet Düzeni ve Yazı Tipi */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-5 border-t border-[var(--primary-border)] mb-5">
+        {/* Sohbet özelleştirme */}
+        <div>
+          <label className="flex items-center gap-1.5 mb-3 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
+            <MessageSquare size={13} /> Sohbet Düzeni & Yoğunluğu
+          </label>
+
+          {/* Sohbet yoğunluğu */}
+          <div className="mb-4">
+            <span className="block mb-1.5 text-sm text-[var(--secondary-text)] font-medium text-left">
+              Sohbet Yoğunluğu
+            </span>
+            <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-[var(--secondary-bg)] border-2 border-[var(--primary-border)] w-fit max-w-full">
+              {[
+                { id: "cozy", label: "Rahat (Cozy)" },
+                { id: "compact", label: "Kompakt (Compact)" },
+              ].map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => setChatDensity(d.id)}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                    chatDensity === d.id
+                      ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
+                      : "text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
+                  }`}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Mesaj balonu stili */}
+          <div>
+            <span className="block mb-1.5 text-sm text-[var(--secondary-text)] font-medium text-left">
+              Mesaj Balonu Stili
+            </span>
+            <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-[var(--secondary-bg)] border-2 border-[var(--primary-border)] w-fit max-w-full">
+              {[
+                { id: "classic", label: "Klasik Akış" },
+                { id: "bubbles", label: "Modern Balonlar" },
+              ].map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setMessageStyle(s.id)}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                    messageStyle === s.id
+                      ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
+                      : "text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Yazı tipi özelleştirme */}
+        <div>
+          <label className="flex items-center gap-1.5 mb-3 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
+            <Type size={13} /> Yazı Tipi & Boyut
+          </label>
+
+          {/* Yazı boyutu */}
+          <div className="mb-4">
+            <span className="block mb-1.5 text-sm text-[var(--secondary-text)] font-medium text-left">
+              Yazı Boyutu
+            </span>
+            <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-[var(--secondary-bg)] border-2 border-[var(--primary-border)] w-fit max-w-full">
+              {[
+                { id: "small", label: "Küçük" },
+                { id: "standard", label: "Standart" },
+                { id: "large", label: "Büyük" },
+                { id: "giant", label: "Dev" },
+              ].map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setFontScale(s.id)}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                    fontScale === s.id
+                      ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
+                      : "text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Yazı tipi ailesi */}
+          <div>
+            <span className="block mb-1.5 text-sm text-[var(--secondary-text)] font-medium text-left">
+              Yazı Tipi
+            </span>
+            <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-[var(--secondary-bg)] border-2 border-[var(--primary-border)] w-fit max-w-full">
+              {[
+                { id: "inter", label: "Inter (Varsayılan)" },
+                { id: "outfit", label: "Outfit" },
+                { id: "roboto-mono", label: "Roboto Mono" },
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setFontFamily(f.id)}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                    fontFamily === f.id
+                      ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
+                      : "text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Satır Izgarası: Canlı Sohbet Önizlemesi ve Arka Plan/Hareket */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-5 border-t border-[var(--primary-border)]">
+        {/* Canlı Sohbet Önizlemesi */}
+        <div className="flex flex-col h-full justify-between">
+          <label className="flex items-center gap-1.5 mb-2 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
+            <MessageSquare size={13} /> Canlı Sohbet Önizlemesi
+          </label>
+          <div 
+            className="flex-1 flex flex-col justify-center space-y-3 p-4 rounded-xl bg-[var(--primary-bg)] border border-[var(--primary-border)]/70 shadow-inner min-h-[160px]"
+            style={{
+              fontSize: fontScale === 'small' ? '13px' : fontScale === 'standard' ? '15px' : fontScale === 'large' ? '17px' : '20px',
+              fontFamily: fontFamily === 'inter' ? "'Inter', sans-serif" : fontFamily === 'outfit' ? "'Outfit', sans-serif" : "'Roboto Mono', monospace"
+            }}
+          >
+            {/* Gelen Mesaj */}
+            <div className={`flex items-start gap-2.5 ${chatDensity === 'compact' ? 'space-y-0.5' : ''} ${messageStyle === 'bubbles' ? 'flex-row' : ''}`}>
+              {chatDensity !== 'compact' && (
+                <img src="/defaults/avatars/2.png" alt="" className="w-8 h-8 rounded-full object-cover shrink-0 mt-0.5" />
+              )}
+              <div className="min-w-0 flex-1">
+                {chatDensity !== 'compact' && (
+                  <div className="flex items-baseline gap-1.5 mb-0.5 text-left">
+                    <span className="text-xs font-bold text-[var(--secondary-text)]">Arkadaşın</span>
+                    <span className="text-[10px] text-[var(--primary-text)]">12:34</span>
+                  </div>
+                )}
+                <div 
+                  className={`text-[var(--secondary-text)] break-words text-left ${
+                    messageStyle === 'bubbles' 
+                      ? 'bg-neutral-800/60 border border-neutral-700/80 px-3 py-1.5 rounded-r-xl rounded-bl-xl inline-block max-w-[85%] shadow-sm border-l-4 border-l-[var(--accent)] text-xs' 
+                      : 'text-sm'
+                  }`}
+                  style={{
+                    backgroundColor: theme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)',
+                    borderColor: theme === 'light' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)'
+                  }}
+                >
+                  Staple sohbet arayüzünü buradan özelleştirebilirsin.
+                </div>
+              </div>
+            </div>
+
+            {/* Giden Mesaj */}
+            <div className={`flex items-start gap-2.5 ${chatDensity === 'compact' ? 'space-y-0.5' : ''} ${messageStyle === 'bubbles' ? 'flex-row-reverse text-right' : ''}`}>
+              {chatDensity !== 'compact' && (
+                <img src="/defaults/avatars/1.png" alt="" className="w-8 h-8 rounded-full object-cover shrink-0 mt-0.5" />
+              )}
+              <div className="min-w-0 flex-1">
+                {chatDensity !== 'compact' && (
+                  <div className="flex items-baseline gap-1.5 mb-0.5 justify-end">
+                    <span className="text-xs font-bold text-[var(--secondary-text)]">Sen</span>
+                    <span className="text-[10px] text-[var(--primary-text)]">12:35</span>
+                  </div>
+                )}
+                <div 
+                  className={`text-[var(--secondary-text)] break-words text-left ${
+                    messageStyle === 'bubbles' 
+                      ? 'bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] border border-[var(--tertiary-border)] px-3 py-1.5 rounded-l-xl rounded-br-xl inline-block max-w-[85%] shadow-sm text-xs' 
+                      : 'text-sm'
+                  }`}
+                >
+                  <span style={{ color: messageStyle === 'bubbles' ? 'var(--tertiary-text)' : 'inherit' }}>
+                    Değişiklikler anında yansıyor!
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Arka Plan & Hareket */}
+        <div className="flex flex-col justify-between">
+          <div>
+            <label className="flex items-center gap-1.5 mb-3 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
+              <Grid2x2 size={13} /> Arka Plan & Hareket
+            </label>
+
+            {/* Desen boyutu */}
+            <div className="mb-4">
+              <span className="block mb-1.5 text-sm text-[var(--secondary-text)] font-medium text-left">
+                Desen boyutu
+              </span>
+              <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-[var(--secondary-bg)] border-2 border-[var(--primary-border)] w-fit max-w-full">
+                {tileSizes.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTileSize(t.id)}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                      tileSize === t.id
+                        ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
+                        : "text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <Toggle
+              checked={parallax}
+              onChange={setParallax}
+              icon={<Sparkles size={14} />}
+              label="Parallax arka plan"
+              hint="Fare hareketiyle arka plan hafifçe kayar."
+            />
+            <Toggle
+              checked={reduceMotion}
+              onChange={setReduceMotion}
+              icon={<Zap size={14} />}
+              label="Hareketi azalt"
+              hint="Animasyonları ve parallax'ı kapatır."
+            />
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -444,7 +647,7 @@ const SettingsPage = () => {
         </div>
       )}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-4 py-10">
+        <div className="max-w-7xl mx-auto px-4 py-10">
           <h1 className="text-3xl font-black mb-8 text-[var(--secondary-text)]">Ayarlar</h1>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">

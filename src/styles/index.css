@@ -1,12 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=Roboto+Mono:wght@400;500;600;700&display=swap');
 @import "./variables.css";
 @import "./components.css";
 
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: var(--chat-font-family, 'Inter'), -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+    sans-serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -20,3 +20,98 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* ================= GÖRÜNÜM ÖZELLEŞTİRMELERİ ================= */
+
+/* --- Yazı Boyutu ve Ailesi --- */
+[id^="msg-"] {
+  font-size: var(--chat-font-size, 15px) !important;
+  font-family: var(--chat-font-family, 'Inter', sans-serif) !important;
+}
+[id^="msg-"] .text-sm {
+  font-size: var(--chat-font-size, 15px) !important;
+}
+[id^="msg-"] input {
+  font-size: var(--chat-font-size, 15px) !important;
+}
+
+/* --- Sohbet Yoğunluğu (Cozy / Compact) --- */
+:root[data-chat-density="compact"] [id^="msg-"] {
+  margin-top: 0.125rem !important;
+  margin-bottom: 0.125rem !important;
+  padding-top: 0px !important;
+  padding-bottom: 0px !important;
+}
+:root[data-chat-density="compact"] [id^="msg-"].mt-4 {
+  margin-top: 0.25rem !important;
+}
+:root[data-chat-density="compact"] [id^="msg-"] img {
+  width: 1.75rem !important;
+  height: 1.75rem !important;
+  margin-top: 0.05rem !important;
+}
+:root[data-chat-density="compact"] [id^="msg-"] .w-10 {
+  width: 1.75rem !important;
+}
+
+/* --- Mesaj Balonu Stili (Modern Balonlar) --- */
+:root[data-message-style="bubbles"] [id^="msg-"] {
+  background-color: transparent !important;
+}
+:root[data-message-style="bubbles"] [id^="msg-"] .text-sm.text-\[var\(--secondary-text\)\] {
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 0.55rem 0.85rem;
+  border-radius: 0 0.85rem 0.85rem 0.85rem;
+  display: inline-block;
+  margin-top: 0.25rem;
+  max-width: 80%;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25);
+  border-left: 3px solid var(--accent); /* distinct accent stripe on the left side of incoming bubbles */
+}
+:root[data-theme="light"][data-message-style="bubbles"] [id^="msg-"] .text-sm.text-\[var\(--secondary-text\)\] {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+:root[data-theme="black"][data-message-style="bubbles"] [id^="msg-"] .text-sm.text-\[var\(--secondary-text\)\] {
+  background-color: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Kendi mesajlarımız (isOwn) sağ tarafta */
+:root[data-message-style="bubbles"] [id^="msg-"][data-is-own="true"] {
+  flex-direction: row-reverse;
+}
+:root[data-message-style="bubbles"] [id^="msg-"][data-is-own="true"] .text-left {
+  text-align: right !important;
+}
+:root[data-message-style="bubbles"] [id^="msg-"][data-is-own="true"] .text-sm.text-\[var\(--secondary-text\)\] {
+  background-color: var(--tertiary-bg) !important;
+  color: var(--tertiary-text) !important;
+  border: 1px solid var(--tertiary-border) !important;
+  border-left: 1px solid var(--tertiary-border) !important; /* clear left border override */
+  border-radius: 0.85rem 0 0.85rem 0.85rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+:root[data-message-style="bubbles"] [id^="msg-"][data-is-own="true"] .text-sm.text-\[var\(--secondary-text\)\] * {
+  color: var(--tertiary-text) !important;
+}
+
+/* Yanıt alıntısı, kullanıcı adı ve sabitleme etiketlerini sağa yasla */
+:root[data-message-style="bubbles"] [id^="msg-"][data-is-own="true"] .group\/reply,
+:root[data-message-style="bubbles"] [id^="msg-"][data-is-own="true"] [class*="group/reply"] {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  justify-content: flex-end !important;
+  text-align: right !important;
+}
+:root[data-message-style="bubbles"] [id^="msg-"][data-is-own="true"] .flex.items-baseline.gap-2 {
+  justify-content: flex-end !important;
+}
+:root[data-message-style="bubbles"] [id^="msg-"][data-is-own="true"] .flex.items-center.gap-1.mb-0\.5 {
+  justify-content: flex-end !important;
+}
+
+
+

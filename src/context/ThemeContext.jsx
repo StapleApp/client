@@ -114,6 +114,12 @@ export const ThemeProvider = ({ children }) => {
   const [parallax, setParallax] = useState(() => localStorage.getItem(PARALLAX_KEY) !== "0");
   const [tileSize, setTileSize] = useState(() => localStorage.getItem(TILE_KEY) || "medium");
 
+  // Yeni görünüm özelleştirme states
+  const [chatDensity, setChatDensity] = useState(() => localStorage.getItem("staple-chat-density") || "cozy");
+  const [messageStyle, setMessageStyle] = useState(() => localStorage.getItem("staple-message-style") || "classic");
+  const [fontScale, setFontScale] = useState(() => localStorage.getItem("staple-font-scale") || "standard");
+  const [fontFamily, setFontFamily] = useState(() => localStorage.getItem("staple-font-family") || "inter");
+
   // Tema (+ Otomatik ise OS değişimini canlı izle)
   useEffect(() => {
     applyTheme(theme);
@@ -150,6 +156,41 @@ export const ThemeProvider = ({ children }) => {
     localStorage.setItem(TILE_KEY, tileSize);
   }, [tileSize]);
 
+  // Sohbet Yoğunluğu
+  useEffect(() => {
+    document.documentElement.setAttribute("data-chat-density", chatDensity);
+    localStorage.setItem("staple-chat-density", chatDensity);
+  }, [chatDensity]);
+
+  // Mesaj Kutusu Stili
+  useEffect(() => {
+    document.documentElement.setAttribute("data-message-style", messageStyle);
+    localStorage.setItem("staple-message-style", messageStyle);
+  }, [messageStyle]);
+
+  // Yazı Boyutu
+  useEffect(() => {
+    const fontSizes = {
+      small: "13px",
+      standard: "15px",
+      large: "17px",
+      giant: "20px",
+    };
+    document.documentElement.style.setProperty("--chat-font-size", fontSizes[fontScale] || "15px");
+    localStorage.setItem("staple-font-scale", fontScale);
+  }, [fontScale]);
+
+  // Yazı Tipi Ailesi
+  useEffect(() => {
+    const fontFamilies = {
+      inter: "'Inter', sans-serif",
+      outfit: "'Outfit', sans-serif",
+      "roboto-mono": "'Roboto Mono', monospace",
+    };
+    document.documentElement.style.setProperty("--chat-font-family", fontFamilies[fontFamily] || "'Inter', sans-serif");
+    localStorage.setItem("staple-font-family", fontFamily);
+  }, [fontFamily]);
+
   return (
     <ThemeContext.Provider
       value={{
@@ -159,6 +200,10 @@ export const ThemeProvider = ({ children }) => {
         reduceMotion, setReduceMotion,
         parallax, setParallax,
         tileSize, setTileSize,
+        chatDensity, setChatDensity,
+        messageStyle, setMessageStyle,
+        fontScale, setFontScale,
+        fontFamily, setFontFamily,
         accents: ACCENTS,
         themes: THEMES,
         tileSizes: TILE_SIZES,
