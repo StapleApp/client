@@ -242,7 +242,7 @@ const ProfileButton = () => {
   return (
     <button
       type="button"
-      onClick={() => navigate("/Profile")}
+      onClick={() => navigate("/ProfileSettings")}
       className="px-3 py-1.5 rounded-xl bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] hover:bg-[var(--quaternary-bg)] text-xs font-bold transition-all hover:scale-[1.03] flex items-center gap-1.5 shadow-md shrink-0"
     >
       <span>Profil</span>
@@ -307,7 +307,7 @@ const ProfilePicture = ({ src, isMe, roleColor }) => {
   
   return (
     <div
-      onClick={isMe ? () => navigate("/Profile") : undefined}
+      onClick={isMe ? () => navigate("/ProfileSettings") : undefined}
       className={`relative flex items-center justify-center w-14 h-14 my-auto ml-1 mr-1.5 shadow-lg rounded-full border-2 select-none shrink-0 ${
         isMe ? "cursor-pointer hover:scale-105 transition-transform" : ""
       }`}

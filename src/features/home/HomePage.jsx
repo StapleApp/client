@@ -665,10 +665,10 @@ const HomePage = () => {
             </div>
 
             <button
-              onClick={() => navigate("/Profile")}
+              onClick={() => navigate("/ProfileSettings")}
               className="flex items-center gap-2 text-[var(--primary-text)] text-sm hover:text-[var(--quaternary-text)] transition-colors"
             >
-              <Hash size={14} /> Profilini görüntüle ve düzenle →
+              <Hash size={14} /> Profilini düzenle →
             </button>
           </div>
 

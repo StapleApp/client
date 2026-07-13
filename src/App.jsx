@@ -4,7 +4,6 @@ import Navigator from "./Components/layout/Navigator";
 import SettingsPage from "./features/settings/SettingsPage";
 import AddFriendsPage from "./features/friends/AddFriendsPage";
 import SearchServerPage from "./features/servers/SearchServerPage";
-import ProfilePage from "./features/profile/ProfilePage";
 import ProfileSettings from "./features/profile/ProfileSettings";
 import HomePage from "./features/home/HomePage";
 import DirectMessagingPage from "./features/messaging/DirectMessagingPage";
@@ -137,7 +136,7 @@ function AnimatedSwitch() {
           <Route path="/Settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="/AddFriends" element={<ProtectedRoute><AddFriendsPage /></ProtectedRoute>} />
           <Route path="/SearchServer" element={<ProtectedRoute><SearchServerPage /></ProtectedRoute>} />
-          <Route path="/Profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/Profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
           <Route path="/ProfileSettings" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
           <Route path="/DirectMessaging" element={<ProtectedRoute><DirectMessagingPage /></ProtectedRoute>} />
           <Route path="/create-server" element={<ProtectedRoute><CreateServerPage /></ProtectedRoute>} />

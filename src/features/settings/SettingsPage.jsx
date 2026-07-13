@@ -657,7 +657,7 @@ const SettingsPage = () => {
 
                     <button
                       onClick={() => {
-                        navigate("/Profile");
+                        navigate("/ProfileSettings");
                         setIsOpen(false);
                       }}
                       className="flex items-center gap-3 w-full p-2.5 rounded-xl bg-[var(--secondary-bg)]/40 hover:bg-[var(--secondary-bg)] border border-[var(--primary-border)]/30 hover:border-[var(--tertiary-border)]/40 text-sm font-semibold text-[var(--secondary-text)] transition-all active:scale-95"
