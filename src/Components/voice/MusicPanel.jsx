@@ -549,7 +549,7 @@ const MusicPanel = () => {
         aria-hidden
         style={
           videoOpen
-            ? { position: "fixed", left: vrect.x, top: vrect.y, width: vrect.w, height: vrect.h, zIndex: 97, borderRadius: 12, overflow: "hidden", background: "#000", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }
+            ? { position: "fixed", left: vrect.x, top: vrect.y, width: vrect.w, height: vrect.h, zIndex: 104, borderRadius: 12, overflow: "hidden", background: "#000", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }
             : { position: "fixed", left: "-9999px", top: 0, width: 240, height: 135, pointerEvents: "none" }
         }
       >
@@ -560,7 +560,7 @@ const MusicPanel = () => {
       {videoOpen && (
         <div
           onPointerDown={startVideoDrag}
-          style={{ position: "fixed", left: vrect.x, top: vrect.y, width: vrect.w, height: vrect.h, zIndex: 98 }}
+          style={{ position: "fixed", left: vrect.x, top: vrect.y, width: vrect.w, height: vrect.h, zIndex: 105 }}
           className="rounded-xl border-2 border-[var(--primary-border)] cursor-grab active:cursor-grabbing"
         >
           <div className="absolute top-0 left-0 right-0 h-7 flex items-center justify-between px-2 rounded-t-xl bg-black/60 text-white pointer-events-none">
