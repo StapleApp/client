@@ -18,7 +18,15 @@ const statusColor = (status) => {
   }
 };
 
-const ServerMembers = ({ serverData, onRefresh, showMembers, onToggleCollapse }) => {
+const ServerMembers = ({ 
+  serverData, 
+  onRefresh, 
+  showMembers, 
+  onToggleCollapse, 
+  membersWidth = 224, 
+  onStartResize, 
+  isMobile 
+}) => {
   const { currentUser } = useAuth();
   const { liveStatus } = usePresence();
   const [members, setMembers] = useState([]);
@@ -158,12 +166,23 @@ const ServerMembers = ({ serverData, onRefresh, showMembers, onToggleCollapse })
     <AnimatePresence>
       {showMembers && (
         <motion.div
-          initial={{ x: 224, opacity: 0 }}
+          initial={{ x: isMobile ? 280 : membersWidth, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          exit={{ x: 224, opacity: 0 }}
+          exit={{ x: isMobile ? 280 : membersWidth, opacity: 0 }}
           transition={{ duration: 0.2, ease: "easeInOut" }}
-          className="fixed top-0 right-0 h-screen w-56 bg-[var(--primary-bg)] border-l border-[var(--primary-border)] flex flex-col z-20"
+          style={isMobile ? {} : { width: membersWidth }}
+          className="fixed top-0 right-0 h-screen bg-[var(--primary-bg)] border-l border-[var(--primary-border)] flex flex-col z-20 select-none"
         >
+          {/* Sürükleme ile genişletme/daraltma tutamacı */}
+          {!isMobile && (
+            <div
+              onPointerDown={onStartResize}
+              className="absolute top-0 left-0 w-1.5 h-full cursor-col-resize hover:bg-[var(--tertiary-border)]/50 active:bg-[var(--tertiary-border)] transition-colors z-50 group flex items-center justify-center"
+            >
+              <div className="w-0.5 h-8 bg-[var(--primary-border)] group-hover:bg-[var(--tertiary-text)] opacity-40 group-hover:opacity-100 transition-opacity rounded" />
+            </div>
+          )}
+
           <div className="p-4 border-b border-[var(--primary-border)] flex items-center justify-between">
             <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--primary-text)] flex items-center gap-2">
               <Users size={14} /> Üyeler — {members.length}

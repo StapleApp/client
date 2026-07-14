@@ -777,6 +777,42 @@ const SvSidebar = ({ serverData, onRefresh }) => {
     document.addEventListener("pointerup", onPointerUp);
   };
 
+  // Üyeler listesi genişliği ayarlanabilirliği (resize) ve kalıcılığı
+  const [membersWidth, setMembersWidth] = useState(() => {
+    return Number(localStorage.getItem("staple-members-width")) || 224;
+  });
+  const [isResizingMembers, setIsResizingMembers] = useState(false);
+
+  const startMembersResize = (e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = membersWidth;
+
+    const onPointerMove = (moveEvent) => {
+      // Sol kenardan tutulduğu için sürükleme yönü ters orantılıdır (sola çekmek genişliği artırır)
+      const newWidth = startWidth + (startX - moveEvent.clientX);
+      setMembersWidth(Math.max(200, Math.min(newWidth, 400)));
+    };
+
+    const onPointerUp = () => {
+      document.removeEventListener("pointermove", onPointerMove);
+      document.removeEventListener("pointerup", onPointerUp);
+      document.body.style.cursor = "default";
+      document.body.classList.remove("select-none");
+      setIsResizingMembers(false);
+    };
+
+    setIsResizingMembers(true);
+    document.body.style.cursor = "col-resize";
+    document.body.classList.add("select-none");
+    document.addEventListener("pointermove", onPointerMove);
+    document.addEventListener("pointerup", onPointerUp);
+  };
+
+  useEffect(() => {
+    localStorage.setItem("staple-members-width", membersWidth);
+  }, [membersWidth]);
+
   // Sidebar kapandığında voicebar docked ise otomatik dışarı (detached) al
   useEffect(() => {
     if (!showSidebar && isDocked) {
@@ -1390,6 +1426,9 @@ const SvSidebar = ({ serverData, onRefresh }) => {
           onRefresh={onRefresh}
           showMembers={showMembers}
           onToggleCollapse={() => setShowMembers(false)}
+          membersWidth={membersWidth}
+          onStartResize={startMembersResize}
+          isMobile={isMobile}
         />
       )}
 
@@ -1416,6 +1455,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
                     onRefresh={onRefresh}
                     showMembers={true}
                     onToggleCollapse={() => setShowMembers(false)}
+                    isMobile={isMobile}
                   />
                 </div>
               </motion.div>
@@ -1464,8 +1504,8 @@ const SvSidebar = ({ serverData, onRefresh }) => {
         }`}
         style={isMobile ? {} : {
           left: showSidebar ? 64 + sidebarWidth : 64,
-          right: showMembers ? 224 : 0,
-          transition: isResizingSidebar ? "none" : "left 0.2s ease-in-out, right 0.2s ease-in-out"
+          right: showMembers ? membersWidth : 0,
+          transition: (isResizingSidebar || isResizingMembers) ? "none" : "left 0.2s ease-in-out, right 0.2s ease-in-out"
         }}
       >
         <style>{`
