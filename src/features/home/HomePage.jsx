@@ -464,9 +464,16 @@ const HomePage = () => {
           <span className="w-2 h-2 rounded-full bg-green-500" /> Çevrimiçi — {onlineFriends.length}
         </RailTitle>
         {loading ? (
-          <div className="flex flex-col gap-2 animate-pulse">
+          <div className="flex flex-col gap-1">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-10 rounded-lg bg-[var(--secondary-bg)]/40" />
+              <div key={i} className="flex items-center gap-2 p-1.5 rounded-lg animate-pulse bg-[var(--primary-bg)]/20">
+                <div className="relative shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-[var(--secondary-bg)]/60" />
+                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--secondary-bg)] bg-[var(--secondary-bg)]" />
+                </div>
+                <div className="flex-1 h-3.5 bg-[var(--secondary-bg)]/60 rounded w-20" />
+                <div className="w-7 h-7 rounded-lg bg-[var(--secondary-bg)]/60 shrink-0" />
+              </div>
             ))}
           </div>
         ) : onlineFriends.length === 0 ? (
@@ -608,9 +615,12 @@ const HomePage = () => {
             <div>
               <SectionTitle>Sunucuların</SectionTitle>
               {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-pulse">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="h-16 rounded-xl bg-[var(--secondary-bg)]/40" />
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-[var(--primary-bg)]/45 border border-[var(--primary-border)]/20 animate-pulse">
+                      <div className="w-11 h-11 rounded-2xl bg-[var(--secondary-bg)]/60 shrink-0" />
+                      <div className="h-4 bg-[var(--secondary-bg)]/60 rounded w-28" />
+                    </div>
                   ))}
                 </div>
               ) : servers.length === 0 ? (
@@ -663,9 +673,15 @@ const HomePage = () => {
                 Arkadaşların{onlineFriends.length > 0 && <span className="ml-2 text-[var(--tertiary-bg)] normal-case">· {onlineFriends.length} çevrimiçi</span>}
               </SectionTitle>
               {loading ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 animate-pulse">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="h-16 rounded-xl bg-[var(--secondary-bg)]/40" />
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-[var(--primary-bg)]/45 border border-[var(--primary-border)]/20 animate-pulse">
+                      <div className="relative shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-[var(--secondary-bg)]/60" />
+                        <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[var(--secondary-bg)] bg-[var(--secondary-bg)]" />
+                      </div>
+                      <div className="h-4 bg-[var(--secondary-bg)]/60 rounded w-20" />
+                    </div>
                   ))}
                 </div>
               ) : friends.length === 0 ? (
