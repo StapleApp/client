@@ -364,16 +364,18 @@ const AppearanceSettings = () => {
           >
             {/* Gelen Mesaj */}
             <div className={`flex items-start gap-2.5 ${chatDensity === 'compact' ? 'space-y-0.5' : ''} ${messageStyle === 'bubbles' ? 'flex-row' : ''}`}>
-              {chatDensity !== 'compact' && (
-                <img src="/defaults/avatars/2.png" alt="" className="w-8 h-8 rounded-full object-cover shrink-0 mt-0.5" />
-              )}
+              <img 
+                src="/defaults/avatars/2.png" 
+                alt="" 
+                className={`rounded-full object-cover shrink-0 mt-0.5 transition-all duration-200 ${
+                  chatDensity === 'compact' ? 'w-7 h-7' : 'w-8 h-8'
+                }`} 
+              />
               <div className="min-w-0 flex-1">
-                {chatDensity !== 'compact' && (
-                  <div className="flex items-baseline gap-1.5 mb-0.5 text-left">
-                    <span className="text-xs font-bold text-[var(--secondary-text)]">Arkadaşın</span>
-                    <span className="text-[10px] text-[var(--primary-text)]">12:34</span>
-                  </div>
-                )}
+                <div className={`flex items-baseline gap-1.5 text-left ${chatDensity === 'compact' ? 'mb-0' : 'mb-0.5'}`}>
+                  <span className="text-xs font-bold text-[var(--secondary-text)]">Arkadaşın</span>
+                  <span className="text-[10px] text-[var(--primary-text)]">12:34</span>
+                </div>
                 <div 
                   className={`text-[var(--secondary-text)] break-words text-left ${
                     messageStyle === 'bubbles' 
@@ -393,16 +395,18 @@ const AppearanceSettings = () => {
 
             {/* Giden Mesaj */}
             <div className={`flex items-start gap-2.5 ${chatDensity === 'compact' ? 'space-y-0.5' : ''} ${messageStyle === 'bubbles' ? 'flex-row-reverse text-right' : ''}`}>
-              {chatDensity !== 'compact' && (
-                <img src="/defaults/avatars/1.png" alt="" className="w-8 h-8 rounded-full object-cover shrink-0 mt-0.5" />
-              )}
+              <img 
+                src="/defaults/avatars/1.png" 
+                alt="" 
+                className={`rounded-full object-cover shrink-0 mt-0.5 transition-all duration-200 ${
+                  chatDensity === 'compact' ? 'w-7 h-7' : 'w-8 h-8'
+                }`} 
+              />
               <div className="min-w-0 flex-1">
-                {chatDensity !== 'compact' && (
-                  <div className="flex items-baseline gap-1.5 mb-0.5 justify-end">
-                    <span className="text-xs font-bold text-[var(--secondary-text)]">Sen</span>
-                    <span className="text-[10px] text-[var(--primary-text)]">12:35</span>
-                  </div>
-                )}
+                <div className={`flex items-baseline gap-1.5 ${chatDensity === 'compact' ? 'mb-0' : 'mb-0.5'} ${messageStyle === 'bubbles' ? 'justify-end' : 'justify-start'}`}>
+                  <span className="text-xs font-bold text-[var(--secondary-text)]">Sen</span>
+                  <span className="text-[10px] text-[var(--primary-text)]">12:35</span>
+                </div>
                 <div 
                   className={`text-[var(--secondary-text)] break-words text-left ${
                     messageStyle === 'bubbles' 
