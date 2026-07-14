@@ -477,8 +477,12 @@ const HomePage = () => {
   return (
     <div
       className={`parallax-bg fixed top-0 right-0 h-screen overflow-y-auto bg-[var(--secondary-bg)] text-left flex flex-col ${
-        isMobile ? "left-0" : "left-16"
+        isMobile ? "left-0" : ""
       }`}
+      style={isMobile ? {} : {
+        left: "var(--navigator-width, 64px)",
+        transition: "left 0.2s ease-in-out"
+      }}
     >
       {isMobile && (
         <div className="flex items-center h-[60px] px-5 py-4 bg-[var(--primary-bg)]/80 backdrop-blur-md border-b border-[var(--primary-border)]/30 text-[var(--secondary-text)] shrink-0 z-30">

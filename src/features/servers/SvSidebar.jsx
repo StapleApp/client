@@ -1383,8 +1383,8 @@ const SvSidebar = ({ serverData, onRefresh }) => {
             pointerEvents: showSidebar ? "auto" : "none"
           }}
           transition={{ duration: 0.2, ease: "easeInOut" }}
-          style={{ width: sidebarWidth }}
-          className="fixed left-16 top-0 h-screen bg-[var(--primary-bg)]/90 backdrop-blur-md text-[var(--secondary-text)] shadow-2xl border-r border-[var(--primary-border)]/20 flex flex-col z-30 select-none"
+          style={{ width: sidebarWidth, left: "var(--navigator-width, 64px)", transition: "left 0.2s ease-in-out" }}
+          className="fixed top-0 h-screen bg-[var(--primary-bg)]/90 backdrop-blur-md text-[var(--secondary-text)] shadow-2xl border-r border-[var(--primary-border)]/20 flex flex-col z-30 select-none"
         >
           {renderChannelListSidebar()}
           {/* Sürükleme ile genişletme/daraltma tutamacı */}
@@ -1503,7 +1503,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
           !showSidebar && !isMobile ? "sidebar-collapsed-padding" : ""
         }`}
         style={isMobile ? {} : {
-          left: showSidebar ? 64 + sidebarWidth : 64,
+          left: showSidebar ? `calc(var(--navigator-width, 64px) + ${sidebarWidth}px)` : "var(--navigator-width, 64px)",
           right: showMembers ? membersWidth : 0,
           transition: (isResizingSidebar || isResizingMembers) ? "none" : "left 0.2s ease-in-out, right 0.2s ease-in-out"
         }}

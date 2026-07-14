@@ -329,8 +329,8 @@ const MusicPanel = () => {
   // ---------- DOCKED (SvSidebar'a gömülü kompakt bar) ----------
   const dockedBar = (
     <div
-      className="fixed left-16 z-[98] pointer-events-auto"
-      style={{ bottom: musicBottom, width: "var(--sidebar-width, 256px)" }}
+      className="fixed z-[98] pointer-events-auto"
+      style={{ bottom: musicBottom, width: "var(--sidebar-width, 256px)", left: "var(--navigator-width, 64px)", transition: "left 0.2s ease-in-out" }}
     >
       <div className="flex flex-col gap-2 px-2 py-2 bg-[var(--primary-bg)] border-t border-[var(--primary-border)]">
         {/* Üst satır: başlık + video + detach */}

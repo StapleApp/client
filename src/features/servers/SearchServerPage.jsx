@@ -91,7 +91,7 @@ const SearchServerPage = () => {
       exit={{ opacity: 0, x: 100 }}
       transition={{ duration: 0.1 }}
       className="background fixed top-0 left-0 w-full h-screen bg-[var(--secondary-bg)] text-[var(--secondary-text)] overflow-hidden flex flex-col"
-      style={{ paddingLeft: isMobile ? "0px" : "64px" }}
+      style={{ paddingLeft: isMobile ? "0px" : "var(--navigator-width, 64px)", transition: "padding-left 0.2s ease-in-out" }}
     >
       {isMobile && (
         <div className="flex items-center h-[60px] px-5 py-4 bg-[var(--primary-bg)] border-b-2 border-[var(--primary-border)] text-[var(--secondary-text)] shrink-0 z-30">

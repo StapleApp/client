@@ -25,7 +25,7 @@ const relTime = (iso) => {
   return new Date(iso).toLocaleDateString("tr-TR");
 };
 
-const NotificationsBell = () => {
+const NotificationsBell = ({ isNavExpanded }) => {
   const navigate = useNavigate();
   const { userData } = useAuth();
   const { notifications, setNotifications, unreadCount } = useNavData();
@@ -89,14 +89,47 @@ const NotificationsBell = () => {
 
   return (
     <div className="relative" ref={ref}>
-      <div className="icon group" onClick={() => setOpen(!open)}>
-        <IoMdNotifications size="25" />
+      <div 
+        onClick={() => setOpen(!open)}
+        className={`${
+          open ? "hovered-icon" : "icon"
+        } group relative transition-all duration-300 ease-in-out cursor-pointer ${
+          isNavExpanded 
+            ? "w-[216px] justify-start px-3.5 gap-3 rounded-[12px] h-12 mt-2 mb-2 mx-auto" 
+            : "w-12 h-12 justify-center rounded-xl mt-2 mb-2 mx-auto"
+        }`}
+      >
+        <div className="shrink-0 flex items-center justify-center">
+          <IoMdNotifications size="25" />
+        </div>
+        
+        <AnimatePresence>
+          {isNavExpanded && (
+            <motion.span
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.15, delay: 0.05 }}
+              className="text-xs font-bold text-[var(--secondary-text)] truncate select-none group-hover:text-[var(--tertiary-bg)]"
+            >
+              Bildirimler
+            </motion.span>
+          )}
+        </AnimatePresence>
+
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-2 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none border-2 border-[var(--primary-bg)]">
+          <span className={`absolute bg-red-500 text-white text-[10px] font-bold leading-none border-2 border-[var(--primary-bg)] rounded-full flex items-center justify-center ${
+            isNavExpanded 
+              ? "right-3 min-w-[18px] h-[18px] px-1" 
+              : "top-1 right-2 min-w-[18px] h-[18px] px-1"
+          }`}>
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
-        <span className="sidebar-tooltip group-hover:scale-100">Bildirimler</span>
+
+        {!isNavExpanded && (
+          <span className="sidebar-tooltip group-hover:scale-100">Bildirimler</span>
+        )}
       </div>
 
       <AnimatePresence>

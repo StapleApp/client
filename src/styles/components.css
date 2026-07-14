@@ -66,11 +66,11 @@
 
 
   .icon {
-    @apply relative flex items-center justify-center h-12 w-12 mt-2 mb-2 mx-auto shadow-lg bg-[var(--primary-bg)] text-[var(--primary-text)] border-3 border-[var(--primary-border)] hover:bg-[var(--secondary-bg)] hover:text-[var(--tertiary-bg)] hover:border-[var(--tertiary-border)] rounded-xl transition-all duration-150 active:scale-90 cursor-pointer;
+    @apply relative flex items-center mt-2 mb-2 mx-auto shadow-lg bg-[var(--primary-bg)] text-[var(--primary-text)] border-3 border-[var(--primary-border)] hover:bg-[var(--secondary-bg)] hover:text-[var(--tertiary-bg)] hover:border-[var(--tertiary-border)] transition-all duration-150 active:scale-90 cursor-pointer;
   }
 
   .hovered-icon {
-    @apply relative flex items-center justify-center h-12 w-12 mt-2 mb-2 mx-auto shadow-lg bg-[var(--secondary-bg)] text-[var(--tertiary-bg)] border-3 border-[var(--tertiary-border)] rounded-xl transition-all duration-150 active:scale-90 cursor-pointer;
+    @apply relative flex items-center mt-2 mb-2 mx-auto shadow-lg bg-[var(--secondary-bg)] text-[var(--tertiary-bg)] border-3 border-[var(--tertiary-border)] transition-all duration-150 active:scale-90 cursor-pointer;
   }
 
   .sidebar-tooltip {

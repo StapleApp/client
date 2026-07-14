@@ -327,8 +327,8 @@ const DirectMessagingPage = () => {
       {/* Desktop sidebar view */}
       {!isMobile && (
         <div 
-          style={{ width: sidebarWidth }}
-          className="fixed top-0 left-16 h-screen bg-[var(--primary-bg)]/90 backdrop-blur-md border-r border-[var(--primary-border)]/20 flex flex-col z-30 select-none"
+          style={{ width: sidebarWidth, left: "var(--navigator-width, 64px)", transition: "left 0.2s ease-in-out" }}
+          className="fixed top-0 h-screen bg-[var(--primary-bg)]/90 backdrop-blur-md border-r border-[var(--primary-border)]/20 flex flex-col z-30 select-none"
         >
           {renderFriendsListSidebar()}
           {/* Sürükleme ile genişletme/daraltma tutamacı */}
@@ -369,7 +369,7 @@ const DirectMessagingPage = () => {
       <div 
         className="fixed top-0 right-0 h-[100dvh] bg-[var(--secondary-bg)] z-20 flex flex-col"
         style={isMobile ? { left: 0 } : {
-          left: 64 + sidebarWidth,
+          left: `calc(var(--navigator-width, 64px) + ${sidebarWidth}px)`,
           transition: isResizingSidebar ? "none" : "left 0.2s ease-in-out"
         }}
       >

@@ -118,7 +118,10 @@ const ServerPage = () => {
 const ServerSkeleton = () => (
   <div className="animate-pulse">
     {/* Kanal sidebar iskeleti */}
-    <div className="fixed left-16 top-0 h-screen w-64 bg-[var(--primary-bg)] border-l border-r border-[var(--primary-border)] flex flex-col z-30">
+    <div 
+      className="fixed top-0 h-screen w-64 bg-[var(--primary-bg)] border-l border-r border-[var(--primary-border)] flex flex-col z-30"
+      style={{ left: "var(--navigator-width, 64px)", transition: "left 0.2s ease-in-out" }}
+    >
       <div className="h-28 w-full bg-[var(--secondary-bg)]" />
       <div className="p-2">
         <div className="h-9 w-full rounded-xl bg-[var(--secondary-bg)]" />

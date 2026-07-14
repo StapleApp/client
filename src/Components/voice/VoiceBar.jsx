@@ -781,8 +781,8 @@ const VoiceBar = () => {
     // Sürükleme sınırı = tüm ekran. pointer-events-none → sayfayı engellemez.
     <div
       ref={boundsRef}
-      className={isDocked ? "fixed left-16 bottom-0 z-[99] pointer-events-auto" : `fixed inset-0 z-[100] flex items-end justify-center pb-4 pointer-events-none ${isMobile ? "px-3" : ""}`}
-      style={isDocked ? { width: "var(--sidebar-width, 256px)" } : {}}
+      className={isDocked ? "fixed bottom-0 z-[99] pointer-events-auto" : `fixed inset-0 z-[100] flex items-end justify-center pb-4 pointer-events-none ${isMobile ? "px-3" : ""}`}
+      style={isDocked ? { width: "var(--sidebar-width, 256px)", left: "var(--navigator-width, 64px)", transition: "left 0.2s ease-in-out" } : {}}
     >
       <AnimatePresence>
         {show && (
