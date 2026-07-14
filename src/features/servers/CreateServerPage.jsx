@@ -196,7 +196,7 @@ const CreateServerPage = () => {
           {/* Row 2: İkon & Banner */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label hint="(isteğe bağlı)">Sunucu İkonu</Label>
+              <Label>Sunucu İkonu</Label>
               <ImagePicker
                 value={iconUrl}
                 onChange={setIconUrl}
@@ -207,7 +207,7 @@ const CreateServerPage = () => {
               />
             </div>
             <div>
-              <Label hint="(isteğe bağlı)">Sunucu Bannerı</Label>
+              <Label>Sunucu Bannerı</Label>
               <ImagePicker
                 value={bannerUrl}
                 onChange={setBannerUrl}
