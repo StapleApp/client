@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
+import ProfilePanel from "../../Components/layout/ProfilePanel";
 import {
   Plus,
   UserPlus,
@@ -205,6 +207,19 @@ const HomePage = () => {
   const [myStatus, setMyStatus] = useState("online");
   const [time, setTime] = useState(new Date());
 
+  // Profil Kartı Açma/Kapatma Durumları
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [cardExpanded, setCardExpanded] = useState(false);
+  const [cardPos, setCardPos] = useState({ top: 0, left: 0 });
+
+  const handleAvatarClick = (e, user) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setCardPos({ top: rect.bottom + 8, left: rect.left });
+    setSelectedUser(user);
+    setCardExpanded(true);
+  };
+
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -250,6 +265,10 @@ const HomePage = () => {
           photoURL: p.photoURL || "/defaults/avatars/1.png",
           rawStatus: p.status || "offline",
           lastSeen: p.lastSeen || null,
+          friendshipID: p.friendshipID || p.userID,
+          createdDate: p.createdDate || null,
+          about: p.about || "",
+          profileBannerUrl: p.profileBannerUrl || "",
         }))
       );
 
@@ -360,7 +379,20 @@ const HomePage = () => {
       >
         <div className="flex items-center gap-3">
           <div className="relative shrink-0">
-            <img src={avatar} alt="" className="w-12 h-12 rounded-2xl object-cover border-2 border-[var(--tertiary-border)]" />
+            <img 
+              src={avatar} 
+              alt="" 
+              onClick={(e) => handleAvatarClick(e, {
+                userID: userData?.userID,
+                friendshipID: userData?.friendshipID,
+                nickName: userData?.nickName || "gezgin",
+                photoURL: userData?.photoURL || "/defaults/avatars/1.png",
+                createdDate: userData?.createdDate,
+                about: userData?.about,
+                profileBannerUrl: userData?.profileBannerUrl
+              })}
+              className="w-12 h-12 rounded-2xl object-cover border-2 border-[var(--tertiary-border)] cursor-pointer hover:scale-105 active:scale-95 transition-transform" 
+            />
             <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[var(--secondary-bg)] ${statusColor(myStatus)}`} />
           </div>
           <div className="flex-1 min-w-0">
@@ -447,7 +479,12 @@ const HomePage = () => {
                 className="group flex items-center gap-2 p-1.5 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors"
               >
                 <div className="relative shrink-0">
-                  <img src={f.photoURL} alt="" className="w-8 h-8 rounded-full object-cover" />
+                  <img 
+                    src={f.photoURL} 
+                    alt="" 
+                    onClick={(e) => handleAvatarClick(e, f)}
+                    className="w-8 h-8 rounded-full object-cover cursor-pointer hover:scale-105 active:scale-95 transition-transform" 
+                  />
                   <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--secondary-bg)] ${statusColor(f.status)}`} />
                   {(userUnread[f.userID] || 0) > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold leading-none border-2 border-[var(--secondary-bg)]">
@@ -652,7 +689,12 @@ const HomePage = () => {
                         className={`flex items-center gap-3 p-3 rounded-xl ${GLASS} ${GLASS_HOVER} hover:-translate-y-0.5 transition-all duration-200 cursor-pointer`}
                       >
                         <div className="relative shrink-0">
-                          <img src={f.photoURL} alt="" className="w-10 h-10 rounded-full object-cover" />
+                          <img 
+                            src={f.photoURL} 
+                            alt="" 
+                            onClick={(e) => handleAvatarClick(e, f)}
+                            className="w-10 h-10 rounded-full object-cover cursor-pointer hover:scale-105 active:scale-95 transition-transform" 
+                          />
                           <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[var(--secondary-bg)] ${statusColor(f.status)}`} />
                           {unread > 0 && (
                             <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none border-2 border-[var(--primary-bg)]">
@@ -729,6 +771,23 @@ const HomePage = () => {
           )}
         </AnimatePresence>
       )}
+      {selectedUser &&
+        createPortal(
+          <ProfilePanel
+            check={cardExpanded}
+            setCheck={setCardExpanded}
+            posX={cardPos.left}
+            posY={cardPos.top}
+            userName={selectedUser.nickName}
+            photoURL={selectedUser.photoURL}
+            userID={selectedUser.friendshipID}
+            memberDate={selectedUser.createdDate}
+            UID={selectedUser.userID}
+            about={selectedUser.about}
+            bannerURL={selectedUser.profileBannerUrl}
+          />,
+          document.body
+        )}
     </div>
   );
 };
