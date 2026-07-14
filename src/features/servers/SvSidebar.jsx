@@ -1425,7 +1425,6 @@ const SvSidebar = ({ serverData, onRefresh }) => {
           serverData={serverData}
           onRefresh={onRefresh}
           showMembers={showMembers}
-          onToggleCollapse={() => setShowMembers(false)}
           membersWidth={membersWidth}
           onStartResize={startMembersResize}
           isMobile={isMobile}
@@ -1454,7 +1453,6 @@ const SvSidebar = ({ serverData, onRefresh }) => {
                     serverData={serverData}
                     onRefresh={onRefresh}
                     showMembers={true}
-                    onToggleCollapse={() => setShowMembers(false)}
                     isMobile={isMobile}
                   />
                 </div>
@@ -1464,15 +1462,6 @@ const SvSidebar = ({ serverData, onRefresh }) => {
         </AnimatePresence>
       )}
 
-      {!showMembers && !isMobile && (
-        <button
-          onClick={() => setShowMembers(true)}
-          title="Üye listesini göster"
-          className="fixed top-3 right-4 z-30 p-2 rounded-xl border border-[var(--primary-border)] bg-[var(--primary-bg)] text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:border-[var(--tertiary-border)] hover:scale-105 transition-all duration-200"
-        >
-          <Users size={16} />
-        </button>
-      )}
 
       {!showSidebar && !isMobile && (
         <button

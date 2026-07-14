@@ -773,14 +773,14 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
             <Search size={18} />
           </button>
 
-          {isMobile && context?.serverId && onToggleMembers && (
+          {context?.serverId && onToggleMembers && (
             <button
               onClick={onToggleMembers}
-              title="Üyeleri Göster"
-              aria-label="Üyeleri Göster"
+              title={showMembers ? "Üyeleri Gizle" : "Üyeleri Göster"}
+              aria-label={showMembers ? "Üyeleri Gizle" : "Üyeleri Göster"}
               className={`p-1.5 rounded-lg transition-colors ml-2 ${
                 showMembers
-                  ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] animate-pulse"
+                  ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
                   : "text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--secondary-bg)]"
               }`}
             >

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Crown, Users, MoreVertical, UserMinus, Shield, ChevronRight } from "lucide-react";
+import { Crown, Users, MoreVertical, UserMinus, Shield } from "lucide-react";
 import { getUser } from "../../services/userService";
 import { usePresence } from "../../context/PresenceContext";
 import { assignMemberRole, kickMember } from "../../services/roleService";
@@ -22,7 +22,6 @@ const ServerMembers = ({
   serverData, 
   onRefresh, 
   showMembers, 
-  onToggleCollapse, 
   membersWidth = 224, 
   onStartResize, 
   isMobile 
@@ -187,13 +186,6 @@ const ServerMembers = ({
             <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--primary-text)] flex items-center gap-2">
               <Users size={14} /> Üyeler — {members.length}
             </h2>
-            <button
-              onClick={onToggleCollapse}
-              title="Üye listesini gizle"
-              className="p-1 rounded-md text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--secondary-bg)] transition-colors"
-            >
-              <ChevronRight size={15} />
-            </button>
           </div>
 
       <div className="flex-1 overflow-y-auto p-2">
