@@ -62,6 +62,42 @@ const DirectMessagingPage = () => {
   const [openingDM, setOpeningDM] = useState(false);
   const [overview, setOverview] = useState({}); // otherUserId -> { lastAt, unread, ... }
 
+  // Sidebar genişliği ayarlanabilirliği (resize) ve kalıcılığı
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    return Number(localStorage.getItem("staple-sidebar-width")) || 256;
+  });
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--sidebar-width", `${sidebarWidth}px`);
+    localStorage.setItem("staple-sidebar-width", sidebarWidth);
+  }, [sidebarWidth]);
+
+  const startSidebarResize = (e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = sidebarWidth;
+
+    const onPointerMove = (moveEvent) => {
+      const newWidth = startWidth + (moveEvent.clientX - startX);
+      setSidebarWidth(Math.max(200, Math.min(newWidth, 450)));
+    };
+
+    const onPointerUp = () => {
+      document.removeEventListener("pointermove", onPointerMove);
+      document.removeEventListener("pointerup", onPointerUp);
+      document.body.style.cursor = "default";
+      document.body.classList.remove("select-none");
+      setIsResizingSidebar(false);
+    };
+
+    setIsResizingSidebar(true);
+    document.body.style.cursor = "col-resize";
+    document.body.classList.add("select-none");
+    document.addEventListener("pointermove", onPointerMove);
+    document.addEventListener("pointerup", onPointerUp);
+  };
+
   // Arkadaş listesini getir + her birinin profilini çek
   useEffect(() => {
     const fetchFriends = async () => {
@@ -290,8 +326,18 @@ const DirectMessagingPage = () => {
     >
       {/* Desktop sidebar view */}
       {!isMobile && (
-        <div className="fixed top-0 left-16 h-screen w-64 bg-[var(--primary-bg)]/90 backdrop-blur-md border-r border-[var(--primary-border)]/20 flex flex-col z-30">
+        <div 
+          style={{ width: sidebarWidth }}
+          className="fixed top-0 left-16 h-screen bg-[var(--primary-bg)]/90 backdrop-blur-md border-r border-[var(--primary-border)]/20 flex flex-col z-30 select-none"
+        >
           {renderFriendsListSidebar()}
+          {/* Sürükleme ile genişletme/daraltma tutamacı */}
+          <div
+            onPointerDown={startSidebarResize}
+            className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-[var(--tertiary-border)]/50 active:bg-[var(--tertiary-border)] transition-colors z-50 group flex items-center justify-center"
+          >
+            <div className="w-0.5 h-8 bg-[var(--primary-border)] group-hover:bg-[var(--tertiary-text)] opacity-40 group-hover:opacity-100 transition-opacity rounded" />
+          </div>
         </div>
       )}
 
@@ -320,9 +366,13 @@ const DirectMessagingPage = () => {
       )}
 
       {/* Chat alanı */}
-      <div className={`fixed top-0 right-0 h-[100dvh] bg-[var(--secondary-bg)] z-20 ${
-        isMobile ? "left-0" : "left-80"
-      }`}>
+      <div 
+        className="fixed top-0 right-0 h-[100dvh] bg-[var(--secondary-bg)] z-20 flex flex-col"
+        style={isMobile ? { left: 0 } : {
+          left: 64 + sidebarWidth,
+          transition: isResizingSidebar ? "none" : "left 0.2s ease-in-out"
+        }}
+      >
         {activeFriend && activeChannelId ? (
           <ChatPanel
             key={activeChannelId}
