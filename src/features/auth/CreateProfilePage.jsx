@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { UpdateNickname } from "../../services/userService";
 import { useAuth } from "../../context/AuthContext";
 import AvatarUpload from "../../Components/AvatarUpload";
-import { DEFAULT_AVATARS } from "../../config/defaults";
+import { DEFAULT_AVATARS, DEFAULT_PROFILE_BANNERS } from "../../config/defaults";
 
 const CreateProfilePage = () => {
   const [nickname, setNickname] = useState('');
@@ -40,7 +40,7 @@ const CreateProfilePage = () => {
 
     setBusy(true);
     try {
-      await UpdateNickname(currentUser.uid, trimmed, selectedImage);
+      await UpdateNickname(currentUser.uid, trimmed, selectedImage, DEFAULT_PROFILE_BANNERS[0]);
       // Yönlendirmeden ÖNCE profili tazele; yoksa ProtectedRoute hâlâ boş
       // nickName görüp bizi buraya geri gönderir.
       await refreshUserData();

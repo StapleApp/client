@@ -34,8 +34,8 @@ const CreateServerPage = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState("public");
-  const [iconUrl, setIconUrl] = useState("");
-  const [bannerUrl, setBannerUrl] = useState("");
+  const [iconUrl, setIconUrl] = useState(DEFAULT_SERVER_ICONS[0] || "");
+  const [bannerUrl, setBannerUrl] = useState(DEFAULT_SERVER_BANNERS[0] || "");
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState("");
   const [submitting, setSubmitting] = useState(false);

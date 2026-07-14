@@ -1,14 +1,17 @@
 import { supabase } from "../config/supabase";
 
-// ** Nickname ve avatar güncelleme **
-export const UpdateNickname = async (uid, newValue, photo) => {
-  // Hatayı yutmuyoruz — çağıran "başarılı" toast'ı göstermeden önce bilmeli.
+// ** Nickname, avatar ve banner güncelleme **
+export const UpdateNickname = async (uid, newValue, photo, banner) => {
+  const updateData = {
+    nickname: newValue,
+    avatar_url: photo,
+  };
+  if (banner) {
+    updateData.profile_banner_url = banner;
+  }
   const { error } = await supabase
     .from("profiles")
-    .update({
-      nickname: newValue,
-      avatar_url: photo,
-    })
+    .update(updateData)
     .eq("id", uid);
 
   if (error) {
