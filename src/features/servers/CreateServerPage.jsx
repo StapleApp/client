@@ -15,7 +15,7 @@ import { saveServerToFirestore } from "../../services/serverService";
 import { useAuth } from "../../context/AuthContext";
 import ImagePicker from "../../Components/ImagePicker";
 import { DEFAULT_SERVER_ICONS, DEFAULT_SERVER_BANNERS } from "../../config/defaults";
-import icon from "../../assets/branding/staple-icon.png";
+import icon from "../../assets/branding/staple-icon.svg";
 
 const inputClass =
   "w-full px-3 py-2 rounded-lg bg-[var(--secondary-bg)] text-[var(--secondary-text)] border border-[var(--primary-border)] focus:outline-none focus:border-[var(--tertiary-border)] placeholder:text-[var(--primary-text)] text-sm transition-colors";

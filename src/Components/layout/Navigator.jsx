@@ -11,6 +11,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import "../../styles/components.css";
 
 import { useNavData } from "../../context/NavDataContext";
+import stapleLogo from "../../assets/branding/staple-icon.svg";
 
 // Sol menü öğeleri — tek kaynaktan yönetilir.
 // Bildirimler (custom) tıklanınca sayfaya gitmez, scroll dropdown açar.
@@ -240,7 +241,11 @@ const Navigator = () => {
           {isNavExpanded ? (
             <>
               <div className="flex items-center gap-2">
-                <FaStapler size="16" className="text-[var(--tertiary-bg)]" />
+                <img
+                  src={stapleLogo}
+                  alt="Staple"
+                  className="w-6 h-6 rounded-md shrink-0"
+                />
                 <span className="text-xs font-bold text-[var(--secondary-text)]">Staple</span>
               </div>
               <PanelLeftClose size="18" className="text-[var(--primary-text)]" />

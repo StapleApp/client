@@ -31,7 +31,7 @@ import { usePresence } from "../../context/PresenceContext";
 import { getDMOverview } from "../../services/groupService";
 import { socket } from "../../config/socket";
 
-import icon from "../../assets/branding/staple-icon.png";
+import icon from "../../assets/branding/staple-icon.svg";
 import Navigator from "../../Components/layout/Navigator";
 
 // Düz renk — koyu mavi kartlar/butonlar (projenin geneliyle aynı), gri paneller.

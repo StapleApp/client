@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { Lock, Compass, ArrowLeft, Loader2, UserPlus } from "lucide-react";
 import { getServerById, joinServer } from "../../services/serverService";
 import { useAuth } from "../../context/AuthContext";
-import fallbackIcon from "../../assets/branding/staple-icon.png";
+import fallbackIcon from "../../assets/branding/staple-icon.svg";
 
 const ServerPage = () => {
   const { serverId } = useParams();

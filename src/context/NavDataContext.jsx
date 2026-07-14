@@ -8,7 +8,7 @@ import {
 import { useAuth } from "./AuthContext";
 import { listenNotifications } from "../services/notificationService";
 import { getServersList } from "../services/serverService";
-import icon from "../assets/branding/staple-icon.png";
+import icon from "../assets/branding/staple-icon.svg";
 
 /**
  * Sol navigasyon çubuğunun ihtiyaç duyduğu paylaşılan verileri tek noktadan sağlar:

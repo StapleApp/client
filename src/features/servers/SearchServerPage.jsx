@@ -6,7 +6,7 @@ import { Menu, Compass, Tag as TagIcon, Users, X, RefreshCw, Home, UserPlus, Set
 import { useAuth } from "../../context/AuthContext";
 import { useMobileMenu } from "../../context/MobileMenuContext";
 import { getPublicServers, joinServer, getServersList, parseInviteCode } from "../../services/serverService";
-import fallbackIcon from "../../assets/branding/staple-icon.png";
+import fallbackIcon from "../../assets/branding/staple-icon.svg";
 import Navigator from "../../Components/layout/Navigator";
 
 const SearchServerPage = () => {

@@ -5,7 +5,7 @@ import { Loader2, Users, ArrowLeft, Lock, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 import { getInviteInfo, joinServerWithInvite } from "../../services/serverService";
-import fallbackIcon from "../../assets/branding/staple-icon.png";
+import fallbackIcon from "../../assets/branding/staple-icon.svg";
 
 // Davet bağlantısı sayfası: /invite/:code
 // Giriş yapmış kullanıcıya sunucu önizlemesini gösterir ve "Katıl" ile

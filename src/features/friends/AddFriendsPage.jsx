@@ -6,7 +6,7 @@ import { Check, X, Clock, Menu, Home, Compass, UserPlus, Settings, User, Search,
 import Navigator from "../../Components/layout/Navigator";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
-import pfp from "../../assets/branding/staple-icon.png";
+import pfp from "../../assets/branding/staple-icon.svg";
 import profileBanner from "../../assets/backgrounds/profile-banner.png";
 import { useAuth } from "../../context/AuthContext";
 import { useMobileMenu } from "../../context/MobileMenuContext";
