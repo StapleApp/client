@@ -377,10 +377,11 @@ const AppearanceSettings = () => {
                 <div 
                   className={`text-[var(--secondary-text)] break-words text-left ${
                     messageStyle === 'bubbles' 
-                      ? 'bg-neutral-800/60 border border-neutral-700/80 px-3 py-1.5 rounded-r-xl rounded-bl-xl inline-block max-w-[85%] shadow-sm border-l-4 border-l-[var(--accent)] text-xs' 
-                      : 'text-sm'
+                      ? 'bg-neutral-800/60 border border-neutral-700/80 px-3 py-1.5 rounded-r-xl rounded-bl-xl inline-block max-w-[85%] shadow-sm border-l-4 border-l-[var(--accent)]' 
+                      : ''
                   }`}
                   style={{
+                    fontSize: "inherit",
                     backgroundColor: theme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)',
                     borderColor: theme === 'light' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)'
                   }}
@@ -405,9 +406,10 @@ const AppearanceSettings = () => {
                 <div 
                   className={`text-[var(--secondary-text)] break-words text-left ${
                     messageStyle === 'bubbles' 
-                      ? 'bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] border border-[var(--tertiary-border)] px-3 py-1.5 rounded-l-xl rounded-br-xl inline-block max-w-[85%] shadow-sm text-xs' 
-                      : 'text-sm'
+                      ? 'bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] border border-[var(--tertiary-border)] px-3 py-1.5 rounded-l-xl rounded-br-xl inline-block max-w-[85%] shadow-sm' 
+                      : ''
                   }`}
+                  style={{ fontSize: "inherit" }}
                 >
                   <span style={{ color: messageStyle === 'bubbles' ? 'var(--tertiary-text)' : 'inherit' }}>
                     Değişiklikler anında yansıyor!
