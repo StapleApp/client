@@ -21,15 +21,15 @@
           var eff = t;
           if (t === "auto") {
             eff = mm && mm("(prefers-color-scheme: dark)").matches ? "black" : "light";
-          } else if (!/^(ocean|black|light)$/.test(t)) {
+          } else if (!/^(ocean|black|light|sepia)$/.test(t)) {
             eff = "ocean";
           }
           d.setAttribute("data-theme", eff);
           // CSS yüklenmeden önce arka planı temaya göre boya (Okyanus flash'ını önler)
-          var canvas = eff === "light" ? "#f1f3f5" : eff === "black" ? "#0c0c0e" : "#393e46";
+          var canvas = eff === "light" ? "#f1f3f5" : eff === "black" ? "#0c0c0e" : eff === "sepia" ? "#eadfc4" : "#393e46";
           d.style.backgroundColor = canvas;
           // Mobil tarayıcı çubuğu rengi
-          var chrome = eff === "light" ? "#ffffff" : eff === "black" ? "#000000" : "#222831";
+          var chrome = eff === "light" ? "#ffffff" : eff === "black" ? "#000000" : eff === "sepia" ? "#f6efdd" : "#222831";
           var meta = document.querySelector('meta[name="theme-color"]');
           if (meta) meta.setAttribute("content", chrome);
           // Hareketi azalt (varsayılan KAPALI — yalnızca kullanıcı açtıysa)

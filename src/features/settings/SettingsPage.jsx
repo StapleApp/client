@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 import { FaPowerOff } from "react-icons/fa6";
-import { Loader2, Trash2, AlertTriangle, Pencil, Menu, Mic, Volume2, ChevronDown, Check, Home, Compass, UserPlus, Settings as SettingsIcon, User, X, Sun, Moon, MoonStar, Monitor, Palette, Pipette, Sparkles, Grid2x2, Zap, Type, MessageSquare } from "lucide-react";
+import { Loader2, Trash2, AlertTriangle, Pencil, Menu, Mic, Volume2, ChevronDown, Check, Home, Compass, UserPlus, Settings as SettingsIcon, User, X, Sun, Moon, MoonStar, Monitor, Palette, Pipette, Sparkles, Grid2x2, Zap, Type, MessageSquare, Coffee } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useMobileMenu } from "../../context/MobileMenuContext";
 import { useVoice } from "../../context/VoiceContext";
@@ -128,6 +128,7 @@ const AppearanceSettings = () => {
   const themeIcon = (id) =>
     id === "light" ? <Sun size={15} /> :
     id === "black" ? <MoonStar size={15} /> :
+    id === "sepia" ? <Coffee size={15} /> :
     id === "auto" ? <Monitor size={15} /> :
     <Moon size={15} />;
 

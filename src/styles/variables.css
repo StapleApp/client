@@ -52,6 +52,16 @@
   --secondary-border: #d1d5db;
 }
 
+/* --- Tema: SEPYA (sıcak kağıt tonu) --- accent korunur */
+:root[data-theme="sepia"] {
+  --primary-bg: #f6efdd;
+  --secondary-bg: #eadfc4;
+  --primary-text: #8b7a5a;
+  --secondary-text: #453a29;
+  --primary-border: #ddceac;
+  --secondary-border: #cabf99;
+}
+
 /*
  * UYARI: Vite şablonundan kalan text-align: center.
  * Birçok sayfa metin ortalamasını buradan miras alıyor; kaldırmak

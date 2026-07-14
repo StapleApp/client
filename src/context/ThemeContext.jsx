@@ -23,6 +23,7 @@ export const THEMES = [
   { id: "ocean", label: "Okyanus" }, // varsayılan (mavi-gri) — :root
   { id: "black", label: "Karanlık" }, // OLED
   { id: "light", label: "Açık" },
+  { id: "sepia", label: "Sepya" }, // sıcak kağıt tonu
   { id: "auto", label: "Otomatik" }, // OS'a göre Açık↔Karanlık
 ];
 
@@ -67,7 +68,7 @@ const accentVarsFor = (hex) => ({
 });
 
 // ---- Uygulayıcılar ----
-const VALID_THEME = /^(ocean|black|light|auto)$/;
+const VALID_THEME = /^(ocean|black|light|sepia|auto)$/;
 const normalizeTheme = (id) => (VALID_THEME.test(id) ? id : DEFAULT_THEME);
 const prefersDark = () =>
   typeof window !== "undefined" &&

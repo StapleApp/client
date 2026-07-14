@@ -65,6 +65,12 @@
   }
 
 
+  :root[data-theme="sepia"] .background,
+  :root[data-theme="sepia"] .parallax-bg {
+    background-image: url("../assets/backgrounds/tile-sepia.png");
+  }
+
+
   .icon {
     @apply relative flex items-center mt-2 mb-2 mx-auto shadow-lg bg-[var(--primary-bg)] text-[var(--primary-text)] border-3 border-[var(--primary-border)] hover:bg-[var(--secondary-bg)] hover:text-[var(--tertiary-bg)] hover:border-[var(--tertiary-border)] transition-all duration-150 active:scale-90 cursor-pointer;
   }
@@ -128,8 +134,10 @@
 }
 
 .no-scrollbar {
-  -ms-overflow-style: none; /* IE/Edge */
-  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;
+  /* IE/Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 /* Hareketi azalt: animasyon/geçişleri kes (framer-motion ayrıca MotionConfig ile
