@@ -123,5 +123,10 @@ code {
   display: inline-block;
 }
 
+/* Resizing Navigator: Resizing devam ederken geçiş animasyonlarını durdurur */
+:root[data-navigator-resizing="true"] * {
+  transition: none !important;
+}
+
 
 

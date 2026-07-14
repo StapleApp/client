@@ -25,7 +25,7 @@ const relTime = (iso) => {
   return new Date(iso).toLocaleDateString("tr-TR");
 };
 
-const NotificationsBell = ({ isNavExpanded }) => {
+const NotificationsBell = ({ isNavExpanded, navigatorWidth }) => {
   const navigate = useNavigate();
   const { userData } = useAuth();
   const { notifications, setNotifications, unreadCount } = useNavData();
@@ -91,12 +91,15 @@ const NotificationsBell = ({ isNavExpanded }) => {
     <div className="relative" ref={ref}>
       <div 
         onClick={() => setOpen(!open)}
+        style={{
+          width: isNavExpanded ? `${navigatorWidth - 24}px` : "48px",
+        }}
         className={`${
           open ? "hovered-icon" : "icon"
         } group relative transition-all duration-300 ease-in-out cursor-pointer ${
           isNavExpanded 
-            ? "w-[216px] justify-start px-3.5 gap-3 rounded-[12px] h-12 mt-2 mb-2 mx-auto" 
-            : "w-12 h-12 justify-center rounded-xl mt-2 mb-2 mx-auto"
+            ? "justify-start px-3.5 gap-3 rounded-[12px] h-12 mt-2 mb-2 mx-auto" 
+            : "h-12 justify-center rounded-xl mt-2 mb-2 mx-auto"
         }`}
       >
         <div className="shrink-0 flex items-center justify-center">

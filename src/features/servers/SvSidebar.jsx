@@ -1478,7 +1478,8 @@ const SvSidebar = ({ serverData, onRefresh }) => {
         <button
           onClick={() => setShowSidebar(true)}
           title="Kanal listesini göster"
-          className="fixed top-3 left-[76px] z-30 p-2 rounded-xl border border-[var(--primary-border)] bg-[var(--primary-bg)] text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:border-[var(--tertiary-border)] hover:scale-105 transition-all duration-200"
+          style={{ left: "calc(var(--navigator-width, 64px) + 12px)", transition: "left 0.2s ease-in-out" }}
+          className="fixed top-3 z-30 p-2 rounded-xl border border-[var(--primary-border)] bg-[var(--primary-bg)] text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:border-[var(--tertiary-border)] hover:scale-105 transition-all duration-200"
         >
           <PanelLeftOpen size={16} />
         </button>

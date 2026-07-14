@@ -25,7 +25,7 @@ const NAV_ITEMS = [
 // Öğelerin genişleme animasyonu gecikmeleri (orijinal tasarımla birebir)
 const ITEM_DELAYS = ["delay-75", "delay-150", "delay-225", "delay-300", "delay-300"];
 
-const NavItem = ({ path, label, icon, badge = 0, isNavExpanded }) => {
+const NavItem = ({ path, label, icon, badge = 0, isNavExpanded, navigatorWidth }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const isActive = location.pathname === path;
@@ -33,12 +33,15 @@ const NavItem = ({ path, label, icon, badge = 0, isNavExpanded }) => {
   return (
     <div
       onClick={() => navigate(path)}
+      style={{
+        width: isNavExpanded ? `${navigatorWidth - 24}px` : "48px",
+      }}
       className={`${
         isActive ? "hovered-icon" : "icon"
       } group relative transition-all duration-300 ease-in-out cursor-pointer ${
         isNavExpanded 
-          ? "w-[216px] justify-start px-3.5 gap-3 rounded-[12px] h-12 mt-2 mb-2 mx-auto" 
-          : "w-12 h-12 justify-center rounded-xl mt-2 mb-2 mx-auto"
+          ? "justify-start px-3.5 gap-3 rounded-[12px] h-12 mt-2 mb-2 mx-auto" 
+          : "h-12 justify-center rounded-xl mt-2 mb-2 mx-auto"
       }`}
     >
       <div className="shrink-0 flex items-center justify-center">
@@ -80,7 +83,7 @@ const NavItem = ({ path, label, icon, badge = 0, isNavExpanded }) => {
 // okunmamış bildirim rozeti taşır. Aşağıdan yukarıya sırayla belirir (stagger).
 // NOT: Liste scroll konteynerinin içinde olduğundan (overflow gizli), isim
 // balonu portalla body'ye render edilir; böylece kırpılmadan sağda görünür.
-const ServerNavIcon = ({ server, badge, index, isNavExpanded }) => {
+const ServerNavIcon = ({ server, badge, index, isNavExpanded, navigatorWidth }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const ref = useRef(null);
@@ -104,12 +107,15 @@ const ServerNavIcon = ({ server, badge, index, isNavExpanded }) => {
       onClick={() => navigate(`/server/${server.id}`)}
       onMouseEnter={showTip}
       onMouseLeave={() => setTip(null)}
+      style={{
+        width: isNavExpanded ? `${navigatorWidth - 24}px` : "48px",
+      }}
       className={`${
         active ? "hovered-icon" : "icon"
       } group relative shrink-0 transition-all duration-300 ease-in-out ${
         isNavExpanded 
-          ? "w-[216px] justify-start px-3.5 gap-3 rounded-[12px] h-12 mt-2 mb-2 mx-auto" 
-          : "w-12 h-12 justify-center rounded-xl mt-2 mb-2 mx-auto"
+          ? "justify-start px-3.5 gap-3 rounded-[12px] h-12 mt-2 mb-2 mx-auto" 
+          : "h-12 justify-center rounded-xl mt-2 mb-2 mx-auto"
       }`}
     >
       <div className={`rounded-[9px] overflow-hidden shrink-0 transition-all duration-300 ${
@@ -164,14 +170,47 @@ const Navigator = () => {
   const [isNavExpanded, setIsNavExpanded] = useState(() => {
     return localStorage.getItem("staple-navigator-expanded") === "true";
   });
+  const [navigatorWidth, setNavigatorWidth] = useState(() => {
+    return Number(localStorage.getItem("staple-navigator-width")) || 240;
+  });
+  const [isResizingNavigator, setIsResizingNavigator] = useState(false);
+
   const { servers, serverUnread } = useNavData();
   const location = useLocation();
 
   useEffect(() => {
-    document.documentElement.style.setProperty("--navigator-width", isNavExpanded ? "240px" : "64px");
+    const widthVal = isNavExpanded ? navigatorWidth : 64;
+    document.documentElement.style.setProperty("--navigator-width", `${widthVal}px`);
     document.documentElement.setAttribute("data-navigator-expanded", isNavExpanded ? "true" : "false");
+    document.documentElement.setAttribute("data-navigator-resizing", isResizingNavigator ? "true" : "false");
     localStorage.setItem("staple-navigator-expanded", isNavExpanded ? "true" : "false");
-  }, [isNavExpanded]);
+    localStorage.setItem("staple-navigator-width", navigatorWidth.toString());
+  }, [isNavExpanded, navigatorWidth, isResizingNavigator]);
+
+  const startNavigatorResize = (e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = navigatorWidth;
+
+    const onPointerMove = (moveEvent) => {
+      const newWidth = startWidth + (moveEvent.clientX - startX);
+      setNavigatorWidth(Math.max(200, Math.min(newWidth, 350)));
+    };
+
+    const onPointerUp = () => {
+      document.removeEventListener("pointermove", onPointerMove);
+      document.removeEventListener("pointerup", onPointerUp);
+      document.body.style.cursor = "default";
+      document.body.classList.remove("select-none");
+      setIsResizingNavigator(false);
+    };
+
+    setIsResizingNavigator(true);
+    document.body.style.cursor = "col-resize";
+    document.body.classList.add("select-none");
+    document.addEventListener("pointermove", onPointerMove);
+    document.addEventListener("pointerup", onPointerUp);
+  };
 
   // Ana sayfada sunucular zaten listelendiğinden çubukta gösterilmez.
   const isHome = location.pathname === "/" || location.pathname === "/Home";
@@ -181,18 +220,21 @@ const Navigator = () => {
     <div
       className="fixed flex flex-col top-0 left-0 h-screen gap-0 z-50 shadow-xl bg-[var(--primary-bg)]/85 backdrop-blur-md border-r border-[var(--primary-border)]/20 select-none"
       style={{
-        width: isNavExpanded ? "240px" : "64px",
-        transition: "width 0.2s ease-in-out",
+        width: isNavExpanded ? `${navigatorWidth}px` : "64px",
+        transition: isResizingNavigator ? "none" : "width 0.2s ease-in-out",
       }}
     >
       <div className="flex flex-col shrink-0">
         {/* Toggle Button */}
         <div
           onClick={() => setIsNavExpanded(!isNavExpanded)}
+          style={{
+            width: isNavExpanded ? `${navigatorWidth - 24}px` : "48px",
+          }}
           className={`icon group relative transition-all duration-300 ease-in-out cursor-pointer ${
             isNavExpanded 
-              ? "w-[216px] justify-between px-3.5 rounded-[12px] h-12 mt-2 mb-2 mx-auto" 
-              : "w-12 h-12 justify-center rounded-xl mt-2 mb-2 mx-auto"
+              ? "justify-between px-3.5 rounded-[12px] h-12 mt-2 mb-2 mx-auto" 
+              : "h-12 justify-center rounded-xl mt-2 mb-2 mx-auto"
           }`}
         >
           {isNavExpanded ? (
@@ -218,9 +260,9 @@ const Navigator = () => {
             className={`${i >= 3 ? "flex flex-col h-16 " : ""}transition-all duration-250 ease-in-out ${ITEM_DELAYS[i]}`}
           >
             {item.custom === "notifications" ? (
-              <NotificationsBell isNavExpanded={isNavExpanded} />
+              <NotificationsBell isNavExpanded={isNavExpanded} navigatorWidth={navigatorWidth} />
             ) : (
-              <NavItem {...item} isNavExpanded={isNavExpanded} />
+              <NavItem {...item} isNavExpanded={isNavExpanded} navigatorWidth={navigatorWidth} />
             )}
             {/* Bildirimler'den sonra ayraç */}
             {item.custom === "notifications" && (
@@ -249,6 +291,7 @@ const Navigator = () => {
                   badge={serverUnread[s.id] || 0}
                   index={i}
                   isNavExpanded={isNavExpanded}
+                  navigatorWidth={navigatorWidth}
                 />
               ))}
             </motion.div>
@@ -264,8 +307,19 @@ const Navigator = () => {
           label="Ayarlar"
           icon={<BsGearFill size="22" />}
           isNavExpanded={isNavExpanded}
+          navigatorWidth={navigatorWidth}
         />
       </div>
+
+      {/* Sürükleme Tutamacı (Sadece genişken etkindir) */}
+      {isNavExpanded && (
+        <div
+          onPointerDown={startNavigatorResize}
+          className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-[var(--tertiary-border)]/50 active:bg-[var(--tertiary-border)] transition-colors z-50 group flex items-center justify-center"
+        >
+          <div className="w-0.5 h-8 bg-[var(--primary-border)] group-hover:bg-[var(--tertiary-text)] opacity-40 group-hover:opacity-100 transition-opacity rounded" />
+        </div>
+      )}
     </div>
   );
 };
