@@ -797,17 +797,21 @@ const VoiceBar = () => {
               document.body.classList.add("select-none");
             }}
             onDrag={(event, info) => {
+              const isNavExpanded = localStorage.getItem("staple-navigator-expanded") === "true";
+              const navW = isNavExpanded ? (Number(localStorage.getItem("staple-navigator-width")) || 240) : 64;
               const sidebarW = Number(localStorage.getItem("staple-sidebar-width")) || 256;
-              const limitX = 64 + sidebarW;
-              const isOver = onServerPage && showSidebar && info.point.x < limitX && info.point.x > 0;
+              const limitX = navW + sidebarW;
+              const isOver = onServerPage && showSidebar && info.point.x < limitX && info.point.x > navW;
               setIsDragOverSidebar(isOver);
             }}
             onDragEnd={(event, info) => {
               document.body.classList.remove("select-none");
               setIsDragOverSidebar(false);
+              const isNavExpanded = localStorage.getItem("staple-navigator-expanded") === "true";
+              const navW = isNavExpanded ? (Number(localStorage.getItem("staple-navigator-width")) || 240) : 64;
               const sidebarW = Number(localStorage.getItem("staple-sidebar-width")) || 256;
-              const limitX = 64 + sidebarW;
-              if (onServerPage && showSidebar && info.point.x < limitX) {
+              const limitX = navW + sidebarW;
+              if (onServerPage && showSidebar && info.point.x < limitX && info.point.x > navW) {
                 setIsDetached(false);
               }
             }}

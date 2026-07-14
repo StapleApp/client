@@ -591,16 +591,20 @@ const MusicPanel = () => {
             dragElastic={0.05}
             onPointerDown={handlePointerDown}
             onDrag={(event, info) => {
+              const isNavExpanded = localStorage.getItem("staple-navigator-expanded") === "true";
+              const navW = isNavExpanded ? (Number(localStorage.getItem("staple-navigator-width")) || 240) : 64;
               const sidebarW = Number(localStorage.getItem("staple-sidebar-width")) || 256;
-              const limitX = 64 + sidebarW;
-              const over = onServerPage && showSidebar && !isMobile && info.point.x < limitX && info.point.x > 0;
+              const limitX = navW + sidebarW;
+              const over = onServerPage && showSidebar && !isMobile && info.point.x < limitX && info.point.x > navW;
               music.setDragOverSidebar(over);
             }}
             onDragEnd={(event, info) => {
               music.setDragOverSidebar(false);
+              const isNavExpanded = localStorage.getItem("staple-navigator-expanded") === "true";
+              const navW = isNavExpanded ? (Number(localStorage.getItem("staple-navigator-width")) || 240) : 64;
               const sidebarW = Number(localStorage.getItem("staple-sidebar-width")) || 256;
-              const limitX = 64 + sidebarW;
-              if (onServerPage && showSidebar && !isMobile && info.point.x < limitX) dock();
+              const limitX = navW + sidebarW;
+              if (onServerPage && showSidebar && !isMobile && info.point.x < limitX && info.point.x > navW) dock();
             }}
             style={{ x, y, touchAction: "none" }}
             className="pointer-events-auto"
