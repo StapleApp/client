@@ -650,71 +650,73 @@ const SettingsPage = () => {
         <div className="max-w-7xl mx-auto px-4 py-10">
           <h1 className="text-3xl font-black mb-8 text-[var(--secondary-text)]">Ayarlar</h1>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-            {/* Sol Sütun: Profil ve Görünüm */}
-            <div className="space-y-6">
-              {/* Profil özeti + düzenle */}
-              <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)]">
-                <h2 className="text-lg font-semibold mb-4 text-[var(--quaternary-text)]">
-                  Profil
-                </h2>
-                <div className="flex items-center gap-4">
-                  <img
-                    src={userData?.photoURL || "/defaults/avatars/1.png"}
-                    alt="Avatar"
-                    className="w-16 h-16 rounded-full border-4 border-[var(--tertiary-border)] object-cover"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-lg truncate">
-                      {userData?.nickName || `${userData?.name || ""} ${userData?.surname || ""}`}
-                    </p>
-                    <p className="text-sm text-[var(--primary-text)] truncate">
-                      {userData?.email}
-                    </p>
-                    <p className="text-xs text-[var(--primary-text)]">
-                      #{userData?.friendshipID}
-                    </p>
+          <div className="space-y-6">
+            {/* Görünüm: tema + vurgu rengi (Tam Genişlik) */}
+            <AppearanceSettings />
+
+            {/* Diğer Ayarlar: Profil, Ses, Hesap (İki Sütun) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+              {/* Sol Sütun: Profil ve Hesap */}
+              <div className="space-y-6">
+                {/* Profil özeti + düzenle */}
+                <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)]">
+                  <h2 className="text-lg font-semibold mb-4 text-[var(--quaternary-text)]">
+                    Profil
+                  </h2>
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={userData?.photoURL || "/defaults/avatars/1.png"}
+                      alt="Avatar"
+                      className="w-16 h-16 rounded-full border-4 border-[var(--tertiary-border)] object-cover"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-lg truncate">
+                        {userData?.nickName || `${userData?.name || ""} ${userData?.surname || ""}`}
+                      </p>
+                      <p className="text-sm text-[var(--primary-text)] truncate">
+                        {userData?.email}
+                      </p>
+                      <p className="text-xs text-[var(--primary-text)]">
+                        #{userData?.friendshipID}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => navigate("/ProfileSettings")}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] font-semibold text-sm hover:bg-[var(--quaternary-bg)] transition-colors shrink-0"
+                    >
+                      <Pencil size={15} /> Düzenle
+                    </button>
                   </div>
-                  <button
-                    onClick={() => navigate("/ProfileSettings")}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] font-semibold text-sm hover:bg-[var(--quaternary-bg)] transition-colors shrink-0"
-                  >
-                    <Pencil size={15} /> Düzenle
-                  </button>
-                </div>
-              </section>
+                </section>
 
-              {/* Görünüm: tema + vurgu rengi */}
-              <AppearanceSettings />
-            </div>
+                {/* Hesap işlemleri */}
+                <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)]">
+                  <h2 className="text-lg font-semibold mb-4 text-[var(--quaternary-text)]">
+                    Hesap
+                  </h2>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-3 px-6 py-3 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors w-full sm:w-auto justify-center"
+                    >
+                      <FaPowerOff size={18} />
+                      Çıkış Yap
+                    </button>
+                    <button
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="flex items-center gap-3 px-6 py-3 rounded-xl bg-transparent text-red-400 font-semibold border-2 border-red-500/60 hover:bg-red-500 hover:text-white transition-colors w-full sm:w-auto justify-center"
+                    >
+                      <Trash2 size={18} />
+                      Hesabı Sil
+                    </button>
+                  </div>
+                </section>
+              </div>
 
-            {/* Sağ Sütun: Ses Cihazları ve Hesap */}
-            <div className="space-y-6">
-              {/* Ses ve görüntü cihazları */}
-              <AudioDeviceSettings />
-
-              {/* Hesap işlemleri */}
-              <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)]">
-                <h2 className="text-lg font-semibold mb-4 text-[var(--quaternary-text)]">
-                  Hesap
-                </h2>
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-3 px-6 py-3 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors w-full sm:w-auto justify-center"
-                  >
-                    <FaPowerOff size={18} />
-                    Çıkış Yap
-                  </button>
-                  <button
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="flex items-center gap-3 px-6 py-3 rounded-xl bg-transparent text-red-400 font-semibold border-2 border-red-500/60 hover:bg-red-500 hover:text-white transition-colors w-full sm:w-auto justify-center"
-                  >
-                    <Trash2 size={18} />
-                    Hesabı Sil
-                  </button>
-                </div>
-              </section>
+              {/* Sağ Sütun: Ses Cihazları */}
+              <div className="space-y-6">
+                <AudioDeviceSettings />
+              </div>
             </div>
           </div>
         </div>
