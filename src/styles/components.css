@@ -50,6 +50,26 @@
     transition: background-position 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
+  @keyframes tileDrift {
+    0% {
+      background-position: calc(50% + var(--parallax-x, 0px)) calc(50% + var(--parallax-y, 0px));
+    }
+    100% {
+      background-position: calc(50% + var(--parallax-x, 0px) + var(--tile-size, 200px)) calc(50% + var(--parallax-y, 0px) - var(--tile-size, 200px));
+    }
+  }
+
+  :root[data-tile-animation="1"] .background,
+  :root[data-tile-animation="1"] .parallax-bg {
+    animation: tileDrift 25s linear infinite !important;
+    transition: none !important;
+  }
+
+  :root[data-reduce-motion="1"] .background,
+  :root[data-reduce-motion="1"] .parallax-bg {
+    animation: none !important;
+  }
+
   /* Açık tema: arka plan tile'ının açık sürümü.
      Dosya: client/src/assets/backgrounds/tile-light.png */
   :root[data-theme="light"] .background,

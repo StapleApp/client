@@ -117,6 +117,7 @@ const AppearanceSettings = () => {
     theme, setTheme,
     accent, setAccent, customAccent, setCustomAccent,
     reduceMotion, setReduceMotion, parallax, setParallax,
+    tileAnimation, setTileAnimation,
     tileSize, setTileSize,
     chatDensity, setChatDensity,
     messageStyle, setMessageStyle,
@@ -463,6 +464,13 @@ const AppearanceSettings = () => {
               icon={<Sparkles size={14} />}
               label="Parallax arka plan"
               hint="Fare hareketiyle arka plan hafifçe kayar."
+            />
+            <Toggle
+              checked={tileAnimation}
+              onChange={setTileAnimation}
+              icon={<Sparkles size={14} />}
+              label="Arka plan tile animasyonu"
+              hint="Arka plandaki desenlerin yavaşça sağ üste doğru kaymasını sağlar."
             />
             <Toggle
               checked={reduceMotion}

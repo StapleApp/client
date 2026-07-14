@@ -40,6 +40,7 @@ const ACCENT_CUSTOM_KEY = "staple-accent-custom";
 const RM_KEY = "staple-reduce-motion";
 const PARALLAX_KEY = "staple-parallax";
 const TILE_KEY = "staple-tile-size";
+const TILE_ANIM_KEY = "staple-tile-animation";
 
 // ---- Renk yardımcıları (özel vurgu için soft + kontrast hesabı) ----
 const normalizeHex = (hex) => {
@@ -108,6 +109,7 @@ export const ThemeProvider = ({ children }) => {
   );
   const [parallax, setParallax] = useState(() => localStorage.getItem(PARALLAX_KEY) !== "0");
   const [tileSize, setTileSize] = useState(() => localStorage.getItem(TILE_KEY) || "medium");
+  const [tileAnimation, setTileAnimation] = useState(() => localStorage.getItem(TILE_ANIM_KEY) === "1");
 
   // Yeni görünüm özelleştirme states
   const [chatDensity, setChatDensity] = useState(() => localStorage.getItem("staple-chat-density") || "cozy");
@@ -143,6 +145,12 @@ export const ThemeProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem(PARALLAX_KEY, parallax ? "1" : "0");
   }, [parallax]);
+
+  // Tile animasyonu (yavaşça sağ üste kayma)
+  useEffect(() => {
+    document.documentElement.setAttribute("data-tile-animation", tileAnimation ? "1" : "0");
+    localStorage.setItem(TILE_ANIM_KEY, tileAnimation ? "1" : "0");
+  }, [tileAnimation]);
 
   // Tile boyutu
   useEffect(() => {
@@ -194,6 +202,7 @@ export const ThemeProvider = ({ children }) => {
         customAccent, setCustomAccent,
         reduceMotion, setReduceMotion,
         parallax, setParallax,
+        tileAnimation, setTileAnimation,
         tileSize, setTileSize,
         chatDensity, setChatDensity,
         messageStyle, setMessageStyle,
