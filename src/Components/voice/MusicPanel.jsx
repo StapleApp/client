@@ -329,8 +329,8 @@ const MusicPanel = () => {
   // ---------- DOCKED (SvSidebar'a gömülü kompakt bar) ----------
   const dockedBar = (
     <div
-      className="fixed left-16 w-64 z-[98] pointer-events-auto"
-      style={{ bottom: musicBottom }}
+      className="fixed left-16 z-[98] pointer-events-auto"
+      style={{ bottom: musicBottom, width: "var(--sidebar-width, 256px)" }}
     >
       <div className="flex flex-col gap-2 px-2 py-2 bg-[var(--primary-bg)] border-t border-[var(--primary-border)]">
         {/* Üst satır: başlık + video + detach */}
@@ -591,12 +591,16 @@ const MusicPanel = () => {
             dragElastic={0.05}
             onPointerDown={handlePointerDown}
             onDrag={(event, info) => {
-              const over = onServerPage && showSidebar && !isMobile && info.point.x < 320 && info.point.x > 0;
+              const sidebarW = Number(localStorage.getItem("staple-sidebar-width")) || 256;
+              const limitX = 64 + sidebarW;
+              const over = onServerPage && showSidebar && !isMobile && info.point.x < limitX && info.point.x > 0;
               music.setDragOverSidebar(over);
             }}
             onDragEnd={(event, info) => {
               music.setDragOverSidebar(false);
-              if (onServerPage && showSidebar && !isMobile && info.point.x < 320) dock();
+              const sidebarW = Number(localStorage.getItem("staple-sidebar-width")) || 256;
+              const limitX = 64 + sidebarW;
+              if (onServerPage && showSidebar && !isMobile && info.point.x < limitX) dock();
             }}
             style={{ x, y, touchAction: "none" }}
             className="pointer-events-auto"

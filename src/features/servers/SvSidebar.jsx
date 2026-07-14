@@ -740,6 +740,43 @@ const SvSidebar = ({ serverData, onRefresh }) => {
   const music = useMusic();
   const musicDocked = !isMobile && music.isActive && !music.detached;
 
+  // Sidebar genişliği ayarlanabilirliği (resize) ve kalıcılığı
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    return Number(localStorage.getItem("staple-sidebar-width")) || 256;
+  });
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--sidebar-width", `${sidebarWidth}px`);
+    document.documentElement.setAttribute("data-sidebar-wide", sidebarWidth >= 320 ? "true" : "false");
+    localStorage.setItem("staple-sidebar-width", sidebarWidth);
+  }, [sidebarWidth]);
+
+  const startSidebarResize = (e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = sidebarWidth;
+
+    const onPointerMove = (moveEvent) => {
+      const newWidth = startWidth + (moveEvent.clientX - startX);
+      setSidebarWidth(Math.max(200, Math.min(newWidth, 450)));
+    };
+
+    const onPointerUp = () => {
+      document.removeEventListener("pointermove", onPointerMove);
+      document.removeEventListener("pointerup", onPointerUp);
+      document.body.style.cursor = "default";
+      document.body.classList.remove("select-none");
+      setIsResizingSidebar(false);
+    };
+
+    setIsResizingSidebar(true);
+    document.body.style.cursor = "col-resize";
+    document.body.classList.add("select-none");
+    document.addEventListener("pointermove", onPointerMove);
+    document.addEventListener("pointerup", onPointerUp);
+  };
+
   // Sidebar kapandığında voicebar docked ise otomatik dışarı (detached) al
   useEffect(() => {
     if (!showSidebar && isDocked) {
@@ -1129,7 +1166,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
     return (
       <>
         <div
-          className="relative h-36 w-full bg-cover bg-center"
+          className="relative aspect-[16/9] w-full bg-cover bg-center"
           style={{
             backgroundImage: `url(${serverData?.ServerBannerURL || profileBanner})`,
           }}
@@ -1303,16 +1340,24 @@ const SvSidebar = ({ serverData, onRefresh }) => {
     <>
       {!isMobile && (
         <motion.div
-          initial={{ x: -256, opacity: 0 }}
+          initial={{ x: -sidebarWidth, opacity: 0 }}
           animate={{
-            x: showSidebar ? 0 : -256,
+            x: showSidebar ? 0 : -sidebarWidth,
             opacity: showSidebar ? 1 : 0,
             pointerEvents: showSidebar ? "auto" : "none"
           }}
           transition={{ duration: 0.2, ease: "easeInOut" }}
-          className="fixed left-16 top-0 h-screen w-64 bg-[var(--primary-bg)]/90 backdrop-blur-md text-[var(--secondary-text)] shadow-2xl border-r border-[var(--primary-border)]/20 flex flex-col z-30"
+          style={{ width: sidebarWidth }}
+          className="fixed left-16 top-0 h-screen bg-[var(--primary-bg)]/90 backdrop-blur-md text-[var(--secondary-text)] shadow-2xl border-r border-[var(--primary-border)]/20 flex flex-col z-30 select-none"
         >
           {renderChannelListSidebar()}
+          {/* Sürükleme ile genişletme/daraltma tutamacı */}
+          <div
+            onPointerDown={startSidebarResize}
+            className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-[var(--tertiary-border)]/50 active:bg-[var(--tertiary-border)] transition-colors z-50 group flex items-center justify-center"
+          >
+            <div className="w-0.5 h-8 bg-[var(--primary-border)] group-hover:bg-[var(--tertiary-text)] opacity-40 group-hover:opacity-100 transition-opacity rounded" />
+          </div>
         </motion.div>
       )}
 
@@ -1411,13 +1456,18 @@ const SvSidebar = ({ serverData, onRefresh }) => {
         />
       )}
 
-      <div className={`fixed top-0 h-[100dvh] z-20 flex flex-col transition-all duration-200 ${
-        isMobile
-          ? "left-0 right-0"
-          : `${showSidebar ? "left-80" : "left-16"} ${showMembers ? "right-56" : "right-0"}`
-      } ${
-        !showSidebar && !isMobile ? "sidebar-collapsed-padding" : ""
-      }`}>
+      <div 
+        className={`fixed top-0 h-[100dvh] z-20 flex flex-col ${
+          isMobile ? "left-0 right-0" : ""
+        } ${
+          !showSidebar && !isMobile ? "sidebar-collapsed-padding" : ""
+        }`}
+        style={isMobile ? {} : {
+          left: showSidebar ? 64 + sidebarWidth : 64,
+          right: showMembers ? 224 : 0,
+          transition: isResizingSidebar ? "none" : "left 0.2s ease-in-out, right 0.2s ease-in-out"
+        }}
+      >
         <style>{`
           .sidebar-collapsed-padding .px-5.py-4 {
             padding-left: 3.5rem !important;

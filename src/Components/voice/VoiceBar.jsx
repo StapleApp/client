@@ -724,13 +724,14 @@ const VoiceBar = () => {
           onClick={isScreenSharing ? stopScreenShare : startScreenShare}
           title={isScreenSharing ? "Paylaşımı durdur" : "Ekran paylaş"}
           disabled={!active}
-          className={`flex-1 flex items-center justify-center py-2 rounded-lg border transition-all disabled:opacity-40 text-xs ${
+          className={`flex-1 flex items-center justify-center py-2 rounded-lg border transition-all disabled:opacity-40 text-xs gap-1.5 ${
             isScreenSharing
               ? "bg-[var(--tertiary-bg)] border-[var(--tertiary-border)] text-[var(--tertiary-text)]"
               : "bg-[var(--secondary-bg)] border-[var(--primary-border)] text-[var(--secondary-text)] hover:border-[var(--tertiary-border)]"
           }`}
         >
           {isScreenSharing ? <ScreenShareOff size={15} /> : <ScreenShare size={15} />}
+          <span className="text-[9px] font-semibold voicebar-btn-text">{isScreenSharing ? "Durdur" : "Paylaş"}</span>
         </button>
 
         {/* Sustur/Aç */}
@@ -738,13 +739,14 @@ const VoiceBar = () => {
           onClick={toggleMute}
           title={muted ? "Sesi aç" : "Sustur"}
           disabled={!active}
-          className={`flex-1 flex items-center justify-center py-2 rounded-lg border transition-all disabled:opacity-40 text-xs ${
+          className={`flex-1 flex items-center justify-center py-2 rounded-lg border transition-all disabled:opacity-40 text-xs gap-1.5 ${
             muted
               ? "bg-red-500/20 border-red-500 text-red-400"
               : "bg-[var(--secondary-bg)] border-[var(--primary-border)] text-[var(--secondary-text)] hover:border-[var(--tertiary-border)]"
           }`}
         >
           {muted ? <MicOff size={15} /> : <Mic size={15} />}
+          <span className="text-[9px] font-semibold voicebar-btn-text">{muted ? "Aç" : "Sustur"}</span>
         </button>
 
         {/* Sağırlaştır/Aç */}
@@ -752,22 +754,24 @@ const VoiceBar = () => {
           onClick={toggleDeafen}
           title={deafened ? "Sağırlaştırmayı kaldır" : "Sağırlaştır"}
           disabled={!active}
-          className={`flex-1 flex items-center justify-center py-2 rounded-lg border transition-all disabled:opacity-40 text-xs ${
+          className={`flex-1 flex items-center justify-center py-2 rounded-lg border transition-all disabled:opacity-40 text-xs gap-1.5 ${
             deafened
               ? "bg-red-500/20 border-red-500 text-red-400"
               : "bg-[var(--secondary-bg)] border-[var(--primary-border)] text-[var(--secondary-text)] hover:border-[var(--tertiary-border)]"
           }`}
         >
           {deafened ? <HeadphoneOff size={15} /> : <Headphones size={15} />}
+          <span className="text-[9px] font-semibold voicebar-btn-text">{deafened ? "Aç" : "Sağır"}</span>
         </button>
 
         {/* Ayrıl */}
         <button
           onClick={leaveVoice}
           title="Ayrıl"
-          className="flex-1 flex items-center justify-center py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors text-xs"
+          className="flex-1 flex items-center justify-center py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors text-xs gap-1.5"
         >
           <PhoneOff size={15} />
+          <span className="text-[9px] font-semibold voicebar-btn-text">Ayrıl</span>
         </button>
       </div>
     </div>
@@ -777,7 +781,8 @@ const VoiceBar = () => {
     // Sürükleme sınırı = tüm ekran. pointer-events-none → sayfayı engellemez.
     <div
       ref={boundsRef}
-      className={isDocked ? "fixed left-16 bottom-0 w-64 z-[99] pointer-events-auto" : `fixed inset-0 z-[100] flex items-end justify-center pb-4 pointer-events-none ${isMobile ? "px-3" : ""}`}
+      className={isDocked ? "fixed left-16 bottom-0 z-[99] pointer-events-auto" : `fixed inset-0 z-[100] flex items-end justify-center pb-4 pointer-events-none ${isMobile ? "px-3" : ""}`}
+      style={isDocked ? { width: "var(--sidebar-width, 256px)" } : {}}
     >
       <AnimatePresence>
         {show && (
@@ -792,13 +797,17 @@ const VoiceBar = () => {
               document.body.classList.add("select-none");
             }}
             onDrag={(event, info) => {
-              const isOver = onServerPage && showSidebar && info.point.x < 320 && info.point.x > 0;
+              const sidebarW = Number(localStorage.getItem("staple-sidebar-width")) || 256;
+              const limitX = 64 + sidebarW;
+              const isOver = onServerPage && showSidebar && info.point.x < limitX && info.point.x > 0;
               setIsDragOverSidebar(isOver);
             }}
             onDragEnd={(event, info) => {
               document.body.classList.remove("select-none");
               setIsDragOverSidebar(false);
-              if (onServerPage && showSidebar && info.point.x < 320) {
+              const sidebarW = Number(localStorage.getItem("staple-sidebar-width")) || 256;
+              const limitX = 64 + sidebarW;
+              if (onServerPage && showSidebar && info.point.x < limitX) {
                 setIsDetached(false);
               }
             }}

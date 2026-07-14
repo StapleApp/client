@@ -113,5 +113,15 @@ code {
   justify-content: flex-end !important;
 }
 
+/* VoiceBar docked iken buton yazıları varsayılan olarak gizlidir */
+.voicebar-btn-text {
+  display: none;
+}
+
+/* Ancak sidebar genişliği 320px ve üzeri olduğunda (data-sidebar-wide="true") görünür olur */
+:root[data-sidebar-wide="true"] .voicebar-btn-text {
+  display: inline-block;
+}
+
 
 
