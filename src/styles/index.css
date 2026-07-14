@@ -2,8 +2,16 @@
 @import "./variables.css";
 @import "./components.css";
 
+/* Sayfa geçişlerinde/yüklenirken görünen canvas rengi temaya bağlı olsun
+   (Okyanus arka plan flash'ını önler). !important, flash script'inin inline
+   değerini CSS yüklenince geçersiz kılar → çalışma zamanı tema değişimini izler. */
+html {
+  background-color: var(--secondary-bg) !important;
+}
+
 body {
   margin: 0;
+  background-color: var(--secondary-bg);
   font-family: var(--chat-font-family, 'Inter'), -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif !important;

@@ -25,9 +25,15 @@
             eff = "ocean";
           }
           d.setAttribute("data-theme", eff);
-          // Hareketi azalt (kayıt yoksa OS tercihinden)
+          // CSS yüklenmeden önce arka planı temaya göre boya (Okyanus flash'ını önler)
+          var canvas = eff === "light" ? "#f1f3f5" : eff === "black" ? "#0c0c0e" : "#393e46";
+          d.style.backgroundColor = canvas;
+          // Mobil tarayıcı çubuğu rengi
+          var chrome = eff === "light" ? "#ffffff" : eff === "black" ? "#000000" : "#222831";
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute("content", chrome);
+          // Hareketi azalt (varsayılan KAPALI — yalnızca kullanıcı açtıysa)
           var rm = localStorage.getItem("staple-reduce-motion");
-          if (rm === null) rm = mm && mm("(prefers-reduced-motion: reduce)").matches ? "1" : "0";
           d.setAttribute("data-reduce-motion", rm === "1" ? "1" : "0");
           // Tile boyutu
           var ts = localStorage.getItem("staple-tile-size") || "medium";
@@ -36,7 +42,7 @@
       })();
     </script>
   </head>
-  <body bgcolor="#393E46">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

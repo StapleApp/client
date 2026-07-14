@@ -101,16 +101,10 @@ export const ThemeProvider = ({ children }) => {
   const [customAccent, setCustomAccent] = useState(
     () => normalizeHex(localStorage.getItem(ACCENT_CUSTOM_KEY)) || "#ff5c8a"
   );
-  const [reduceMotion, setReduceMotion] = useState(() => {
-    const s = localStorage.getItem(RM_KEY);
-    if (s === "1") return true;
-    if (s === "0") return false;
-    return (
-      typeof window !== "undefined" &&
-      window.matchMedia &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    );
-  });
+  // Varsayılan KAPALI (yeni kullanıcı). Yalnızca kullanıcı açtıysa "1".
+  const [reduceMotion, setReduceMotion] = useState(
+    () => localStorage.getItem(RM_KEY) === "1"
+  );
   const [parallax, setParallax] = useState(() => localStorage.getItem(PARALLAX_KEY) !== "0");
   const [tileSize, setTileSize] = useState(() => localStorage.getItem(TILE_KEY) || "medium");
 
