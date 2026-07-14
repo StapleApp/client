@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { motion, useDragControls, useMotionValue } from "framer-motion";
+import { motion, AnimatePresence, useDragControls, useMotionValue } from "framer-motion";
 import {
   Music,
   Play,
@@ -16,6 +16,8 @@ import {
   Minimize2,
   Maximize2,
   GripVertical,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useMusic } from "../../context/MusicContext";
@@ -45,6 +47,11 @@ const MusicPanel = () => {
   // Docked bar ses açılır kutusu
   const [volOpen, setVolOpen] = useState(false);
   const volWrapRef = useRef(null);
+
+  // Watch Party minimize edilme durumu
+  const [isMinimized, setIsMinimized] = useState(() => {
+    return localStorage.getItem("staple-music-minimized") === "true";
+  });
 
   // Video penceresi (kontrollere bağlı ayrı, sürüklenebilir + boyutlanabilir)
   const [videoOpen, setVideoOpen] = useState(false);
@@ -205,6 +212,14 @@ const MusicPanel = () => {
   };
 
 
+  const toggleMinimize = () => {
+    setIsMinimized((prev) => {
+      const next = !prev;
+      localStorage.setItem("staple-music-minimized", String(next));
+      return next;
+    });
+  };
+
   const resume = () => {
     try { playerRef.current?.playVideo(); } catch { /* yok say */ }
     setBlocked(false);
@@ -347,101 +362,136 @@ const MusicPanel = () => {
             )}
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
-            {/* Ses — tıklayınca üstünde açılır kutu */}
-            <div className="relative" ref={volWrapRef}>
-              <button
-                onClick={() => setVolOpen((v) => !v)}
-                title="Ses"
-                className={`p-1.5 rounded-lg transition-colors ${
-                  volOpen
-                    ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
-                    : "text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--secondary-bg)]"
-                }`}
-              >
-                {volume === 0 ? <VolumeX size={15} /> : <Volume2 size={15} />}
-              </button>
-              {volOpen && (
-                <div className="absolute bottom-full right-0 mb-2 z-[60] w-44 p-2 rounded-xl bg-[var(--primary-bg)] border-2 border-[var(--primary-border)] shadow-2xl">
-                  <div className="flex items-center gap-2">
+            {/* Animasyonla kaybolacak ses ve video butonları */}
+            <AnimatePresence initial={false}>
+              {!isMinimized && (
+                <motion.div
+                  initial={{ width: 0, opacity: 0, x: 20 }}
+                  animate={{ width: "auto", opacity: 1, x: 0 }}
+                  exit={{ width: 0, opacity: 0, x: 20 }}
+                  transition={{ duration: 0.2, ease: "easeInOut" }}
+                  className="flex items-center gap-0.5 overflow-hidden shrink-0 animate-fade-in"
+                >
+                  {/* Ses — tıklayınca üstünde açılır kutu */}
+                  <div className="relative" ref={volWrapRef}>
                     <button
-                      onClick={() => changeVolume(volume === 0 ? 70 : 0)}
-                      title={volume === 0 ? "Sesi aç" : "Sustur"}
-                      className={`shrink-0 transition-colors ${
-                        volume === 0 ? "text-red-400" : "text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
+                      onClick={() => setVolOpen((v) => !v)}
+                      title="Ses"
+                      className={`p-1.5 rounded-lg transition-colors ${
+                        volOpen
+                          ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
+                          : "text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--secondary-bg)]"
                       }`}
                     >
                       {volume === 0 ? <VolumeX size={15} /> : <Volume2 size={15} />}
                     </button>
-                    <input
-                      type="range" role="slider" min={0} max={100} value={volume}
-                      onChange={(e) => changeVolume(Number(e.target.value))}
-                      className="flex-1 h-1 cursor-pointer" style={{ accentColor: "var(--tertiary-bg)" }}
-                      title="Ses (yalnızca sende)"
-                    />
-                    <span className="w-8 shrink-0 text-right text-[10px] tabular-nums text-[var(--primary-text)]">
-                      %{volume}
-                    </span>
+                    {volOpen && (
+                      <div className="absolute bottom-full right-0 mb-2 z-[60] w-44 p-2 rounded-xl bg-[var(--primary-bg)] border-2 border-[var(--primary-border)] shadow-2xl">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => changeVolume(volume === 0 ? 70 : 0)}
+                            title={volume === 0 ? "Sesi aç" : "Sustur"}
+                            className={`shrink-0 transition-colors ${
+                              volume === 0 ? "text-red-400" : "text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
+                            }`}
+                          >
+                            {volume === 0 ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                          </button>
+                          <input
+                            type="range" role="slider" min={0} max={100} value={volume}
+                            onChange={(e) => changeVolume(Number(e.target.value))}
+                            className="flex-1 h-1 cursor-pointer" style={{ accentColor: "var(--tertiary-bg)" }}
+                            title="Ses (yalnızca sende)"
+                          />
+                          <span className="w-8 shrink-0 text-right text-[10px] tabular-nums text-[var(--primary-text)]">
+                            %{volume}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
+                  {videoToggleBtn}
+                </motion.div>
               )}
-            </div>
+            </AnimatePresence>
 
+            {/* Minimize / Geri Yükle butonu */}
+            <button
+              onClick={toggleMinimize}
+              title={isMinimized ? "Geri Yükle" : "Minimize Et"}
+              className="p-1.5 rounded-lg text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--secondary-bg)] transition-colors shrink-0"
+            >
+              {isMinimized ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
 
-            {videoToggleBtn}
+            {/* Kenardan çıkar butonu (her zaman görünür) */}
             <button onClick={detach} title="Kenardan çıkar"
-              className="p-1.5 rounded-lg text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--secondary-bg)] transition-colors">
+              className="p-1.5 rounded-lg text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--secondary-bg)] transition-colors shrink-0">
               <Maximize2 size={14} />
             </button>
           </div>
         </div>
 
-        {/* Şu an çalan */}
-        {current ? (
-          <div className="flex items-center gap-2">
-            <img src={youtubeThumb(current.id)} alt="" className="w-9 h-9 rounded object-cover bg-[var(--secondary-bg)] shrink-0" />
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-[var(--secondary-text)] truncate">{title}</p>
-              {current.addedBy && <p className="text-[10px] text-[var(--primary-text)] truncate">{current.addedBy}</p>}
-            </div>
-          </div>
-        ) : (
-          <p className="text-[11px] text-[var(--primary-text)] py-0.5">Sıra boş — link ekle.</p>
-        )}
+        {/* Alt kısım animasyonlu slide down/up */}
+        <AnimatePresence initial={false}>
+          {!isMinimized && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="overflow-hidden flex flex-col gap-2"
+            >
+              {/* Şu an çalan */}
+              {current ? (
+                <div className="flex items-center gap-2">
+                  <img src={youtubeThumb(current.id)} alt="" className="w-9 h-9 rounded object-cover bg-[var(--secondary-bg)] shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-[var(--secondary-text)] truncate">{title}</p>
+                    {current.addedBy && <p className="text-[10px] text-[var(--primary-text)] truncate">{current.addedBy}</p>}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-[11px] text-[var(--primary-text)] py-0.5">Sıra boş — link ekle.</p>
+              )}
 
-        {blocked && current && (
-          <button onClick={resume}
-            className="w-full flex items-center justify-center gap-1.5 py-1 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] text-[11px] font-bold hover:bg-[var(--quaternary-bg)] transition-colors">
-            <Play size={12} /> Sesi başlat
-          </button>
-        )}
+              {blocked && current && (
+                <button onClick={resume}
+                  className="w-full flex items-center justify-center gap-1.5 py-1 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] text-[11px] font-bold hover:bg-[var(--quaternary-bg)] transition-colors">
+                  <Play size={12} /> Sesi başlat
+                </button>
+              )}
 
-        {/* Video süre kontrolü (seek) */}
-        {current && (
-          <div>
-            <input type="range" role="slider" min={0} max={Math.max(duration, 1)} step={1} value={position}
-              onChange={(e) => music.seek(Number(e.target.value))}
-              className="w-full h-1 cursor-pointer" style={{ accentColor: "var(--tertiary-bg)" }} />
-            <div className="flex justify-between text-[10px] text-[var(--primary-text)] tabular-nums">
-              <span>{formatTime(position)}</span>
-              <span>{formatTime(duration)}</span>
-            </div>
-          </div>
-        )}
+              {/* Video süre kontrolü (seek) */}
+              {current && (
+                <div>
+                  <input type="range" role="slider" min={0} max={Math.max(duration, 1)} step={1} value={position}
+                    onChange={(e) => music.seek(Number(e.target.value))}
+                    className="w-full h-1 cursor-pointer" style={{ accentColor: "var(--tertiary-bg)" }} />
+                  <div className="flex justify-between text-[10px] text-[var(--primary-text)] tabular-nums">
+                    <span>{formatTime(position)}</span>
+                    <span>{formatTime(duration)}</span>
+                  </div>
+                </div>
+              )}
 
-        {/* Kontroller + ekle */}
-        <div className="flex items-center gap-1.5">
-          {transport}
-          <input
-            type="text" value={input} onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            placeholder="YouTube linki…"
-            className="flex-1 min-w-0 px-2 py-1.5 rounded-lg bg-[var(--secondary-bg)] text-[var(--secondary-text)] border border-[var(--primary-border)] focus:outline-none focus:border-[var(--tertiary-border)] placeholder:text-[var(--primary-text)] text-xs transition-colors"
-          />
-          <button onClick={handleAdd} title="Ekle"
-            className="grid place-items-center w-8 h-8 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] hover:bg-[var(--quaternary-bg)] transition-colors shrink-0">
-            <Plus size={15} />
-          </button>
-        </div>
+              {/* Kontroller + ekle */}
+              <div className="flex items-center gap-1.5">
+                {transport}
+                <input
+                  type="text" value={input} onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                  placeholder="YouTube linki…"
+                  className="flex-1 min-w-0 px-2 py-1.5 rounded-lg bg-[var(--secondary-bg)] text-[var(--secondary-text)] border border-[var(--primary-border)] focus:outline-none focus:border-[var(--tertiary-border)] placeholder:text-[var(--primary-text)] text-xs transition-colors"
+                />
+                <button onClick={handleAdd} title="Ekle"
+                  className="grid place-items-center w-8 h-8 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] hover:bg-[var(--quaternary-bg)] transition-colors shrink-0">
+                  <Plus size={15} />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
