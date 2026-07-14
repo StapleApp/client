@@ -53,6 +53,9 @@ const MusicPanel = () => {
     return localStorage.getItem("staple-music-minimized") === "true";
   });
 
+  // Docked bar queue listesinin minimize edilme durumu
+  const [queueMinimized, setQueueMinimized] = useState(false);
+
   // Video penceresi (kontrollere bağlı ayrı, sürüklenebilir + boyutlanabilir)
   const [videoOpen, setVideoOpen] = useState(false);
   const [vrect, setVrect] = useState({ x: 0, y: 0, w: 320, h: 180 });
@@ -67,6 +70,12 @@ const MusicPanel = () => {
   const hostRef = useRef(null);
   const stateRef = useRef(music);
   stateRef.current = music;
+
+  useEffect(() => {
+    if (music.queue?.length === 0) {
+      setQueueMinimized(false);
+    }
+  }, [music.queue?.length]);
 
   const onServerPage = /^\/server\/[^/]+/.test(location.pathname);
   const voiceDocked = onServerPage && !isMobile && !!voice.active && !voice.isDetached;
@@ -303,6 +312,14 @@ const MusicPanel = () => {
   const duration = progress.duration || 0;
   const position = Math.min(progress.position || 0, duration || 0);
 
+  const handlePlusClick = () => {
+    if (input.trim()) {
+      handleAdd();
+    } else if (queue.length > 0) {
+      setQueueMinimized((prev) => !prev);
+    }
+  };
+
   const videoToggleBtn = (
     <button
       onClick={() => (videoOpen ? setVideoOpen(false) : openVideo())}
@@ -484,11 +501,79 @@ const MusicPanel = () => {
                   placeholder="YouTube linki…"
                   className="flex-1 min-w-0 px-2 py-1.5 rounded-lg bg-[var(--secondary-bg)] text-[var(--secondary-text)] border border-[var(--primary-border)] focus:outline-none focus:border-[var(--tertiary-border)] placeholder:text-[var(--primary-text)] text-xs transition-colors"
                 />
-                <button onClick={handleAdd} title="Ekle"
-                  className="grid place-items-center w-8 h-8 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] hover:bg-[var(--quaternary-bg)] transition-colors shrink-0">
-                  <Plus size={15} />
-                </button>
+                
+                {/* Ekle / Minimize kontrol grubu */}
+                <div className="flex items-center gap-1 shrink-0 relative">
+                  <AnimatePresence>
+                    {queueMinimized && queue.length > 0 && (
+                      <motion.button
+                        initial={{ width: 0, opacity: 0, x: 20 }}
+                        animate={{ width: "auto", opacity: 1, x: 0 }}
+                        exit={{ width: 0, opacity: 0, x: 20 }}
+                        transition={{ duration: 0.2, ease: "easeInOut" }}
+                        onClick={() => setQueueMinimized(false)}
+                        title="Sırayı Göster"
+                        className="p-1.5 rounded-lg text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--secondary-bg)] transition-colors overflow-hidden flex items-center justify-center shrink-0"
+                      >
+                        <ListMusic size={15} />
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
+
+                  <AnimatePresence>
+                    {(queue.length > 0 || input.trim().length > 0) && (
+                      <motion.button
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        onClick={handlePlusClick}
+                        title={input.trim() ? "Ekle" : (queueMinimized ? "Sırayı Göster" : "Sırayı Gizle")}
+                        className="grid place-items-center w-8 h-8 rounded-lg bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] hover:bg-[var(--quaternary-bg)] transition-colors shrink-0"
+                      >
+                        <Plus size={15} />
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
+
+              {/* Sırada Listesi - Animasyonlu ve Kaydırılabilir */}
+              <AnimatePresence initial={false}>
+                {!queueMinimized && queue.length > 0 && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    className="overflow-hidden border-t border-[var(--primary-border)] mt-2 pt-2"
+                  >
+                    <div className="flex items-center justify-between px-1 pb-1">
+                      <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-[var(--primary-text)]">
+                        <ListMusic size={12} /> Sırada ({queue.length})
+                      </span>
+                      <button onClick={music.clear} className="text-[10px] font-semibold text-[var(--primary-text)] hover:text-red-400 transition-colors">
+                        Temizle
+                      </button>
+                    </div>
+                    <div className="max-h-[80px] overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-1">
+                      {queue.map((item, i) => (
+                        <div key={`${item.id}-${i}`} className="group flex items-center gap-2 p-1 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors">
+                          <img src={youtubeThumb(item.id)} alt="" className="w-8 h-8 rounded object-cover bg-[var(--secondary-bg)] shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-medium text-[var(--secondary-text)] truncate">{item.title || "YouTube videosu"}</p>
+                            {item.addedBy && <p className="text-[9px] text-[var(--primary-text)] truncate">{item.addedBy}</p>}
+                          </div>
+                          <button onClick={() => music.removeAt(i)} title="Kaldır"
+                            className="p-1 rounded text-[var(--primary-text)] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
         </AnimatePresence>
@@ -577,7 +662,7 @@ const MusicPanel = () => {
               Temizle
             </button>
           </div>
-          <div className="max-h-40 overflow-y-auto custom-scrollbar px-2 pb-2 flex flex-col gap-1">
+          <div className="max-h-[154px] overflow-y-auto custom-scrollbar px-2 pb-2 flex flex-col gap-1">
             {queue.map((item, i) => (
               <div key={`${item.id}-${i}`} className="group flex items-center gap-2 p-1.5 rounded-lg hover:bg-[var(--secondary-bg)] transition-colors">
                 <img src={youtubeThumb(item.id)} alt="" className="w-9 h-9 rounded object-cover bg-[var(--secondary-bg)] shrink-0" />
