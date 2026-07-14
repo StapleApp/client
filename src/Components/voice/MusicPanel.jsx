@@ -115,7 +115,7 @@ const MusicPanel = () => {
         width: "100%",
         height: "100%",
         playerVars: {
-          autoplay: 0, controls: 0, disablekb: 1, rel: 0, modestbranding: 1, playsinline: 1,
+          autoplay: 0, controls: 1, disablekb: 1, rel: 0, modestbranding: 1, playsinline: 1,
         },
         events: {
           onReady: () => {
@@ -203,6 +203,8 @@ const MusicPanel = () => {
     localStorage.setItem("staple-music-volume", String(val));
     try { playerRef.current?.setVolume(val); } catch { /* yok say */ }
   };
+
+
   const resume = () => {
     try { playerRef.current?.playVideo(); } catch { /* yok say */ }
     setBlocked(false);
@@ -383,6 +385,8 @@ const MusicPanel = () => {
                 </div>
               )}
             </div>
+
+
             {videoToggleBtn}
             <button onClick={detach} title="Kenardan çıkar"
               className="p-1.5 rounded-lg text-[var(--primary-text)] hover:text-[var(--secondary-text)] hover:bg-[var(--secondary-bg)] transition-colors">
@@ -507,6 +511,7 @@ const MusicPanel = () => {
               className="flex-1 h-1 cursor-pointer" style={{ accentColor: "var(--tertiary-bg)" }}
               title="Ses (yalnızca sende)" />
           </div>
+
         </div>
       </div>
 
@@ -549,7 +554,7 @@ const MusicPanel = () => {
         aria-hidden
         style={
           videoOpen
-            ? { position: "fixed", left: vrect.x, top: vrect.y, width: vrect.w, height: vrect.h, zIndex: 104, borderRadius: 12, overflow: "hidden", background: "#000", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }
+            ? { position: "fixed", left: vrect.x, top: vrect.y, width: vrect.w, height: vrect.h - 28, zIndex: 104, borderTopLeftRadius: 12, borderTopRightRadius: 12, overflow: "hidden", background: "#000", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }
             : { position: "fixed", left: "-9999px", top: 0, width: 240, height: 135, pointerEvents: "none" }
         }
       >
@@ -559,19 +564,21 @@ const MusicPanel = () => {
       {/* Video penceresi — sürüklenebilir + köşeden boyutlanır */}
       {videoOpen && (
         <div
-          onPointerDown={startVideoDrag}
-          style={{ position: "fixed", left: vrect.x, top: vrect.y, width: vrect.w, height: vrect.h, zIndex: 105 }}
-          className="rounded-xl border-2 border-[var(--primary-border)] cursor-grab active:cursor-grabbing"
+          style={{ position: "fixed", left: vrect.x, top: vrect.y, width: vrect.w, height: vrect.h, zIndex: 105, pointerEvents: "none" }}
+          className="rounded-xl border-2 border-[var(--primary-border)]"
         >
-          <div className="absolute top-0 left-0 right-0 h-7 flex items-center justify-between px-2 rounded-t-xl bg-black/60 text-white pointer-events-none">
-            <span className="flex items-center gap-1.5 text-[11px] font-semibold"><Music size={12} /> Video</span>
+          <div
+            onPointerDown={startVideoDrag}
+            className="absolute bottom-0 left-0 right-0 h-7 flex items-center gap-2 px-2 rounded-b-[10px] bg-black/85 text-white pointer-events-auto cursor-grab active:cursor-grabbing"
+          >
             <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setVideoOpen(false)} title="Videoyu kapat"
-              className="pointer-events-auto p-0.5 rounded hover:bg-white/20 transition-colors">
+              className="p-0.5 rounded hover:bg-white/20 text-red-400 hover:text-red-300 transition-colors">
               <X size={14} />
             </button>
+            <span className="flex items-center gap-1.5 text-[11px] font-semibold select-none"><Music size={12} /> Video</span>
           </div>
           <div data-resize onPointerDown={startVideoResize} title="Boyutlandır"
-            className="absolute bottom-0 right-0 z-10 w-6 h-6 cursor-nwse-resize flex items-end justify-end p-1 group/resize">
+            className="absolute bottom-0 right-0 z-10 w-6 h-6 cursor-nwse-resize flex items-end justify-end p-1 group/resize pointer-events-auto">
             <div className="w-3 h-3 border-b-[3px] border-r-[3px] border-white/70 group-hover/resize:border-[var(--quaternary-text)] rounded-br-sm transition-colors" />
           </div>
         </div>
