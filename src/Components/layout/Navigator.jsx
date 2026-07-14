@@ -156,7 +156,7 @@ const ServerNavIcon = ({ server, badge, index, isNavExpanded, navigatorWidth }) 
         createPortal(
           <div
             style={{ position: "fixed", left: 64, top: tip.top, transform: "translateY(-50%)" }}
-            className="z-[70] ml-2 p-2 rounded-md shadow-md bg-[var(--tertiary-text)] text-[var(--tertiary-bg)] text-xs font-bold whitespace-nowrap pointer-events-none"
+            className="z-[130] ml-2 p-2 rounded-md shadow-md bg-[var(--tertiary-text)] text-[var(--tertiary-bg)] text-xs font-bold whitespace-nowrap pointer-events-none"
           >
             {server.name}
           </div>,
@@ -218,7 +218,7 @@ const Navigator = () => {
 
   return (
     <div
-      className="fixed flex flex-col top-0 left-0 h-screen gap-0 z-50 shadow-xl bg-[var(--primary-bg)]/85 backdrop-blur-md border-r border-[var(--primary-border)]/20 select-none"
+      className="fixed flex flex-col top-0 left-0 h-screen gap-0 z-[120] shadow-xl bg-[var(--primary-bg)]/85 backdrop-blur-md border-r border-[var(--primary-border)]/20 select-none"
       style={{
         width: isNavExpanded ? `${navigatorWidth}px` : "64px",
         transition: isResizingNavigator ? "none" : "width 0.2s ease-in-out",
