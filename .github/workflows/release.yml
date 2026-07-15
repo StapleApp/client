@@ -188,7 +188,7 @@ jobs:
 
       # iOS builds on CI/CD can be built as simulator builds (.app) or unsigned IPA
       - name: Build iOS App (Simulator / Unsigned)
-        run: npx tauri ios build -- --no-bundle
+        run: npx tauri ios build -- --no-bundle -sdk iphonesimulator
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
