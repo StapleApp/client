@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import { socket } from "../config/socket";
 import { useAuth } from "./AuthContext";
 import { getUser } from "../services/userService";
+import { playJoinSound, playLeaveSound } from "../utils/voiceSounds";
 // RNNoise (wasm + AudioWorklet) — derin öğrenme tabanlı gürültü bastırma.
 // Vite ?url importları: dosyalar bundle'a asset olarak girer.
 import { loadRnnoise, RnnoiseWorkletNode } from "@sapphi-red/web-noise-suppressor";
@@ -884,7 +885,14 @@ export const VoiceProvider = ({ children }) => {
       }
     });
 
-    socket.on("voice:peer-left", ({ socketId }) => closePeer(socketId));
+    // Başka biri kanala katıldı → giriş bildirim sesi (Discord benzeri).
+    // (Bağlantı offer üzerinden kurulur; burada yalnızca bildirim çalınır.)
+    socket.on("voice:peer-joined", () => playJoinSound());
+
+    socket.on("voice:peer-left", ({ socketId }) => {
+      playLeaveSound();
+      closePeer(socketId);
+    });
 
     // ===== Ekran paylaşımı signaling =====
     socket.on("screen:started", ({ socketId }) => {
@@ -1117,9 +1125,11 @@ export const VoiceProvider = ({ children }) => {
     setActive({ serverId, channelId, channelName, serverName });
     setMuted(false);
     setConnecting(false);
+    playJoinSound(); // kendi giriş bildirimin
   };
 
   const leaveVoice = () => {
+    playLeaveSound(); // kendi çıkış bildirimin
     cleanup();
     setActive(null);
   };
