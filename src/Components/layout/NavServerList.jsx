@@ -71,7 +71,12 @@ const ServerIcon = ({ server, active, badge, size = 40, label, isNavExpanded }) 
       className={`rounded-[9px] overflow-hidden shrink-0`}
       style={{ width: size, height: size }}
     >
-      <img src={server.photo} alt={server.name} className="w-full h-full object-cover" />
+      <img
+        src={server.photo}
+        alt={server.name}
+        draggable={false}
+        className="w-full h-full object-cover select-none pointer-events-none"
+      />
     </div>
     {isNavExpanded && label && (
       <span className="text-xs font-bold text-[var(--secondary-text)] truncate select-none">
@@ -105,7 +110,12 @@ const FolderThumb = ({ ids = [], serverById, size = 40 }) => {
       ) : (
         preview.map((s) => (
           <div key={s.id} className="rounded-[3px] overflow-hidden bg-[var(--primary-bg)]">
-            <img src={s.photo} alt="" className="w-full h-full object-cover" />
+            <img
+              src={s.photo}
+              alt=""
+              draggable={false}
+              className="w-full h-full object-cover select-none pointer-events-none"
+            />
           </div>
         ))
       )}
@@ -390,6 +400,7 @@ const NavServerList = ({ servers, serverUnread, isNavExpanded, navigatorWidth })
     <div
       className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-scrollbar flex flex-col"
       onContextMenu={openAreaMenu}
+      onDragStart={(e) => e.preventDefault()}
     >
       <AnimatePresence>
         {layout.length > 0 && (
