@@ -83,6 +83,21 @@ const loadNoiseSuppression = () => {
   }
 };
 
+// DeepFilterNet3 bastırma şiddeti (atten_lim, dB — 0..100). Yüksek = daha
+// agresif gürültü bastırma (klavye vb. iyi eler ama konuşmayı da kesebilir);
+// düşük = daha yumuşak (konuşma korunur, biraz gürültü kalır). Varsayılan 100.
+const DFN3_LEVEL_KEY = "staple-dfn3-level";
+const DFN3_LEVEL_DEFAULT = 100;
+const clampLevel = (n) => Math.max(0, Math.min(100, Math.round(Number(n))));
+const loadDfn3Level = () => {
+  try {
+    const v = JSON.parse(localStorage.getItem(DFN3_LEVEL_KEY));
+    return Number.isFinite(v) ? clampLevel(v) : DFN3_LEVEL_DEFAULT;
+  } catch {
+    return DFN3_LEVEL_DEFAULT;
+  }
+};
+
 // Wasm binary'si bir kez indirilir/derlenir, sonraki açmalarda cache'ten gelir
 let rnnoiseWasmPromise = null;
 const getRnnoiseWasm = () => {
@@ -175,6 +190,8 @@ export const VoiceProvider = ({ children }) => {
   const [audioDevices, setAudioDevices] = useState(loadDevices);
   // RNNoise gürültü bastırma (default kapalı; gecikme eklediği için opsiyonel)
   const [noiseSuppression, setNoiseSuppressionState] = useState(loadNoiseSuppression);
+  // DeepFilterNet3 bastırma şiddeti (0..100) — canlı ayarlanabilir
+  const [dfn3Level, setDfn3LevelState] = useState(loadDfn3Level);
 
   const localStreamRef = useRef(null); // ham mikrofon akışı (mute buradan)
   const outStreamRef = useRef(null); // peer'lara gönderilen işlenmiş akış
@@ -198,6 +215,8 @@ export const VoiceProvider = ({ children }) => {
   const volumesRef = useRef(volumes);
   const audioDevicesRef = useRef(audioDevices);
   const noiseSuppressionRef = useRef(noiseSuppression);
+  const dfn3LevelRef = useRef(dfn3Level);
+  const nsProcRef = useRef(null); // aktif DFN3 core (canlı seviye değişimi için)
   const mutedRef = useRef(false);
   const vadRef = useRef(vad);
   const activeRef = useRef(null); // beforeunload handler'ı güncel active'i görsün
@@ -573,6 +592,7 @@ export const VoiceProvider = ({ children }) => {
     } catch {
       /* zaten kapalı */
     }
+    nsProcRef.current = null;
     localNodeRef.current = null;
     outStreamRef.current = null;
   };
@@ -613,7 +633,7 @@ export const VoiceProvider = ({ children }) => {
           // HTTP önbelleği (ilk indirmeden sonra diskten gelir).
           nsProc = new DeepFilterNet3Core({
             sampleRate: 48000,
-            noiseReductionLevel: 100,
+            noiseReductionLevel: clampLevel(dfn3LevelRef.current),
             assetConfig: { cdnUrl: "/dfn3" },
           });
           await nsProc.initialize();
@@ -644,12 +664,32 @@ export const VoiceProvider = ({ children }) => {
       gate.connect(dest);
 
       localNodeRef.current = { source, highpass, ns, nsProc, gate, dest, analyser, buf };
+      nsProcRef.current = nsProc; // canlı seviye değişimi bunu kullanır
       outStreamRef.current = dest.stream;
     } catch (err) {
       // Zincir kurulamazsa sesi kaybetme — peer'lara ham akış gider, gate/VAD yok
       console.error("Output chain error:", err);
       localNodeRef.current = null;
       outStreamRef.current = null;
+    }
+  };
+
+  // DeepFilterNet3 bastırma şiddetini değiştir (0..100). Kanaldaysak worklet'e
+  // canlı iletilir (zincir yeniden kurulmaz → kesintisiz). Kalıcı saklanır.
+  const setDfn3Level = (level) => {
+    const next = clampLevel(level);
+    dfn3LevelRef.current = next;
+    setDfn3LevelState(next);
+    try {
+      localStorage.setItem(DFN3_LEVEL_KEY, JSON.stringify(next));
+    } catch {
+      /* kota dolu / gizli mod */
+    }
+    // Aktif DFN3 worklet'ine anında uygula (kanaldaysak ve dfn3 modundaysak)
+    try {
+      nsProcRef.current?.setSuppressionLevel?.(next);
+    } catch {
+      /* worklet henüz hazır değil */
     }
   };
 
@@ -1288,6 +1328,9 @@ export const VoiceProvider = ({ children }) => {
         // RNNoise gürültü bastırma
         noiseSuppression,
         setNoiseSuppression,
+        // DeepFilterNet3 bastırma şiddeti (0..100)
+        dfn3Level,
+        setDfn3Level,
         // ekran paylaşımı
         isScreenSharing,
         localScreenStream,

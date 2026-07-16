@@ -53,6 +53,8 @@ const VoiceBar = () => {
     setVadAggressiveness,
     noiseSuppression,
     setNoiseSuppression,
+    dfn3Level,
+    setDfn3Level,
     getUserVolume,
     setUserVolume,
     isDetached,
@@ -326,6 +328,36 @@ const VoiceBar = () => {
                       Yüksek kalite: klavye gibi ani sesleri çok daha iyi bastırır.
                       Daha çok CPU + ~40ms gecikme; ilk açılışta model indirilir.
                     </p>
+
+                    {/* DFN3 bastırma şiddeti — yalnız DFN3 açıkken. Yüksek =
+                        agresif (konuşmayı da kesebilir), düşük = konuşma korunur. */}
+                    {noiseSuppression === "dfn3" && (
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-[var(--primary-text)]">
+                            Bastırma şiddeti
+                          </span>
+                          <span className="text-[10px] tabular-nums text-[var(--primary-text)]">
+                            {dfn3Level}
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={dfn3Level}
+                          onChange={(e) => setDfn3Level(Number(e.target.value))}
+                          aria-label="DeepFilterNet3 bastırma şiddeti"
+                          className="w-full h-1 cursor-pointer"
+                          style={{ accentColor: "var(--quaternary-text)" }}
+                        />
+                        <p className="text-[10px] leading-tight text-[var(--primary-text)] mt-1">
+                          Yüksek: gürültüyü daha çok eler ama konuşmanı da kesebilir.
+                          Kendi sesin kesiliyorsa değeri düşür.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </motion.div>
