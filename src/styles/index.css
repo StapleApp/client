@@ -66,6 +66,13 @@ code {
 :root[data-message-style="bubbles"] [id^="msg-"] {
   background-color: transparent !important;
 }
+/* Yanıta gidince kısa vurgu + sabitlenen mesaj: baloncuk modunda da görünsün
+   (yukarıdaki transparent !important'ı daha spesifik seçiciyle ez). */
+:root[data-message-style="bubbles"] [id^="msg-"][data-highlight="true"],
+:root[data-message-style="bubbles"] [id^="msg-"][data-pinned="true"] {
+  background-color: color-mix(in srgb, var(--tertiary-bg) 30%, transparent) !important;
+  border-radius: 0.6rem;
+}
 :root[data-message-style="bubbles"] [id^="msg-"] .text-sm.text-\[var\(--secondary-text\)\] {
   background-color: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.15);

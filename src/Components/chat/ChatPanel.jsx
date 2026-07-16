@@ -945,6 +945,8 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
                 <div
                   id={`msg-${message.id}`}
                   data-is-own={isOwn}
+                  data-highlight={highlightId === message.id ? "true" : undefined}
+                  data-pinned={message.pinned ? "true" : undefined}
                   onContextMenu={(e) => openContextMenu(e, message)}
                   className={`group relative flex items-start gap-3 px-4 transition-colors ${
                     message.pinned
