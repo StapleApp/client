@@ -606,7 +606,15 @@ export const VoiceProvider = ({ children }) => {
       } else if (mode === "dfn3") {
         try {
           const { DeepFilterNet3Core } = await getDfn3Module();
-          nsProc = new DeepFilterNet3Core({ sampleRate: 48000, noiseReductionLevel: 100 });
+          // wasm + model KENDİ origin'imizden servis edilir (public/dfn3/…):
+          // paketin varsayılan CDN'i (cdn.mezon.ai) CORS başlığı göndermediği
+          // için tarayıcıdan erişilemiyor. Aynı origin → CORS yok + normal
+          // HTTP önbelleği (ilk indirmeden sonra diskten gelir).
+          nsProc = new DeepFilterNet3Core({
+            sampleRate: 48000,
+            noiseReductionLevel: 100,
+            assetConfig: { cdnUrl: "/dfn3" },
+          });
           await nsProc.initialize();
           ns = await nsProc.createAudioWorkletNode(ctx);
         } catch (e) {
@@ -660,6 +668,21 @@ export const VoiceProvider = ({ children }) => {
 
     teardownOutputChain();
     await buildOutputChain();
+    // Görünür geri bildirim: model gerçekten yüklendi mi? (DFN3'te ilk seferde
+    // CDN'den wasm+model iner; hazır olunca toast, başarısızsa hata gösterilir.)
+    if (next === "dfn3") {
+      if (localNodeRef.current?.nsProc) {
+        toast.success("DeepFilterNet3 hazır — gürültü bastırma etkin");
+      } else {
+        toast.error("DeepFilterNet3 yüklenemedi — internet bağlantısını kontrol et");
+      }
+    } else if (next === "rnnoise") {
+      if (localNodeRef.current?.ns) {
+        toast.success("RNNoise etkin");
+      } else {
+        toast.error("RNNoise yüklenemedi");
+      }
+    }
     const newTrack = outboundTracks()[0] || null;
     if (!newTrack) return;
     Object.values(peersRef.current).forEach(({ pc }) => {
