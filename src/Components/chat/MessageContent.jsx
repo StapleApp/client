@@ -1,7 +1,9 @@
+import { openLightbox } from "./ImageLightbox";
+
 /**
  * Renders a chat message's content with rich formatting:
  * emoji-only enlargement, YouTube embeds, image/GIF links, plain links.
- * Extracted from ChatPanel — markup unchanged.
+ * Görsel/GIF'e tıklanınca linke gitmez; Discord tarzı yakınlaştırma açılır.
  */
 const MessageContent = ({ content }) => {
   // Sadece emoji ise büyük göster
@@ -50,13 +52,17 @@ const MessageContent = ({ content }) => {
     content.includes("giphy.com")
   ) {
     return (
-      <a href={content} target="_blank" rel="noopener noreferrer">
-        <img
-          src={content}
-          alt="GIF"
-          className="max-w-xs max-h-48 rounded-lg mt-2 object-cover"
-        />
-      </a>
+      <img
+        src={content}
+        alt="Görsel"
+        loading="lazy"
+        draggable={false}
+        onClick={(e) => {
+          e.stopPropagation();
+          openLightbox(content);
+        }}
+        className="max-w-xs max-h-48 rounded-lg mt-2 object-cover cursor-zoom-in select-none"
+      />
     );
   }
   // Genel link

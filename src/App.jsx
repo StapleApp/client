@@ -18,6 +18,7 @@ import { VoiceProvider } from "./context/VoiceContext";
 import { MusicProvider } from "./context/MusicContext";
 import VoiceBar from "./Components/voice/VoiceBar";
 import MusicPanel from "./Components/voice/MusicPanel";
+import ImageLightbox from "./Components/chat/ImageLightbox";
 
 import RegisterPage from "./features/auth/RegisterPage";
 import LoginPage from "./features/auth/LoginPage"; 
@@ -59,6 +60,7 @@ function App() {
                     <MainLayout />
                     <VoiceBar />
                     <MusicPanel />
+                    <ImageLightbox />
                   </Router>
                 </MusicProvider>
               </VoiceProvider>
