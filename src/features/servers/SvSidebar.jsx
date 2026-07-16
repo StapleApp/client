@@ -157,10 +157,8 @@ const ChannelRow = ({ channel, h }) => {
 
   return (
     <>
-      <motion.div
+      <div
         onClick={() => handleChannelClick(channel)}
-        animate={joinFlash && !reduceMotion ? { scale: [1, 1.045, 1] } : { scale: 1 }}
-        transition={{ duration: 0.45, ease: "easeOut" }}
         className={`group relative overflow-hidden flex items-center justify-between gap-1 px-2 py-1.5 rounded-lg cursor-pointer transition-colors duration-200 ${
           persistentActive
             ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
@@ -277,7 +275,7 @@ const ChannelRow = ({ channel, h }) => {
             <MoreVertical size={15} />
           </button>
         )}
-      </motion.div>
+      </div>
 
       {/* Sesli kanalda kimler var */}
       {occupants.length > 0 && (
@@ -465,6 +463,7 @@ const CategorySection = ({
   return (
     <Reorder.Item
       value={category}
+      layout="position"
       dragListener={false}
       dragControls={controls}
       onDragEnd={persistCategories}
@@ -659,6 +658,7 @@ const CategorySection = ({
                 <Reorder.Item
                   key={channel.id}
                   value={channel}
+                  layout="position"
                   onDragEnd={persistChannelPlacements}
                   className="relative"
                 >
@@ -1387,6 +1387,7 @@ const SvSidebar = ({ serverData, onRefresh }) => {
                 <Reorder.Item
                   key={channel.id}
                   value={channel}
+                  layout="position"
                   onDragEnd={persistChannelPlacements}
                   className="relative select-none"
                 >
