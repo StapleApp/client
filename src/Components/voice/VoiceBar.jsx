@@ -600,7 +600,7 @@ const VoiceBar = () => {
         {/* Ekran paylaş / durdur */}
         <button
           onClick={isScreenSharing ? stopScreenShare : startScreenShare}
-          title={isScreenSharing ? "Paylaşımı durdur" : "Ekran paylaş"}
+          title={isScreenSharing ? "Paylaşımı durdur (S)" : "Ekran paylaş (S)"}
           disabled={!active}
           className={`rounded-xl border-2 transition-all disabled:opacity-40 ${
             isMobile ? "p-1.5" : "p-2.5"
@@ -646,7 +646,7 @@ const VoiceBar = () => {
         {/* Sustur/aç */}
         <button
           onClick={toggleMute}
-          title={muted ? "Sesi aç" : "Sustur"}
+          title={muted ? "Sesi aç (M)" : "Sustur (M)"}
           disabled={!active}
           className={`rounded-xl border-2 transition-all disabled:opacity-40 ${
             isMobile ? "p-1.5" : "p-2.5"
@@ -662,7 +662,7 @@ const VoiceBar = () => {
         {/* Sağırlaştır/aç */}
         <button
           onClick={toggleDeafen}
-          title={deafened ? "Sağırlaştırmayı kaldır" : "Sağırlaştır"}
+          title={deafened ? "Sağırlaştırmayı kaldır (D)" : "Sağırlaştır (D)"}
           disabled={!active}
           className={`rounded-xl border-2 transition-all disabled:opacity-40 ${
             isMobile ? "p-1.5" : "p-2.5"
@@ -775,7 +775,7 @@ const VoiceBar = () => {
         {/* Ekran Paylaşımı */}
         <button
           onClick={isScreenSharing ? stopScreenShare : startScreenShare}
-          title={isScreenSharing ? "Paylaşımı durdur" : "Ekran paylaş"}
+          title={isScreenSharing ? "Paylaşımı durdur (S)" : "Ekran paylaş (S)"}
           disabled={!active}
           className={`flex-1 flex items-center justify-center py-2 rounded-lg border transition-all disabled:opacity-40 text-xs gap-1.5 ${
             isScreenSharing
@@ -790,7 +790,7 @@ const VoiceBar = () => {
         {/* Sustur/Aç */}
         <button
           onClick={toggleMute}
-          title={muted ? "Sesi aç" : "Sustur"}
+          title={muted ? "Sesi aç (M)" : "Sustur (M)"}
           disabled={!active}
           className={`flex-1 flex items-center justify-center py-2 rounded-lg border transition-all disabled:opacity-40 text-xs gap-1.5 ${
             muted
@@ -805,7 +805,7 @@ const VoiceBar = () => {
         {/* Sağırlaştır/Aç */}
         <button
           onClick={toggleDeafen}
-          title={deafened ? "Sağırlaştırmayı kaldır" : "Sağırlaştır"}
+          title={deafened ? "Sağırlaştırmayı kaldır (D)" : "Sağırlaştır (D)"}
           disabled={!active}
           className={`flex-1 flex items-center justify-center py-2 rounded-lg border transition-all disabled:opacity-40 text-xs gap-1.5 ${
             deafened

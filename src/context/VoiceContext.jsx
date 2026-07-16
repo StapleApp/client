@@ -1290,6 +1290,60 @@ export const VoiceProvider = ({ children }) => {
     setRemoteScreenStream(null);
   };
 
+  // ===== Klavye kısayolları (yalnız sesli kanaldayken) =====
+  // Her render'da güncel aksiyonları ref'e yaz → keydown handler'ı [] deps ile
+  // kurulsa bile eski closure'a takılmaz. Kısayollar:
+  //   M = mikrofon aç/kapa, D = sağırlaştır, S = ekran paylaşımı,
+  //   Shift+D = ekran izlemeyi bırak (biri izleniyorsa).
+  const shortcutsRef = useRef({});
+  shortcutsRef.current = {
+    toggleMute,
+    toggleDeafen,
+    startScreenShare,
+    stopScreenShare,
+    stopWatching,
+    isSharing: !!screenStreamRef.current,
+    isWatching: !!watchingRef.current,
+    active: activeRef.current,
+  };
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      // Yazı yazarken tetikleme; tarayıcı kombinasyonlarına karışma.
+      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+      const t = e.target;
+      if (
+        t &&
+        (t.isContentEditable ||
+          t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.tagName === "SELECT")
+      )
+        return;
+      const s = shortcutsRef.current;
+      if (!s.active) return; // sesli kanalda değilsek kısayol yok
+
+      const key = e.key.toLowerCase();
+      if (key === "m") {
+        e.preventDefault();
+        s.toggleMute();
+      } else if (key === "d") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          if (s.isWatching) s.stopWatching();
+        } else {
+          s.toggleDeafen();
+        }
+      } else if (key === "s") {
+        e.preventDefault();
+        if (s.isSharing) s.stopScreenShare();
+        else s.startScreenShare();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   return (
     <VoiceContext.Provider
       value={{
