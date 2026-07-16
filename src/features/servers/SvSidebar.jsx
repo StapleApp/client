@@ -1109,10 +1109,14 @@ const SvSidebar = ({ serverData, onRefresh }) => {
         channelName: channel.name,
         serverName: serverData?.ServerName,
       });
+      setIsOpen(false);
     } else {
-      setActiveChannel(channel);
+      // Zaten açık olan yazı kanalına tekrar basınca kanaldan çık (kapat).
+      const leaving = activeChannelRef.current?.id === channel.id;
+      setActiveChannel(leaving ? null : channel);
+      // Yeni kanal açılıyorsa mobil çekmeceyi kapat; çıkışta açık bırak.
+      if (!leaving) setIsOpen(false);
     }
-    setIsOpen(false);
   };
 
   const isChannelActive = (channel) =>
