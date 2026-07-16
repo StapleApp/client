@@ -33,6 +33,15 @@ const formatTime = (createdAt) => {
   });
 };
 
+// Mesaj gönderildikten sonra düzenleme yalnızca ilk 10 dakika içinde yapılabilir.
+// createdAt bilinmiyorsa (henüz sunucudan dönmemiş yeni mesaj) iyimser davran.
+const EDIT_WINDOW_MS = 10 * 60 * 1000;
+const canStillEdit = (createdAt) => {
+  const ms = (createdAt?.seconds || 0) * 1000;
+  if (!ms) return true;
+  return Date.now() - ms < EDIT_WINDOW_MS;
+};
+
 const isSameDay = (a, b) => {
   if (!a?.seconds || !b?.seconds) return false;
   const da = new Date(a.seconds * 1000);
@@ -493,6 +502,10 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
   };
 
   const startEdit = (message) => {
+    if (!canStillEdit(message.createdAt)) {
+      toast.error("Düzenleme süresi doldu (10 dakika)");
+      return;
+    }
     setConfirmDeleteId(null);
     setEditingId(message.id);
     setEditText(message.content);
@@ -507,6 +520,12 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
     const text = editText.trim();
     if (!text || text === message.content) {
       cancelEdit();
+      return;
+    }
+    // Düzenleme başladıktan sonra pencere kapanmış olabilir → son bir kontrol
+    if (!canStillEdit(message.createdAt)) {
+      cancelEdit();
+      toast.error("Düzenleme süresi doldu (10 dakika)");
       return;
     }
     cancelEdit();
@@ -1102,7 +1121,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
                           >
                             <Reply size={13} />
                           </button>
-                          {isOwn && message.type !== "gif" && (
+                          {isOwn && message.type !== "gif" && canStillEdit(message.createdAt) && (
                             <button
                               onClick={() => startEdit(message)}
                               className="p-1 rounded text-[var(--secondary-text)] hover:text-[var(--quaternary-text)] transition-colors"
@@ -1294,7 +1313,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
           (() => {
             const m = contextMenu.message;
             const isOwnMsg = m.senderId === userData?.userID;
-            const canEdit = isOwnMsg && m.type !== "gif";
+            const canEdit = isOwnMsg && m.type !== "gif" && canStillEdit(m.createdAt);
             const canDelete = isOwnMsg || canModerate;
             return (
               <div

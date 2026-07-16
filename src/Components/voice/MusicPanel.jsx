@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence, useDragControls, useMotionValue } from "framer-motion";
 import {
@@ -44,9 +45,18 @@ const MusicPanel = () => {
     return Number.isFinite(v) && v >= 0 && v <= 100 ? v : 70;
   });
 
-  // Docked bar ses açılır kutusu
+  // Docked bar ses açılır kutusu — overflow-hidden animasyon konteynerinden
+  // kırpılmasın diye portal ile body'ye taşınır; konum butondan hesaplanır.
   const [volOpen, setVolOpen] = useState(false);
-  const volWrapRef = useRef(null);
+  const [volPos, setVolPos] = useState(null); // { left, bottom } (fixed)
+  const volWrapRef = useRef(null); // buton sarmalayıcı (konum kaynağı)
+  const volPopRef = useRef(null); // portal popup (dış-tık istisnası)
+
+  const openVol = () => {
+    const r = volWrapRef.current?.getBoundingClientRect();
+    if (r) setVolPos({ left: r.right - 176, bottom: window.innerHeight - r.top + 8 });
+    setVolOpen((v) => !v);
+  };
 
   // Watch Party minimize edilme durumu
   const [isMinimized, setIsMinimized] = useState(() => {
@@ -203,7 +213,11 @@ const MusicPanel = () => {
   // Ses açılır kutusu: dışarı tıkla / Esc ile kapan
   useEffect(() => {
     if (!volOpen) return undefined;
-    const onDown = (e) => { if (!volWrapRef.current?.contains(e.target)) setVolOpen(false); };
+    const onDown = (e) => {
+      if (volWrapRef.current?.contains(e.target)) return;
+      if (volPopRef.current?.contains(e.target)) return; // portal popup içi
+      setVolOpen(false);
+    };
     const onKey = (e) => { if (e.key === "Escape") setVolOpen(false); };
     document.addEventListener("pointerdown", onDown);
     document.addEventListener("keydown", onKey);
@@ -392,7 +406,7 @@ const MusicPanel = () => {
                   {/* Ses — tıklayınca üstünde açılır kutu */}
                   <div className="relative" ref={volWrapRef}>
                     <button
-                      onClick={() => setVolOpen((v) => !v)}
+                      onClick={openVol}
                       title="Ses"
                       className={`p-1.5 rounded-lg transition-colors ${
                         volOpen
@@ -402,8 +416,12 @@ const MusicPanel = () => {
                     >
                       {volume === 0 ? <VolumeX size={15} /> : <Volume2 size={15} />}
                     </button>
-                    {volOpen && (
-                      <div className="absolute bottom-full right-0 mb-2 z-[60] w-44 p-2 rounded-xl bg-[var(--primary-bg)] border-2 border-[var(--primary-border)] shadow-2xl">
+                    {volOpen && volPos && createPortal(
+                      <div
+                        ref={volPopRef}
+                        className="fixed z-[200] w-44 p-2 rounded-xl bg-[var(--primary-bg)] border-2 border-[var(--primary-border)] shadow-2xl"
+                        style={{ left: volPos.left, bottom: volPos.bottom }}
+                      >
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => changeVolume(volume === 0 ? 70 : 0)}
@@ -424,7 +442,8 @@ const MusicPanel = () => {
                             %{volume}
                           </span>
                         </div>
-                      </div>
+                      </div>,
+                      document.body
                     )}
                   </div>
                   {videoToggleBtn}
