@@ -5,12 +5,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PanelLeftOpen, PanelLeftClose } from "lucide-react";
 
 import NotificationsBell from './NotificationsBell'
-import { useState, useRef, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../../styles/components.css";
 
 import { useNavData } from "../../context/NavDataContext";
+import NavServerList from "./NavServerList";
 
 // Sol menü öğeleri — tek kaynaktan yönetilir.
 // Bildirimler (custom) tıklanınca sayfaya gitmez, scroll dropdown açar.
@@ -77,93 +77,6 @@ const NavItem = ({ path, label, icon, badge = 0, isNavExpanded, navigatorWidth }
   );
 };
 
-// Alt kısımda listelenen sunucu ikonu — tıklayınca sunucuya gider, sağ üstte
-// okunmamış bildirim rozeti taşır. Aşağıdan yukarıya sırayla belirir (stagger).
-// NOT: Liste scroll konteynerinin içinde olduğundan (overflow gizli), isim
-// balonu portalla body'ye render edilir; böylece kırpılmadan sağda görünür.
-const ServerNavIcon = ({ server, badge, index, isNavExpanded, navigatorWidth }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const ref = useRef(null);
-  const [tip, setTip] = useState(null); // { top } — hover'da hesaplanır
-  const active = location.pathname.startsWith(`/server/${server.id}`);
-
-  const showTip = () => {
-    if (isNavExpanded) return; // Genişken tooltip gösterme
-    const r = ref.current?.getBoundingClientRect();
-    if (r) setTip({ top: r.top + r.height / 2 });
-  };
-
-  return (
-    <motion.div
-      ref={ref}
-      layout
-      initial={{ opacity: 0, y: 16, scale: 0.5 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 16, scale: 0.5 }}
-      transition={{ type: "spring", stiffness: 500, damping: 30, delay: index * 0.04 }}
-      onClick={() => navigate(`/server/${server.id}`)}
-      onMouseEnter={showTip}
-      onMouseLeave={() => setTip(null)}
-      style={{
-        width: isNavExpanded ? `${navigatorWidth - 24}px` : "48px",
-      }}
-      className={`${
-        active ? "hovered-icon" : "icon"
-      } group relative shrink-0 transition-all duration-300 ease-in-out ${
-        isNavExpanded 
-          ? "justify-start px-3.5 gap-3 rounded-[12px] h-12 mt-2 mb-2 mx-auto" 
-          : "h-12 justify-center rounded-xl mt-2 mb-2 mx-auto"
-      }`}
-    >
-      <div className={`rounded-[9px] overflow-hidden shrink-0 transition-all duration-300 ${
-        isNavExpanded ? "w-8 h-8" : "w-10 h-10"
-      }`}>
-        <img
-          src={server.photo}
-          alt={server.name}
-          className="w-full h-full object-cover"
-        />
-      </div>
-
-      <AnimatePresence>
-        {isNavExpanded && (
-          <motion.span
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
-            transition={{ duration: 0.15, delay: 0.05 }}
-            className="text-xs font-bold text-[var(--secondary-text)] truncate select-none group-hover:text-[var(--tertiary-bg)]"
-          >
-            {server.name}
-          </motion.span>
-        )}
-      </AnimatePresence>
-
-      {badge > 0 && (
-        <span className={`absolute bg-red-500 text-white text-[10px] font-bold leading-none border-2 border-[var(--primary-bg)] rounded-full flex items-center justify-center z-10 ${
-          isNavExpanded 
-            ? "right-3 min-w-[18px] h-[18px] px-1" 
-            : "-top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1"
-        }`}>
-          {badge > 9 ? "9+" : badge}
-        </span>
-      )}
-
-      {tip &&
-        createPortal(
-          <div
-            style={{ position: "fixed", left: 64, top: tip.top, transform: "translateY(-50%)" }}
-            className="z-[130] ml-2 p-2 rounded-md shadow-md bg-[var(--tertiary-text)] text-[var(--tertiary-bg)] text-xs font-bold whitespace-nowrap pointer-events-none"
-          >
-            {server.name}
-          </div>,
-          document.body
-        )}
-    </motion.div>
-  );
-};
-
 const Navigator = () => {
   const [isNavExpanded, setIsNavExpanded] = useState(() => {
     return localStorage.getItem("staple-navigator-expanded") === "true";
@@ -208,8 +121,6 @@ const Navigator = () => {
     document.addEventListener("pointermove", onPointerMove);
     document.addEventListener("pointerup", onPointerUp);
   };
-
-  const showServers = servers.length > 0;
 
   return (
     <div
@@ -279,32 +190,14 @@ const Navigator = () => {
         ))}
       </div>
 
-      {/* Sunucu Listesi */}
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-scrollbar flex flex-col">
-        <AnimatePresence>
-          {showServers && (
-            <motion.div
-              key="server-nav-list"
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 24 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="mt-auto flex flex-col-reverse items-center py-1"
-            >
-              {servers.map((s, i) => (
-                <ServerNavIcon
-                  key={s.id}
-                  server={s}
-                  badge={serverUnread[s.id] || 0}
-                  index={i}
-                  isNavExpanded={isNavExpanded}
-                  navigatorWidth={navigatorWidth}
-                />
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+      {/* Sunucu Listesi — bildirim ayracının hemen altında, üstten aşağı;
+          sürükle-bırak sıralama + klasör organizasyonu NavServerList'te. */}
+      <NavServerList
+        servers={servers}
+        serverUnread={serverUnread}
+        isNavExpanded={isNavExpanded}
+        navigatorWidth={navigatorWidth}
+      />
 
       {/* Ayarlar (altta sabit, ayraçla ayrılır) */}
       <div className="flex flex-col shrink-0 transition-all duration-250 ease-in-out delay-300 pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:pb-0">
