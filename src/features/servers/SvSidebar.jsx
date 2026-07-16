@@ -5,6 +5,7 @@ import {
   AnimatePresence,
   Reorder,
   useDragControls,
+  useReducedMotion,
 } from "framer-motion";
 import {
   Hash,
@@ -123,6 +124,27 @@ const ChannelRow = ({ channel, h }) => {
   const active = isChannelActive(channel);
   const menuOpen = channelOptions === channel.id;
   const occupants = channel.type === "voice" ? voiceState[channel.id] || [] : [];
+  const reduceMotion = useReducedMotion();
+
+  // Metin kanalı: aktifken kalıcı vurgu (kullanıcı o kanalı görüntülüyor).
+  // Sesli kanal: kalıcı vurgu YOK — bunun yerine katılınca bir kez şık bir
+  // animasyon oynar; kanalda olduğunu zaten altındaki katılımcı listesi belli eder.
+  const isVoice = channel.type === "voice";
+  const persistentActive = active && !isVoice;
+
+  // Sesli kanala katılış anını (pasif→aktif) yakala → bir kereye mahsus flash.
+  const [joinFlash, setJoinFlash] = useState(false);
+  const prevVoiceActiveRef = useRef(isVoice && active);
+  useEffect(() => {
+    const voiceActive = isVoice && active;
+    if (voiceActive && !prevVoiceActiveRef.current) {
+      setJoinFlash(true);
+      const t = setTimeout(() => setJoinFlash(false), 900);
+      prevVoiceActiveRef.current = voiceActive;
+      return () => clearTimeout(t);
+    }
+    prevVoiceActiveRef.current = voiceActive;
+  }, [isVoice, active]);
 
   // Okunmamış rozeti: yalnızca metin kanallarında ve aktif olmayan kanalda göster.
   const unread = channel.type === "text" ? unreadCounts?.[channel.id] || 0 : 0;
@@ -135,15 +157,59 @@ const ChannelRow = ({ channel, h }) => {
 
   return (
     <>
-      <div
+      <motion.div
         onClick={() => handleChannelClick(channel)}
-        className={`group flex items-center justify-between gap-1 px-2 py-1.5 rounded-lg cursor-pointer transition-colors duration-200 ${
-          active
+        animate={joinFlash && !reduceMotion ? { scale: [1, 1.045, 1] } : { scale: 1 }}
+        transition={{ duration: 0.45, ease: "easeOut" }}
+        className={`group relative overflow-hidden flex items-center justify-between gap-1 px-2 py-1.5 rounded-lg cursor-pointer transition-colors duration-200 ${
+          persistentActive
             ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
             : "text-[var(--primary-text)] hover:bg-[var(--secondary-bg)] hover:text-[var(--secondary-text)]"
         }`}
       >
-        <div className="flex items-center gap-1.5 min-w-0">
+        {/* Sesli kanala katılış animasyonu (Persona tarzı diyagonal parıltı + halka) */}
+        <AnimatePresence>
+          {joinFlash && (
+            <>
+              {reduceMotion ? (
+                <motion.span
+                  key="flash-fade"
+                  initial={{ opacity: 0.6 }}
+                  animate={{ opacity: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.6 }}
+                  className="absolute inset-0 rounded-lg bg-[var(--tertiary-bg)] pointer-events-none"
+                />
+              ) : (
+                <>
+                  {/* Diyagonal ışık süpürmesi */}
+                  <motion.span
+                    key="flash-sweep"
+                    initial={{ x: "-130%" }}
+                    animate={{ x: "130%" }}
+                    transition={{ duration: 0.55, ease: "easeOut" }}
+                    className="absolute inset-y-0 -inset-x-1/4 pointer-events-none"
+                    style={{
+                      background:
+                        "linear-gradient(105deg, transparent 35%, var(--accent) 50%, transparent 65%)",
+                      opacity: 0.9,
+                    }}
+                  />
+                  {/* Kısa iç halka parlaması */}
+                  <motion.span
+                    key="flash-ring"
+                    initial={{ opacity: 1 }}
+                    animate={{ opacity: 0 }}
+                    transition={{ duration: 0.7, ease: "easeOut" }}
+                    className="absolute inset-0 rounded-lg pointer-events-none"
+                    style={{ boxShadow: "inset 0 0 0 2px var(--accent)" }}
+                  />
+                </>
+              )}
+            </>
+          )}
+        </AnimatePresence>
+        <div className="flex items-center gap-1.5 min-w-0 relative">
           {canManageChannels && (
             <GripVertical
               size={14}
@@ -202,8 +268,8 @@ const ChannelRow = ({ channel, h }) => {
               setMenuPos({ top, left });
               setChannelOptions(menuOpen ? null : channel.id);
             }}
-            className={`w-6 h-6 rounded-full transition-all flex items-center justify-center shrink-0 ${
-              active
+            className={`relative z-10 w-6 h-6 rounded-full transition-all flex items-center justify-center shrink-0 ${
+              persistentActive
                 ? "opacity-100 hover:bg-black/10 text-[var(--tertiary-text)]"
                 : "opacity-0 group-hover:opacity-100 hover:bg-[var(--primary-bg)] text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
             }`}
@@ -211,7 +277,7 @@ const ChannelRow = ({ channel, h }) => {
             <MoreVertical size={15} />
           </button>
         )}
-      </div>
+      </motion.div>
 
       {/* Sesli kanalda kimler var */}
       {occupants.length > 0 && (
