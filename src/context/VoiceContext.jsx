@@ -67,13 +67,18 @@ const loadDevices = () => {
   }
 };
 
-// RNNoise gürültü bastırma tercihi (default KAPALI — küçük gecikme ekler)
+// Gürültü bastırma modu: "off" | "rnnoise" (hafif) | "dfn3" (DeepFilterNet3,
+// yüksek kalite ama daha çok CPU + ~40ms gecikme). Varsayılan KAPALI.
+// Eski kayıtlar boolean'dı → true'yu "rnnoise"a eşle (geriye dönük uyum).
 const NS_KEY = "staple-noise-suppression";
 const loadNoiseSuppression = () => {
   try {
-    return !!JSON.parse(localStorage.getItem(NS_KEY));
+    const v = JSON.parse(localStorage.getItem(NS_KEY));
+    if (v === true) return "rnnoise";
+    if (v === "rnnoise" || v === "dfn3") return v;
+    return "off";
   } catch {
-    return false;
+    return "off";
   }
 };
 
@@ -90,6 +95,19 @@ const getRnnoiseWasm = () => {
     });
   }
   return rnnoiseWasmPromise;
+};
+
+// DeepFilterNet3 modülü LAZY yüklenir (dinamik import) — ağır (wasm + model);
+// ana bundle'a girmez, yalnızca kullanıcı bu modu seçince indirilir.
+let dfn3ModulePromise = null;
+const getDfn3Module = () => {
+  if (!dfn3ModulePromise) {
+    dfn3ModulePromise = import("deepfilternet3-noise-filter").catch((e) => {
+      dfn3ModulePromise = null; // sonraki denemede yeniden yükle
+      throw e;
+    });
+  }
+  return dfn3ModulePromise;
 };
 
 const loadVadSettings = () => {
@@ -344,7 +362,9 @@ export const VoiceProvider = ({ children }) => {
   const getAudioCtx = () => {
     if (!audioCtxRef.current) {
       const Ctx = window.AudioContext || window.webkitAudioContext;
-      audioCtxRef.current = new Ctx();
+      // 48kHz sabit: DeepFilterNet3 bunu şart koşar; RNNoise de 48k bekler.
+      // Donanım farklıysa tarayıcı giriş/çıkışı kendisi yeniden örnekler.
+      audioCtxRef.current = new Ctx({ sampleRate: 48000 });
       // Tüm uzak sesler master gain'den geçer → sağırlaştırma tek noktadan 0'lanır
       const mg = audioCtxRef.current.createGain();
       mg.gain.value = deafenedRef.current ? 0 : 1;
@@ -530,11 +550,11 @@ export const VoiceProvider = ({ children }) => {
     typeof volumes[userId] === "number" ? volumes[userId] : 1;
 
   // Giden zinciri sök (mikrofon akışına dokunmadan) — cleanup ve
-  // RNNoise aç/kapa sırasında kullanılır.
+  // gürültü bastırma modu değişiminde kullanılır.
   const teardownOutputChain = () => {
     if (!localNodeRef.current) return;
-    const { source, highpass, rnnoise, gate, dest, analyser } = localNodeRef.current;
-    [source, highpass, rnnoise, gate, dest, analyser].forEach((n) => {
+    const { source, highpass, ns, nsProc, gate, dest, analyser } = localNodeRef.current;
+    [source, highpass, ns, gate, dest, analyser].forEach((n) => {
       if (!n) return;
       try {
         n.disconnect();
@@ -543,16 +563,21 @@ export const VoiceProvider = ({ children }) => {
       }
     });
     try {
-      rnnoise?.destroy?.();
+      ns?.destroy?.(); // RnnoiseWorkletNode kendi destroy'unu taşır
     } catch {
       /* worklet zaten kapalı */
+    }
+    try {
+      nsProc?.destroy?.(); // DFN3 core (worker + wasm) temizliği
+    } catch {
+      /* zaten kapalı */
     }
     localNodeRef.current = null;
     outStreamRef.current = null;
   };
 
-  // Giden ses işleme zinciri: ham mikrofon → highpass → [RNNoise] → noise gate → çıkış.
-  // Analyser, RNNoise varsa onun SONRASINI ölçer → VAD klavye sesine değil
+  // Giden ses işleme zinciri: ham mikrofon → highpass → [RNNoise|DFN3] → noise gate → çıkış.
+  // Analyser, bastırma varsa onun SONRASINI ölçer → VAD klavye sesine değil
   // bastırılmış (temiz) sinyale bakar.
   const buildOutputChain = async () => {
     try {
@@ -563,20 +588,36 @@ export const VoiceProvider = ({ children }) => {
       highpass.type = "highpass";
       highpass.frequency.value = HIGHPASS_HZ;
 
-      // RNNoise (opsiyonel): wasm + worklet yüklenemezse zincir onsuz kurulur
-      let rnnoise = null;
-      if (noiseSuppressionRef.current) {
+      // Gürültü bastırma (opsiyonel): seçilen model yüklenemezse zincir onsuz
+      // kurulur. ns = zincire bağlanan worklet node; nsProc = DFN3 core
+      // (destroy için ayrı tutulur — RNNoise'ta node'un kendisi destroy edilir).
+      let ns = null;
+      let nsProc = null;
+      const mode = noiseSuppressionRef.current;
+      if (mode === "rnnoise") {
         try {
           const wasmBinary = await getRnnoiseWasm();
           await ctx.audioWorklet.addModule(rnnoiseWorkletPath);
-          rnnoise = new RnnoiseWorkletNode(ctx, { wasmBinary, maxChannels: 1 });
+          ns = new RnnoiseWorkletNode(ctx, { wasmBinary, maxChannels: 1 });
         } catch (e) {
           console.error("RNNoise yüklenemedi, onsuz devam:", e);
-          rnnoise = null;
+          ns = null;
+        }
+      } else if (mode === "dfn3") {
+        try {
+          const { DeepFilterNet3Core } = await getDfn3Module();
+          nsProc = new DeepFilterNet3Core({ sampleRate: 48000, noiseReductionLevel: 100 });
+          await nsProc.initialize();
+          ns = await nsProc.createAudioWorkletNode(ctx);
+        } catch (e) {
+          console.error("DeepFilterNet3 yüklenemedi, onsuz devam:", e);
+          try { nsProc?.destroy?.(); } catch { /* yok say */ }
+          ns = null;
+          nsProc = null;
         }
       }
 
-      const { analyser, buf } = makeAnalyser(ctx, rnnoise || highpass);
+      const { analyser, buf } = makeAnalyser(ctx, ns || highpass);
 
       const gate = ctx.createGain();
       gate.gain.value = 1; // gate mantığı VAD açıkken tickLevels'ta sürülür
@@ -586,14 +627,14 @@ export const VoiceProvider = ({ children }) => {
 
       source.connect(highpass);
       let tail = highpass;
-      if (rnnoise) {
-        highpass.connect(rnnoise);
-        tail = rnnoise;
+      if (ns) {
+        highpass.connect(ns);
+        tail = ns;
       }
       tail.connect(gate);
       gate.connect(dest);
 
-      localNodeRef.current = { source, highpass, rnnoise, gate, dest, analyser, buf };
+      localNodeRef.current = { source, highpass, ns, nsProc, gate, dest, analyser, buf };
       outStreamRef.current = dest.stream;
     } catch (err) {
       // Zincir kurulamazsa sesi kaybetme — peer'lara ham akış gider, gate/VAD yok
@@ -603,13 +644,15 @@ export const VoiceProvider = ({ children }) => {
     }
   };
 
-  // RNNoise'u aç/kapat. Kanaldaysak zinciri yeniden kurup peer'lardaki
-  // ses track'ini yenisiyle değiştirir (yeniden bağlanma gerekmez).
-  const setNoiseSuppression = async (enabled) => {
-    noiseSuppressionRef.current = enabled;
-    setNoiseSuppressionState(enabled);
+  // Gürültü bastırma modunu değiştir ("off" | "rnnoise" | "dfn3").
+  // Kanaldaysak zinciri yeniden kurup peer'lardaki ses track'ini yenisiyle
+  // değiştirir (yeniden bağlanma gerekmez).
+  const setNoiseSuppression = async (mode) => {
+    const next = mode === "rnnoise" || mode === "dfn3" ? mode : "off";
+    noiseSuppressionRef.current = next;
+    setNoiseSuppressionState(next);
     try {
-      localStorage.setItem(NS_KEY, JSON.stringify(enabled));
+      localStorage.setItem(NS_KEY, JSON.stringify(next));
     } catch {
       /* kota dolu / gizli mod */
     }

@@ -287,7 +287,8 @@ const VoiceBar = () => {
                     </p>
                   </div>
 
-                  {/* RNNoise gürültü bastırma (default kapalı) */}
+                  {/* Gürültü bastırma: RNNoise (hafif) / DeepFilterNet3 (yüksek).
+                      Aynı anda yalnız biri açık olabilir; ikisi de kapatılabilir. */}
                   <div className="mt-2 pt-2 border-t border-[var(--primary-border)]">
                     <label className="flex items-center justify-between gap-2 cursor-pointer">
                       <span className="text-xs text-[var(--secondary-text)]">
@@ -295,15 +296,35 @@ const VoiceBar = () => {
                       </span>
                       <input
                         type="checkbox"
-                        checked={noiseSuppression}
-                        onChange={(e) => setNoiseSuppression(e.target.checked)}
+                        checked={noiseSuppression === "rnnoise"}
+                        onChange={(e) =>
+                          setNoiseSuppression(e.target.checked ? "rnnoise" : "off")
+                        }
                         className="w-4 h-4 cursor-pointer"
                         style={{ accentColor: "var(--quaternary-text)" }}
                       />
                     </label>
                     <p className="text-[10px] leading-tight text-[var(--primary-text)] mt-1">
-                      Klavye/fan gibi gürültüleri yapay zekâ ile bastırır.
-                      Küçük bir gecikme ekler — gerekiyorsa aç.
+                      Hafif: az CPU, küçük gecikme. Fan gibi sabit gürültülerde iyi.
+                    </p>
+
+                    <label className="flex items-center justify-between gap-2 cursor-pointer mt-2">
+                      <span className="text-xs text-[var(--secondary-text)]">
+                        Gürültü bastırma (DeepFilterNet3)
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={noiseSuppression === "dfn3"}
+                        onChange={(e) =>
+                          setNoiseSuppression(e.target.checked ? "dfn3" : "off")
+                        }
+                        className="w-4 h-4 cursor-pointer"
+                        style={{ accentColor: "var(--quaternary-text)" }}
+                      />
+                    </label>
+                    <p className="text-[10px] leading-tight text-[var(--primary-text)] mt-1">
+                      Yüksek kalite: klavye gibi ani sesleri çok daha iyi bastırır.
+                      Daha çok CPU + ~40ms gecikme; ilk açılışta model indirilir.
                     </p>
                   </div>
                 </div>
