@@ -6,6 +6,7 @@ import ProfilePanel from "../../Components/layout/ProfilePanel";
 import {
   Plus,
   UserPlus,
+  Search,
   MessageCircle,
   Compass,
   Hash,
@@ -586,32 +587,10 @@ const HomePage = () => {
               {/* Hızlı aksiyonlar */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <QuickAction icon={<Plus size={20} />} label="Sunucu Oluştur" onClick={() => navigate("/create-server")} />
+                <QuickAction icon={<Search size={20} />} label="Sunucu Ara" onClick={() => navigate("/SearchServer")} />
                 <QuickAction icon={<UserPlus size={20} />} label="Arkadaş Ekle" onClick={() => navigate("/AddFriends")} />
-                <QuickAction icon={<MessageCircle size={20} />} label="Mesajlar" onClick={() => navigate("/DirectMessaging")} />
               </div>
 
-            {/* Okunmamış mesajlar — okunmamış DM varsa öncelikli göster */}
-            {!loading && unreadDms.length > 0 && (
-              <div>
-                <SectionTitle action="Tümü" onAction={() => navigate("/DirectMessaging")}>
-                  Okunmamış Mesajlar
-                  <span className="ml-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-[var(--tertiary-bg)] text-[var(--tertiary-text)] text-[10px] font-bold normal-case">
-                    {totalUnread > 9 ? "9+" : totalUnread}
-                  </span>
-                </SectionTitle>
-                <div className="flex flex-col gap-2">
-                  {unreadDms.map((dm) => (
-                    <DmRow
-                      key={dm.otherId}
-                      dm={dm}
-                      onClick={() => navigate("/DirectMessaging", { state: { userID: dm.otherId } })}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Sunucular */}
             <div>
               <SectionTitle>Sunucuların</SectionTitle>
               {loading ? (

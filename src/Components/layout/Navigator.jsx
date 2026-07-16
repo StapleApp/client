@@ -1,6 +1,6 @@
 import { BsGearFill } from "react-icons/bs";
-import { FaStapler } from "react-icons/fa6";
-import { MdHome, MdSearch, MdOutlineMessage } from "react-icons/md";
+
+import { MdHome, MdOutlineMessage } from "react-icons/md";
 import { motion, AnimatePresence } from "framer-motion";
 import { PanelLeftOpen, PanelLeftClose } from "lucide-react";
 
@@ -16,14 +16,12 @@ import { useNavData } from "../../context/NavDataContext";
 // Bildirimler (custom) tıklanınca sayfaya gitmez, scroll dropdown açar.
 const NAV_ITEMS = [
   { path: "/", label: "Ana Sayfa", icon: <MdHome size="25" /> },
-  { path: "/AddFriends", label: "Arkadaş Ekle", icon: <FaStapler size="20" /> },
-  { path: "/SearchServer", label: "Sunucu Ara", icon: <MdSearch size="25" /> },
   { path: "/DirectMessaging", label: "Mesajlar", icon: <MdOutlineMessage size="25" /> },
   { custom: "notifications", label: "Bildirimler" },
 ];
 
 // Öğelerin genişleme animasyonu gecikmeleri (orijinal tasarımla birebir)
-const ITEM_DELAYS = ["delay-75", "delay-150", "delay-225", "delay-300", "delay-300"];
+const ITEM_DELAYS = ["delay-75", "delay-150", "delay-225"];
 
 const NavItem = ({ path, label, icon, badge = 0, isNavExpanded, navigatorWidth }) => {
   const navigate = useNavigate();
@@ -176,7 +174,6 @@ const Navigator = () => {
   const [isResizingNavigator, setIsResizingNavigator] = useState(false);
 
   const { servers, serverUnread } = useNavData();
-  const location = useLocation();
 
   useEffect(() => {
     const widthVal = isNavExpanded ? navigatorWidth : 64;
@@ -212,9 +209,7 @@ const Navigator = () => {
     document.addEventListener("pointerup", onPointerUp);
   };
 
-  // Ana sayfada sunucular zaten listelendiğinden çubukta gösterilmez.
-  const isHome = location.pathname === "/" || location.pathname === "/Home";
-  const showServers = !isHome && servers.length > 0;
+  const showServers = servers.length > 0;
 
   return (
     <div
