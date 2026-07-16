@@ -218,7 +218,7 @@ const Navigator = () => {
 
   return (
     <div
-      className="fixed flex flex-col top-0 left-0 h-screen gap-0 z-[120] shadow-xl bg-[var(--primary-bg)]/85 backdrop-blur-md border-r border-[var(--primary-border)]/20 select-none"
+      className="fixed flex flex-col top-0 bottom-0 left-0 gap-0 z-[120] shadow-xl bg-[var(--primary-bg)]/85 backdrop-blur-md border-r border-[var(--primary-border)]/20 select-none"
       style={{
         width: isNavExpanded ? `${navigatorWidth}px` : "64px",
         transition: isResizingNavigator ? "none" : "width 0.2s ease-in-out",
@@ -312,7 +312,7 @@ const Navigator = () => {
       </div>
 
       {/* Ayarlar (altta sabit, ayraçla ayrılır) */}
-      <div className="flex flex-col shrink-0 transition-all duration-250 ease-in-out delay-300 pb-[env(safe-area-inset-bottom,16px)] md:pb-0">
+      <div className="flex flex-col shrink-0 transition-all duration-250 ease-in-out delay-300 pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:pb-0">
         <hr className="border-[var(--primary-border)] border" />
         <NavItem
           path="/Settings"
