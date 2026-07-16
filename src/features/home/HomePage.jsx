@@ -27,7 +27,7 @@ import {
   getVoiceChannelsMap,
 } from "../../services/serverService";
 import { getFriendsList } from "../../services/friendService";
-import { getUser, updateUserStatus } from "../../services/userService";
+import { getUser, updateUserStatus, getAvatarsByIds } from "../../services/userService";
 import { usePresence } from "../../context/PresenceContext";
 import { getDMOverview } from "../../services/groupService";
 import { socket } from "../../config/socket";
@@ -229,6 +229,7 @@ const HomePage = () => {
   // Aktif ses kanalları
   const [serverVoice, setServerVoice] = useState({}); // serverId -> { channelId: [users] }
   const [voiceChanMap, setVoiceChanMap] = useState({}); // channelId -> { name, serverId }
+  const [voiceAvatars, setVoiceAvatars] = useState({}); // userId -> avatar_url (sesli kanaldakiler)
 
   useEffect(() => {
     setMyStatus(liveStatus(userData?.userID, userData?.status, userData?.lastSeen));
@@ -313,6 +314,23 @@ const HomePage = () => {
       ids.forEach((id) => socket.emit("voice:unwatch", { serverId: id }));
     };
   }, [servers]);
+
+  // Sesli kanaldaki kullanıcıların avatarlarını topluca çöz (userId -> foto).
+  // Eksik olanları çeker; zaten bilinenleri tekrar sorgulamaz.
+  useEffect(() => {
+    const ids = new Set();
+    Object.values(serverVoice).forEach((state) => {
+      Object.values(state || {}).forEach((users) => {
+        (users || []).forEach((u) => u?.userId && ids.add(u.userId));
+      });
+    });
+    const missing = [...ids].filter((id) => !(id in voiceAvatars));
+    if (!missing.length) return;
+    getAvatarsByIds(missing).then((map) => {
+      if (Object.keys(map).length) setVoiceAvatars((prev) => ({ ...prev, ...map }));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverVoice]);
 
   const handleStatusChange = useCallback(
     async (s) => {
@@ -441,7 +459,7 @@ const HomePage = () => {
                   {vc.users.slice(0, 3).map((u) => (
                     <img
                       key={u.socketId}
-                      src="/defaults/avatars/1.png"
+                      src={voiceAvatars[u.userId] || "/defaults/avatars/1.png"}
                       alt=""
                       title={u.nickName}
                       className="w-6 h-6 rounded-full object-cover border-2 border-[var(--secondary-bg)]"

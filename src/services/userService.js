@@ -46,6 +46,27 @@ export const getUser = async (uid) => {
   }
 };
 
+// ** ID listesi ile avatar haritası (id -> avatar_url) — sesli kanal rozetleri gibi hafif kullanımlar için **
+export const getAvatarsByIds = async (ids) => {
+  const uniq = [...new Set((ids || []).filter(Boolean))];
+  if (!uniq.length) return {};
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, avatar_url")
+      .in("id", uniq);
+    if (error) throw error;
+    const map = {};
+    (data || []).forEach((p) => {
+      map[p.id] = p.avatar_url || "/defaults/avatars/1.png";
+    });
+    return map;
+  } catch (error) {
+    console.error("Error fetching avatars by ids:", error);
+    return {};
+  }
+};
+
 // Supabase profil verisini eski Firebase formatına dönüştür
 // Böylece UI bileşenlerinde minimum değişiklik gerekir
 export const mapProfileToLegacy = (profile) => {
