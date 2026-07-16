@@ -312,7 +312,7 @@ const Navigator = () => {
       </div>
 
       {/* Ayarlar (altta sabit, ayraçla ayrılır) */}
-      <div className="flex flex-col shrink-0 transition-all duration-250 ease-in-out delay-300">
+      <div className="flex flex-col shrink-0 transition-all duration-250 ease-in-out delay-300 pb-[env(safe-area-inset-bottom,16px)] md:pb-0">
         <hr className="border-[var(--primary-border)] border" />
         <NavItem
           path="/Settings"
