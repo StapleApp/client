@@ -204,11 +204,8 @@ npm run tauri:build   # → src-tauri/target/release/bundle/nsis/Staple_<version
 ## 🗺 Roadmap
 
 - [ ] Group DMs
-- [ ] Message search & pins
 - [ ] End-to-end encryption for direct messages
-- [ ] macOS & Linux desktop builds
 - [ ] In-app auto-update
-- [ ] Mobile apps (iOS / Android)
 - [ ] Moderation: blocking, reporting & spam filtering
 
 ---
@@ -225,16 +222,6 @@ Released under the **MIT License** — free to use, modify, and distribute.
 
 ---
 
-## 👥 Team
-
-Built by a team of students crafting a sleek, scalable, and secure communication platform.
-
-- **Mustafa Aykut**
-- **Eren Köse**
-- **Eren Güreli**
-- **Lütfü Bedel**
-- **Yusuf Balmumcu**
-- **Ahmet Yusuf Birdir**
 
 ## 📬 Contact
 
