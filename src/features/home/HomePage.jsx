@@ -30,7 +30,7 @@ import { getFriendsList } from "../../services/friendService";
 import { getUser, updateUserStatus, getAvatarsByIds } from "../../services/userService";
 import { usePresence } from "../../context/PresenceContext";
 import { getDMOverview } from "../../services/groupService";
-import { socket } from "../../config/socket";
+import { socket, attachSocketAuth } from "../../config/socket";
 
 import icon from "../../assets/branding/staple-icon.svg";
 import Navigator from "../../Components/layout/Navigator";
@@ -307,7 +307,7 @@ const HomePage = () => {
       setServerVoice((prev) => ({ ...prev, [serverId]: state }));
     };
     socket.on("voice:state", onState);
-    if (!socket.connected) socket.connect();
+    if (!socket.connected) { attachSocketAuth().then(() => socket.connect()); }
     ids.forEach((id) => socket.emit("voice:watch", { serverId: id }));
     return () => {
       socket.off("voice:state", onState);

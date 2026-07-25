@@ -1,15 +1,25 @@
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import Navigator from "./Components/layout/Navigator";
-import SettingsPage from "./features/settings/SettingsPage";
-import AddFriendsPage from "./features/friends/AddFriendsPage";
-import SearchServerPage from "./features/servers/SearchServerPage";
-import ProfileSettings from "./features/profile/ProfileSettings";
-import HomePage from "./features/home/HomePage";
-import DirectMessagingPage from "./features/messaging/DirectMessagingPage";
-import CreateServerPage from "./features/servers/CreateServerPage";
-import ServerPage from "./features/servers/ServerPage";
-import InvitePage from "./features/servers/InvitePage";
+
+// Route-based Code Splitting (lazy loading) — sayfa kodları sadece ihtiyaç duyulduğunda yüklenir
+const SettingsPage = lazy(() => import("./features/settings/SettingsPage"));
+const AddFriendsPage = lazy(() => import("./features/friends/AddFriendsPage"));
+const SearchServerPage = lazy(() => import("./features/servers/SearchServerPage"));
+const ProfileSettings = lazy(() => import("./features/profile/ProfileSettings"));
+const HomePage = lazy(() => import("./features/home/HomePage"));
+const DirectMessagingPage = lazy(() => import("./features/messaging/DirectMessagingPage"));
+const CreateServerPage = lazy(() => import("./features/servers/CreateServerPage"));
+const ServerPage = lazy(() => import("./features/servers/ServerPage"));
+const InvitePage = lazy(() => import("./features/servers/InvitePage"));
+
+const RegisterPage = lazy(() => import("./features/auth/RegisterPage"));
+const LoginPage = lazy(() => import("./features/auth/LoginPage")); 
+const ForgotPasswordPage = lazy(() => import("./features/auth/ForgotPasswordPage"));
+const TermsPage = lazy(() => import("./features/auth/TermsPage"));
+const CreateProfilePage = lazy(() => import("./features/auth/CreateProfilePage"));
+const AuthCallbackPage = lazy(() => import("./features/auth/AuthCallbackPage"));
+const ResetPasswordPage = lazy(() => import("./features/auth/ResetPasswordPage"));
 
 import { AnimatePresence, MotionConfig } from "framer-motion";
 import { Toaster } from "react-hot-toast";
@@ -20,13 +30,6 @@ import VoiceBar from "./Components/voice/VoiceBar";
 import MusicPanel from "./Components/voice/MusicPanel";
 import ImageLightbox from "./Components/chat/ImageLightbox";
 
-import RegisterPage from "./features/auth/RegisterPage";
-import LoginPage from "./features/auth/LoginPage"; 
-import ForgotPasswordPage from "./features/auth/ForgotPasswordPage";
-import TermsPage from "./features/auth/TermsPage";
-import CreateProfilePage from "./features/auth/CreateProfilePage";
-import AuthCallbackPage from "./features/auth/AuthCallbackPage";
-import ResetPasswordPage from "./features/auth/ResetPasswordPage";
 import ProtectedRoute from "./Components/layout/ProtectedRoute";
 import NotFound from "./Components/layout/NotFound";
 import ErrorBoundary from "./Components/layout/ErrorBoundary";
@@ -126,44 +129,54 @@ function MainLayout() {
   );
 }
 
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-[var(--primary-bg)] text-[var(--secondary-text)]">
+      <div className="w-8 h-8 border-4 border-[var(--tertiary-bg)] border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
+
 function AnimatedSwitch() {
   const location = useLocation();
   return (
     <>
       <Toaster />
       <AnimatePresence mode="wait">
-        <Routes location={location} key={location.pathname}>
-          <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-          <Route path="/Home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-          <Route path="/Settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-          <Route path="/AddFriends" element={<ProtectedRoute><AddFriendsPage /></ProtectedRoute>} />
-          <Route path="/SearchServer" element={<ProtectedRoute><SearchServerPage /></ProtectedRoute>} />
-          <Route path="/Profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
-          <Route path="/ProfileSettings" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
-          <Route path="/DirectMessaging" element={<ProtectedRoute><DirectMessagingPage /></ProtectedRoute>} />
-          <Route path="/create-server" element={<ProtectedRoute><CreateServerPage /></ProtectedRoute>} />
-          <Route path="/server/:serverId/*" element={<ProtectedRoute><ServerPage /></ProtectedRoute>} />
-          <Route path="/invite/:code" element={<ProtectedRoute><InvitePage /></ProtectedRoute>} />
+        <Suspense fallback={<PageFallback />}>
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+            <Route path="/Home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+            <Route path="/Settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+            <Route path="/AddFriends" element={<ProtectedRoute><AddFriendsPage /></ProtectedRoute>} />
+            <Route path="/SearchServer" element={<ProtectedRoute><SearchServerPage /></ProtectedRoute>} />
+            <Route path="/Profile" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
+            <Route path="/ProfileSettings" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
+            <Route path="/DirectMessaging" element={<ProtectedRoute><DirectMessagingPage /></ProtectedRoute>} />
+            <Route path="/create-server" element={<ProtectedRoute><CreateServerPage /></ProtectedRoute>} />
+            <Route path="/server/:serverId/*" element={<ProtectedRoute><ServerPage /></ProtectedRoute>} />
+            <Route path="/invite/:code" element={<ProtectedRoute><InvitePage /></ProtectedRoute>} />
 
-          {/* Auth Routes */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signin" element={<RegisterPage />} />      
-          <Route path="/forgetPassword" element={<ForgotPasswordPage />} />
-          <Route path="/terms" element={<TermsPage />} />
-          <Route path="/auth/callback" element={<AuthCallbackPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route
-            path="/create_profile"
-            element={
-              <ProtectedRoute requireProfile={false}>
-                <CreateProfilePage />
-              </ProtectedRoute>
-            }
-          />
+            {/* Auth Routes */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signin" element={<RegisterPage />} />      
+            <Route path="/forgetPassword" element={<ForgotPasswordPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route
+              path="/create_profile"
+              element={
+                <ProtectedRoute requireProfile={false}>
+                  <CreateProfilePage />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* 404 */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* 404 */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </AnimatePresence>
     </>
   );

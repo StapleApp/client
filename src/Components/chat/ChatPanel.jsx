@@ -23,7 +23,7 @@ import GifPicker from "./GifPicker";
 import ProfilePanel from "../layout/ProfilePanel";
 import { getUser } from "../../services/userService";
 import { createNotification } from "../../services/notificationService";
-import { socket } from "../../config/socket";
+import { socket, attachSocketAuth } from "../../config/socket";
 
 const formatTime = (createdAt) => {
   if (!createdAt?.seconds) return "";
@@ -138,7 +138,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
 
   useEffect(() => {
     if (!channelId || !userData?.userID) return;
-    if (!socket.connected) socket.connect();
+    if (!socket.connected) { attachSocketAuth().then(() => socket.connect()); }
     socket.emit("chat:join", { channelId });
 
     const onTyping = ({ userId, nickName, isTyping }) => {
@@ -181,7 +181,7 @@ const ChatPanel = ({ context, channelName, headerIcon, headerUserId, showHeader 
 
   const emitTyping = () => {
     if (!channelId || !userData?.userID) return;
-    if (!socket.connected) socket.connect();
+    if (!socket.connected) { attachSocketAuth().then(() => socket.connect()); }
     socket.emit("chat:typing", {
       channelId,
       userId: userData.userID,

@@ -65,7 +65,7 @@ const reconcile = (layout, servers) => {
 };
 
 // ---- Tekil sunucu ikonu görseli (üst seviye veya klasör içi) ----
-const ServerIcon = ({ server, active, badge, size = 40, label, isNavExpanded }) => (
+const ServerIcon = ({ server, badge, size = 40, label, isNavExpanded }) => (
   <>
     <div
       className={`rounded-[9px] overflow-hidden shrink-0`}

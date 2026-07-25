@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 import toast from "react-hot-toast";
-import { socket } from "../config/socket";
+import { socket, attachSocketAuth } from "../config/socket";
 import { useAuth } from "./AuthContext";
 import { getUser } from "../services/userService";
 import { playJoinSound, playLeaveSound } from "../utils/voiceSounds";
@@ -302,7 +302,7 @@ export const VoiceProvider = ({ children }) => {
     setVoiceState({});
     if (!serverId) return;
 
-    if (!socket.connected) socket.connect();
+    if (!socket.connected) { attachSocketAuth().then(() => socket.connect()); }
     socket.emit("voice:watch", { serverId });
   }, []);
 
@@ -1155,7 +1155,7 @@ export const VoiceProvider = ({ children }) => {
     startLevelLoop();
 
     registerSocketHandlers();
-    if (!socket.connected) socket.connect();
+    if (!socket.connected) { await attachSocketAuth(); socket.connect(); }
     socket.emit("voice:join", {
       roomId: `${serverId}:${channelId}`,
       userId: userData?.userID,

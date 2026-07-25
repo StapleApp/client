@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { socket } from "../config/socket";
+import { socket, attachSocketAuth } from "../config/socket";
 import { useAuth } from "./AuthContext";
 import { resolveStatus } from "../services/userService";
 
@@ -62,7 +62,10 @@ export const PresenceProvider = ({ children }) => {
     socket.on("presence:diff", onDiff);
 
     if (socket.connected) onConnect();
-    else socket.connect();
+    else {
+      // Bağlanmadan önce JWT token'ı socket.auth'a enjekte et
+      attachSocketAuth().then(() => socket.connect());
+    }
 
     return () => {
       socket.off("connect", onConnect);
