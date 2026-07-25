@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 import { FaPowerOff } from "react-icons/fa6";
-import { Loader2, Trash2, AlertTriangle, Pencil, Menu, Mic, Volume2, ChevronDown, Check, Home, Compass, UserPlus, Settings as SettingsIcon, User, X, Sun, Moon, MoonStar, Monitor, Palette, Pipette, Sparkles, Grid2x2, Zap, Type, MessageSquare, Coffee } from "lucide-react";
+import { Loader2, Trash2, AlertTriangle, Pencil, Menu, Mic, Volume2, ChevronDown, Check, Home, Compass, UserPlus, Settings as SettingsIcon, User, X, Sun, Moon, MoonStar, Monitor, Palette, Pipette, Sparkles, Grid2x2, Zap, Type, MessageSquare, Coffee, Languages } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { SUPPORTED } from "../../i18n";
 import { useAuth } from "../../context/AuthContext";
 import { useMobileMenu } from "../../context/MobileMenuContext";
 import { useVoice } from "../../context/VoiceContext";
@@ -125,6 +127,7 @@ const AppearanceSettings = () => {
     fontFamily, setFontFamily,
     accents, themes, tileSizes,
   } = useTheme();
+  const { t, i18n } = useTranslation();
 
   const themeIcon = (id) =>
     id === "light" ? <Sun size={15} /> :
@@ -136,15 +139,38 @@ const AppearanceSettings = () => {
   return (
     <section className="bg-[var(--primary-bg)] rounded-2xl p-6 shadow-xl border border-[var(--primary-border)]">
       <h2 className="text-lg font-semibold mb-4 text-[var(--quaternary-text)]">
-        Görünüm
+        {t("settings.appearanceTitle")}
       </h2>
+
+      {/* Dil / Language */}
+      <div className="mb-5">
+        <label className="flex items-center gap-1.5 mb-2 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
+          <Languages size={13} /> {t("settings.language")}
+        </label>
+        <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-[var(--secondary-bg)] border-2 border-[var(--primary-border)] w-fit">
+          {SUPPORTED.map((l) => (
+            <button
+              key={l.code}
+              type="button"
+              onClick={() => i18n.changeLanguage(l.code)}
+              className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                (i18n.resolvedLanguage || i18n.language) === l.code
+                  ? "bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
+                  : "text-[var(--primary-text)] hover:text-[var(--secondary-text)]"
+              }`}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* 1. Satır Izgarası: Tema ve Vurgu Rengi */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-5">
         {/* Uygulama teması */}
         <div>
           <label className="flex items-center gap-1.5 mb-2 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
-            <Palette size={13} /> Uygulama Teması
+            <Palette size={13} /> {t("settings.theme")}
           </label>
           <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-[var(--secondary-bg)] border-2 border-[var(--primary-border)] w-fit max-w-full">
             {themes.map((t) => (
@@ -168,7 +194,7 @@ const AppearanceSettings = () => {
         {/* Vurgu rengi (accent) — temadan bağımsız */}
         <div>
           <label className="flex items-center gap-1.5 mb-2 text-xs font-bold uppercase tracking-wide text-[var(--primary-text)]">
-            <Palette size={13} /> Vurgu Rengi
+            <Palette size={13} /> {t("settings.accent")}
           </label>
           <div className="flex flex-wrap gap-2 items-center">
             {accents.map((a) => {

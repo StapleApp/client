@@ -1,0 +1,28 @@
+{
+  "nav": {
+    "home": "Ana Sayfa",
+    "messages": "Mesajlar",
+    "notifications": "Bildirimler",
+    "settings": "Ayarlar",
+    "expand": "Genişlet"
+  },
+  "settings": {
+    "appearanceTitle": "Görünüm",
+    "theme": "Uygulama Teması",
+    "accent": "Vurgu Rengi",
+    "language": "Dil"
+  },
+  "login": {
+    "welcome": "STAPLE'a Hoş Geldin",
+    "email": "E-posta",
+    "password": "Parola",
+    "rememberMe": "Beni hatırla",
+    "forgotPassword": "Parolanı mı unuttun?",
+    "logIn": "Giriş yap",
+    "loggingIn": "Giriş yapılıyor…",
+    "orContinue": "veya şununla devam et",
+    "googleSignIn": "Google ile giriş yap",
+    "notMember": "Üye değil misin?",
+    "registerNow": "Hemen Kaydol"
+  }
+}

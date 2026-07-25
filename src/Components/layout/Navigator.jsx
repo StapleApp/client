@@ -7,17 +7,18 @@ import { PanelLeftOpen, PanelLeftClose } from "lucide-react";
 import NotificationsBell from './NotificationsBell'
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import "../../styles/components.css";
 
 import { useNavData } from "../../context/NavDataContext";
 import NavServerList from "./NavServerList";
 
-// Sol menü öğeleri — tek kaynaktan yönetilir.
-// Bildirimler (custom) tıklanınca sayfaya gitmez, scroll dropdown açar.
+// Sol menü öğeleri — tek kaynaktan yönetilir. label i18n anahtarı; render'da
+// t() ile çözülür. Bildirimler (custom) tıklanınca sayfaya gitmez, dropdown açar.
 const NAV_ITEMS = [
-  { path: "/", label: "Ana Sayfa", icon: <MdHome size="25" /> },
-  { path: "/DirectMessaging", label: "Mesajlar", icon: <MdOutlineMessage size="25" /> },
-  { custom: "notifications", label: "Bildirimler" },
+  { path: "/", labelKey: "nav.home", icon: <MdHome size="25" /> },
+  { path: "/DirectMessaging", labelKey: "nav.messages", icon: <MdOutlineMessage size="25" /> },
+  { custom: "notifications", labelKey: "nav.notifications" },
 ];
 
 // Öğelerin genişleme animasyonu gecikmeleri (orijinal tasarımla birebir)
@@ -87,6 +88,7 @@ const Navigator = () => {
   const [isResizingNavigator, setIsResizingNavigator] = useState(false);
 
   const { servers, serverUnread } = useNavData();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const widthVal = isNavExpanded ? navigatorWidth : 64;
@@ -166,7 +168,7 @@ const Navigator = () => {
           ) : (
             <>
               <PanelLeftOpen size="20" />
-              <span className="sidebar-tooltip group-hover:scale-100">Genişlet</span>
+              <span className="sidebar-tooltip group-hover:scale-100">{t("nav.expand")}</span>
             </>
           )}
         </div>
@@ -180,7 +182,13 @@ const Navigator = () => {
             {item.custom === "notifications" ? (
               <NotificationsBell isNavExpanded={isNavExpanded} navigatorWidth={navigatorWidth} />
             ) : (
-              <NavItem {...item} isNavExpanded={isNavExpanded} navigatorWidth={navigatorWidth} />
+              <NavItem
+                path={item.path}
+                icon={item.icon}
+                label={t(item.labelKey)}
+                isNavExpanded={isNavExpanded}
+                navigatorWidth={navigatorWidth}
+              />
             )}
             {/* Bildirimler'den sonra ayraç */}
             {item.custom === "notifications" && (
@@ -204,7 +212,7 @@ const Navigator = () => {
         <hr className="border-[var(--primary-border)] border" />
         <NavItem
           path="/Settings"
-          label="Ayarlar"
+          label={t("nav.settings")}
           icon={<BsGearFill size="22" />}
           isNavExpanded={isNavExpanded}
           navigatorWidth={navigatorWidth}

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import toast from 'react-hot-toast';
 import { loginWithMail, signInWithGoogle } from "../../services/authService";
 import { useAuth } from "../../context/AuthContext";
 
 const LoginPage = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -60,7 +62,7 @@ const LoginPage = () => {
     <div className="fixed left-0 top-0 background flex items-center justify-center min-h-screen">
       <div className="w-full max-w-md p-12 bg-white border border-gray-300 rounded-2xl shadow-md">
         <h2 className="mb-8 text-center text-2xl font-bold tracking-tight text-gray-900">
-          Welcome to STAPLE
+          {t("login.welcome")}
         </h2>
   
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -71,7 +73,7 @@ const LoginPage = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
+              placeholder={t("login.email")}
               required
               autoComplete="email"
               className="block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-none border border-gray-300 focus:ring-2 focus:ring-indigo-500"
@@ -85,7 +87,7 @@ const LoginPage = () => {
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
+              placeholder={t("login.password")}
               required
               autoComplete="current-password"
               className="block w-full rounded-md bg-white px-3 py-2 text-gray-900 outline-none border border-gray-300 focus:ring-2 focus:ring-indigo-500"
@@ -110,15 +112,15 @@ const LoginPage = () => {
                 className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
               />
               <label htmlFor="remember-me" className="ml-2 text-sm text-gray-900">
-                Remember me
+                {t("login.rememberMe")}
               </label>
             </div>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="text-sm font-semibold text-indigo-600 hover:text-indigo-500"
               onClick={() => navigate("/forgetPassword")}
             >
-              Forgot password?
+              {t("login.forgotPassword")}
             </button>
           </div>
   
@@ -127,13 +129,13 @@ const LoginPage = () => {
             disabled={busy}
             className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-white font-semibold shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {busy ? "Logging in…" : "Log in"}
+            {busy ? t("login.loggingIn") : t("login.logIn")}
           </button>
         </form>
-  
+
         <div className="mt-6 flex items-center justify-between">
           <div className="w-24 border-t border-gray-300"></div>
-          <span className="px-5 text-gray-500">Or continue with</span>
+          <span className="px-5 text-gray-500">{t("login.orContinue")}</span>
           <div className="w-24 border-t border-gray-300"></div>
         </div>
   
@@ -148,18 +150,18 @@ const LoginPage = () => {
               alt="Google Logo"
               className="h-8 w-8"
             />
-            Sign in with Google
+            {t("login.googleSignIn")}
           </button>
         </div>
-  
+
         <div className="flex flex-row justify-center items-center mt-5 text-sm text-gray-500">
-          Not a member?
-          <button 
-            type="button" 
+          {t("login.notMember")}
+          <button
+            type="button"
             className="ml-1 font-semibold text-indigo-600 hover:text-indigo-500"
             onClick={() => navigate("/signin")}
           >
-            Register Now
+            {t("login.registerNow")}
           </button>
         </div>
       </div>

@@ -1,0 +1,28 @@
+{
+  "nav": {
+    "home": "Home",
+    "messages": "Messages",
+    "notifications": "Notifications",
+    "settings": "Settings",
+    "expand": "Expand"
+  },
+  "settings": {
+    "appearanceTitle": "Appearance",
+    "theme": "App Theme",
+    "accent": "Accent Color",
+    "language": "Language"
+  },
+  "login": {
+    "welcome": "Welcome to STAPLE",
+    "email": "Email",
+    "password": "Password",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "logIn": "Log in",
+    "loggingIn": "Logging in…",
+    "orContinue": "Or continue with",
+    "googleSignIn": "Sign in with Google",
+    "notMember": "Not a member?",
+    "registerNow": "Register Now"
+  }
+}
