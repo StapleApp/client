@@ -1007,6 +1007,9 @@ const SvSidebar = ({ serverData, onRefresh }) => {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [editingChannel, setEditingChannel] = useState(null);
   const [newChannelName, setNewChannelName] = useState("");
+  // Kategori ekleme — tarayıcı prompt'u yerine custom inline input
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   useEffect(() => {
     if (!serverData) return;
@@ -1204,13 +1207,21 @@ const SvSidebar = ({ serverData, onRefresh }) => {
   };
 
   // Kategori işlemleri
-  const addCategory = async () => {
+  const addCategory = async (name) => {
+    const catName = (name && name.trim()) || "Yeni Kategori";
     const row = await createCategory(serverId, {
-      name: "Yeni Kategori",
+      name: catName,
       position: categories.length + 1,
     });
     if (!row) return;
     setCategories((prev) => [...prev, { id: row.id, name: row.name, position: row.position }]);
+  };
+
+  const submitNewCategory = () => {
+    const name = newCategoryName.trim();
+    setAddingCategory(false);
+    setNewCategoryName("");
+    if (name) addCategory(name);
   };
 
   const renameCategoryCommit = async (id, name) => {
@@ -1367,15 +1378,42 @@ const SvSidebar = ({ serverData, onRefresh }) => {
 
           <button
             onClick={() => {
-              const name = prompt("Yeni Kategori Adı:");
-              if (name) addCategory(name);
+              setAddingCategory(true);
+              setNewCategoryName("");
+              setShowAddDropdown(false);
             }}
-            className="flex items-center justify-center p-2 rounded-xl border-2 border-[var(--primary-border)] bg-[var(--secondary-bg)] text-[var(--secondary-text)] hover:border-[var(--tertiary-border)] hover:text-[var(--quaternary-text)] transition-all duration-200"
+            className={`flex items-center justify-center p-2 rounded-xl border-2 transition-all duration-200 ${
+              addingCategory
+                ? "border-[var(--tertiary-border)] bg-[var(--tertiary-bg)] text-[var(--tertiary-text)]"
+                : "border-[var(--primary-border)] bg-[var(--secondary-bg)] text-[var(--secondary-text)] hover:border-[var(--tertiary-border)] hover:text-[var(--quaternary-text)]"
+            }`}
             title="Kategori Ekle"
           >
             <FolderPlus size={16} />
           </button>
           </div>
+          )}
+
+          {/* Kategori adı — custom inline input (tarayıcı prompt'u yerine) */}
+          {canManageChannels && addingCategory && (
+            <div className="px-2 pb-2">
+              <input
+                autoFocus
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                onBlur={submitNewCategory}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") submitNewCategory();
+                  if (e.key === "Escape") {
+                    setAddingCategory(false);
+                    setNewCategoryName("");
+                  }
+                }}
+                placeholder="Kategori adı (Enter)"
+                maxLength={40}
+                className="w-full px-3 py-2 rounded-xl bg-[var(--secondary-bg)] border-2 border-[var(--tertiary-border)] text-sm text-[var(--secondary-text)] outline-none placeholder:text-[var(--primary-text)]"
+              />
+            </div>
           )}
 
           {/* Kanal/Kategori Listesi */}
