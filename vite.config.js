@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -8,6 +9,15 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  // Vitest birim test yapılandırması (npm run test).
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/test/setup.js',
+    css: false,
+    // Playwright E2E testleri vitest tarafından çalıştırılmasın.
+    exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**'],
+  },
   // Tauri expects a fixed dev-server port and needs to see its own env vars.
   clearScreen: false,
   envPrefix: ['VITE_', 'TAURI_ENV_*'],

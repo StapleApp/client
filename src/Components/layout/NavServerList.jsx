@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Folder as FolderIcon, FolderPlus, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { genId, reconcile } from "../../utils/navLayout";
 
 // ============================================================================
 // Navigator sunucu listesi — sürükle-bırak sıralama + klasör organizasyonu.
@@ -13,9 +14,6 @@ import { useAuth } from "../../context/AuthContext";
 //     | { type:"folder", id, name, open, children: string[] /* serverId */ }
 //   >
 // ============================================================================
-
-const genId = () =>
-  (globalThis.crypto?.randomUUID?.() || `f_${Date.now()}_${Math.random().toString(36).slice(2)}`);
 
 const storeKeyFor = (uid) => (uid ? `staple-nav-layout:${uid}` : null);
 
@@ -27,41 +25,6 @@ const loadLayout = (key) => {
   } catch {
     return [];
   }
-};
-
-// Kayıtlı yerleşimi gerçek sunucu listesiyle uzlaştır: geçersiz/ayrılınan
-// sunucuları at, yeni katılınanları en alta ekle, mükerrerleri tekille.
-const reconcile = (layout, servers) => {
-  const valid = new Set(servers.map((s) => s.id));
-  const seen = new Set();
-  const out = [];
-  for (const it of layout || []) {
-    if (it?.type === "server") {
-      if (valid.has(it.id) && !seen.has(it.id)) {
-        out.push({ type: "server", id: it.id });
-        seen.add(it.id);
-      }
-    } else if (it?.type === "folder") {
-      const children = (it.children || []).filter(
-        (id) => valid.has(id) && !seen.has(id)
-      );
-      children.forEach((id) => seen.add(id));
-      out.push({
-        type: "folder",
-        id: it.id || genId(),
-        name: it.name || "Klasör",
-        open: !!it.open,
-        children,
-      });
-    }
-  }
-  for (const s of servers) {
-    if (!seen.has(s.id)) {
-      out.push({ type: "server", id: s.id });
-      seen.add(s.id);
-    }
-  }
-  return out;
 };
 
 // ---- Tekil sunucu ikonu görseli (üst seviye veya klasör içi) ----
