@@ -1117,6 +1117,30 @@ export const VoiceProvider = ({ children }) => {
     setRemoteScreenStream(null);
   };
 
+  // Mikrofon akışını al. Kayıtlı cihaz (deviceId:exact) artık yoksa
+  // OverconstrainedError/NotFoundError verir → seçimi temizleyip sistem
+  // varsayılanıyla tekrar dener. Böylece "izin verdim ama açılmıyor" takılması olmaz.
+  const acquireMicStream = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw Object.assign(new Error("getUserMedia yok"), { name: "NotSupportedError" });
+    }
+    const base = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
+    const inputId = audioDevicesRef.current.input;
+    try {
+      return await navigator.mediaDevices.getUserMedia({
+        audio: inputId ? { ...base, deviceId: { exact: inputId } } : base,
+        video: false,
+      });
+    } catch (e) {
+      if (inputId && (e?.name === "OverconstrainedError" || e?.name === "NotFoundError")) {
+        // Seçili mikrofon artık yok → kaydı temizle, varsayılanla dene.
+        try { setAudioInputDevice(""); } catch { /* yok say */ }
+        return await navigator.mediaDevices.getUserMedia({ audio: base, video: false });
+      }
+      throw e;
+    }
+  };
+
   const joinVoice = async ({ serverId, channelId, channelName, serverName }) => {
     // Aynı kanaldaysak bir şey yapma
     if (active && active.serverId === serverId && active.channelId === channelId) {
@@ -1129,23 +1153,24 @@ export const VoiceProvider = ({ children }) => {
     setIsTheaterExpanded(true);
     setConnecting(true);
     try {
-      const inputId = audioDevicesRef.current.input;
-      localStreamRef.current = await navigator.mediaDevices.getUserMedia({
-        // Tarayıcının kendi işleme zinciri. Chrome bunları varsayılan açar ama
-        // garanti değil; açıkça isteyerek Firefox/Safari'de de tutarlı olur.
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          // Seçili mikrofon (yoksa sistem varsayılanı)
-          ...(inputId ? { deviceId: { exact: inputId } } : {}),
-        },
-        video: false,
-      });
+      localStreamRef.current = await acquireMicStream();
     } catch (e) {
-      console.error("getUserMedia error:", e);
+      console.error("getUserMedia error:", e?.name, e?.message);
       setConnecting(false);
-      toast.error("Mikrofona erişilemedi. Tarayıcı iznini kontrol et.");
+      // Gerçek nedene göre doğru mesaj — "izin verdim ama izin yok diyor"
+      // karışıklığını önler (çoğu zaman izin değil, cihaz/ortam sorunudur).
+      const n = e?.name;
+      const msg =
+        n === "NotAllowedError" || n === "SecurityError"
+          ? "Mikrofon izni reddedildi. Tarayıcı ve işletim sistemi mikrofon iznini kontrol et."
+          : n === "NotFoundError" || n === "OverconstrainedError"
+          ? "Kullanılabilir mikrofon bulunamadı. Bir mikrofon bağlı mı diye bak."
+          : n === "NotReadableError"
+          ? "Mikrofona erişilemedi — başka bir uygulama onu kullanıyor olabilir."
+          : n === "NotSupportedError" || !navigator.mediaDevices?.getUserMedia
+          ? "Mikrofon bu ortamda kullanılamıyor (güvenli bağlam / HTTPS gerekir)."
+          : "Mikrofona erişilemedi. Tarayıcı iznini kontrol et.";
+      toast.error(msg);
       return;
     }
 
